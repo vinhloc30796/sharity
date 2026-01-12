@@ -60,12 +60,12 @@ export default function Home() {
               <div key={item._id} className="border p-4 rounded flex flex-col gap-2">
                 <div className="flex justify-between items-start">
                     <h3 className="font-bold text-lg">{item.name}</h3>
-                    <span className={`px-2 py-1 rounded text-xs ${item.isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {item.isAvailable ? 'Available' : 'Unavailable'}
+                    <span className={`px-2 py-1 rounded text-xs ${item.isAvailable === false ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                        {item.isAvailable === false ? 'Unavailable' : 'Available'}
                     </span>
                 </div>
                 {item.description && <p className="text-gray-600">{item.description}</p>}
-                <p className="text-xs text-gray-400">Owner: {item.ownerId}</p>
+                <p className="text-xs text-gray-400">Owner: {item.ownerId ?? 'Unknown'}</p>
               </div>
             ))
           )}
