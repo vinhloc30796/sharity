@@ -24,13 +24,17 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Roadmap
 
-- [ ] Givers should be able to submit an item
+- [x] Givers should be able to submit an item
 - [ ] Givers should be able to approve or reject a getter's claim
-- [ ] Getters should be able to browse items aimlessly (for discovery)
+    - there should be a queue of 5 claimer (this should be a server-side config, not exposed to users)
+    - this should affect status badge of the item: avail, waitlist open, waitlist closed, exchanged
+- [ ] Givers should be able to block a spammer from claiming an item (or all items)
+- [x] Getters should be able to browse items aimlessly (for discovery)
 - [ ] Getters should be able to search for specific items
     - [ ] by location
     - [ ] by time
-    - [ ] by keywords
+    - [~] by keywords
+    - [ ] by owner (default to exclude all items submitted by current logged in user)
 - [ ] Getters should be able to claim an item
 - [ ] Givers & getters should be able to mark an item as exchanged & hide it from the market
 - ...

@@ -4,21 +4,17 @@ import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+
 
 import { Doc } from "../convex/_generated/dataModel";
+
 import { ReactNode } from "react";
+import { ItemCard } from "./item-card";
 
 export function ItemList({
   action,
 }: {
-  action?: (item: Doc<"items">) => ReactNode;
+  action?: (item: Doc<"items"> & { isRequested?: boolean }) => ReactNode;
 }) {
   const items = useQuery(api.items.get);
   const [search, setSearch] = useState("");
@@ -47,33 +43,18 @@ export function ItemList({
            <p>No items found matching &quot;{search}&quot;</p>
         ) : (
           filteredItems?.map((item) => (
-            <Card key={item._id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle>{item.name}</CardTitle>
-                  <span
-                    className={`px-2 py-1 rounded text-xs ${
-                      item.isAvailable === false
-                        ? "bg-red-100 text-red-800"
-                        : "bg-green-100 text-green-800"
-                    }`}
-                  >
-                    {item.isAvailable === false ? "Unavailable" : "Available"}
-                  </span>
+            <ItemCard
+              key={item._id}
+              item={item}
+              footer={
+                <div className="flex justify-between items-center w-full">
+                  <p className="text-xs text-gray-400">
+                    Owner: {item.ownerId ?? "Unknown"}
+                  </p>
+                  {action && action(item)}
                 </div>
-              </CardHeader>
-              <CardContent>
-                {item.description && (
-                  <p className="text-gray-600">{item.description}</p>
-                )}
-              </CardContent>
-              <CardFooter className="flex justify-between items-center">
-                <p className="text-xs text-gray-400">
-                  Owner: {item.ownerId ?? "Unknown"}
-                </p>
-                {action && action(item)}
-              </CardFooter>
-            </Card>
+              }
+            />
           ))
         )}
       </div>

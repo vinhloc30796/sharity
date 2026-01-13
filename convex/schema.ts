@@ -8,4 +8,11 @@ export default defineSchema({
     ownerId: v.string(), // For MVP, we'll just store a string ID
     isAvailable: v.boolean(),
   }),
+  claims: defineTable({
+    itemId: v.id("items"),
+    claimerId: v.string(),
+    status: v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected")),
+  })
+  .index("by_item", ["itemId"])
+  .index("by_claimer", ["claimerId"]),
 });

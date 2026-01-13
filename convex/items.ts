@@ -4,7 +4,24 @@ import { v } from "convex/values";
 export const get = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("items").order("desc").collect();
+    const identity = await ctx.auth.getUserIdentity();
+    const items = await ctx.db.query("items").order("desc").collect();
+    
+    if (!identity) {
+      return items.map(item => ({ ...item, isRequested: false }));
+    }
+
+    const myClaims = await ctx.db
+        .query("claims")
+        .withIndex("by_claimer", q => q.eq("claimerId", identity.subject))
+        .collect();
+        
+    const myClaimedItemIds = new Set(myClaims.map(c => c.itemId));
+    
+    return items.map(item => ({
+        ...item,
+        isRequested: myClaimedItemIds.has(item._id),
+    }));
   },
 });
 
@@ -15,11 +32,15 @@ export const getMyItems = query({
     if (!identity) {
       return [];
     }
-    return await ctx.db
+    const items = await ctx.db
       .query("items")
       .filter((q) => q.eq(q.field("ownerId"), identity.subject))
       .order("desc")
       .collect();
+
+    // Enrich with request counts (optional but helpful)
+    // For now, let's just return items, and getClaims will handle details
+    return items;
   },
 });
 
@@ -90,4 +111,116 @@ export const deleteItem = mutation({
 
     await ctx.db.delete(args.id);
   },
+});
+
+export const requestItem = mutation({
+  args: { itemId: v.id("items") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+    
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw new Error("Item not found");
+    if (!item.isAvailable) throw new Error("Item is not available");
+    if (item.ownerId === identity.subject) throw new Error("Cannot claim your own item");
+
+    const existingClaim = await ctx.db
+      .query("claims")
+      .withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
+      .filter((q) => q.eq(q.field("itemId"), args.itemId))
+      .first();
+      
+    if (existingClaim) throw new Error("Already requested this item");
+
+    const pendingClaims = await ctx.db
+      .query("claims")
+      .withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .collect();
+      
+    if (pendingClaims.length >= 5) {
+      throw new Error("Waitlist is full");
+    }
+
+    await ctx.db.insert("claims", {
+      itemId: args.itemId,
+      claimerId: identity.subject,
+      status: "pending",
+    });
+  },
+});
+
+export const getClaims = query({
+  args: { itemId: v.id("items") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+
+    const item = await ctx.db.get(args.itemId);
+    if (!item) return [];
+    
+    if (item.ownerId !== identity.subject) {
+       throw new Error("Unauthorized");
+    }
+
+    return await ctx.db
+      .query("claims")
+      .withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+      .collect();
+  }
+});
+
+export const approveClaim = mutation({
+  args: { claimId: v.id("claims"), itemId: v.id("items") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw new Error("Item not found");
+    if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
+
+    const claim = await ctx.db.get(args.claimId);
+    if (!claim) throw new Error("Claim not found");
+    if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+
+    await ctx.db.patch(args.claimId, { status: "approved" });
+    await ctx.db.patch(args.itemId, { isAvailable: false });
+    
+    // Optionally reject others or leave them pending? 
+    // Usually once approved, others are implicitly rejected or on hold. 
+    // Let's leave them pending but they effectively can't get it unless this one is cancelled.
+  }
+});
+
+export const rejectClaim = mutation({
+  args: { claimId: v.id("claims"), itemId: v.id("items") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const item = await ctx.db.get(args.itemId);
+    if (!item) throw new Error("Item not found");
+    if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
+    
+    await ctx.db.patch(args.claimId, { status: "rejected" });
+  }
+});
+
+export const cancelClaim = mutation({
+  args: { itemId: v.id("items") },
+  handler: async (ctx, args) => {
+      const identity = await ctx.auth.getUserIdentity();
+      if (!identity) throw new Error("Unauthenticated");
+      
+      const claim = await ctx.db
+        .query("claims")
+        .withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
+        .filter((q) => q.eq(q.field("itemId"), args.itemId))
+        .first();
+        
+      if (!claim) throw new Error("No claim found");
+      
+      await ctx.db.delete(claim._id);
+  }
 });

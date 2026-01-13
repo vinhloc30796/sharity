@@ -6,9 +6,25 @@ import { MyItemsList } from "@/components/my-items-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button, ButtonWithTooltip } from "@/components/ui/button";
 import { useAuth, SignedIn } from "@clerk/nextjs";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+// Removed unused sonner import
+// Actually no toast imported in file, let's stick to standard alert or nothing for now, or use console.
+// Re-reading: The file uses ButtonWithTooltip.
+// I will just use console.error for failures or simple alert if needed, but UI updates automatically.
 
 export default function Home() {
   const { isSignedIn } = useAuth();
+  const requestItem = useMutation(api.items.requestItem);
+    
+  const handleClaim = async (itemId: any) => {
+    try {
+      await requestItem({ itemId });
+    } catch (error: any) {
+      alert(error.message);
+    }
+  };
+
   return (
     <main className="min-h-screen flex flex-col items-center bg-gray-50/50">
       <div className="w-full max-w-6xl p-4 md:p-8 space-y-8">
@@ -33,13 +49,25 @@ export default function Home() {
           <div className="w-full">
             <ItemList
               action={(item) => (
-                <ButtonWithTooltip
-                  size="sm"
-                  disabled={!isSignedIn}
-                  tooltipContent={!isSignedIn ? "Sign in to claim this item" : undefined}
-                >
-                  Claim
-                </ButtonWithTooltip>
+                 item.isRequested ? (
+                   <Button size="sm" variant="secondary" disabled>
+                     Requested
+                   </Button>
+                 ) : (
+                  <ButtonWithTooltip
+                    size="sm"
+                    disabled={!isSignedIn || !item.isAvailable}
+                    // If not signed in -> claim (tooltip handles msg)
+                    // If signed in and not available -> Disabled
+                    tooltipContent={
+                        !isSignedIn ? "Sign in to claim this item" : 
+                        !item.isAvailable ? "Item is unavailable" : undefined
+                    }
+                    onClick={() => handleClaim(item._id)}
+                  >
+                    {item.isAvailable ? "Claim" : "Unavailable"}
+                  </ButtonWithTooltip>
+                 )
               )}
             />
           </div>
@@ -52,15 +80,23 @@ export default function Home() {
               <h2 className="text-lg font-semibold px-1">Browse Items</h2>
               <ItemList
                 action={(item) => (
+                 item.isRequested ? (
+                   <Button size="sm" variant="secondary" disabled>
+                     Requested
+                   </Button>
+                 ) : (
                   <ButtonWithTooltip
                     size="sm"
-                    disabled={!isSignedIn}
+                    disabled={!isSignedIn || !item.isAvailable}
                     tooltipContent={
-                      !isSignedIn ? "Sign in to claim this item" : undefined
+                        !isSignedIn ? "Sign in to claim this item" : 
+                        !item.isAvailable ? "Item is unavailable" : undefined
                     }
+                    onClick={() => handleClaim(item._id)}
                   >
-                    Claim
+                    {item.isAvailable ? "Claim" : "Unavailable"}
                   </ButtonWithTooltip>
+                 )
                 )}
               />
             </TabsContent>
