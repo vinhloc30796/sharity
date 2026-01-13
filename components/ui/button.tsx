@@ -1,6 +1,6 @@
-import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -59,4 +59,30 @@ function Button({
   )
 }
 
-export { Button, buttonVariants }
+import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip"
+
+function ButtonWithTooltip({
+  tooltipContent,
+  ...props
+}: React.ComponentProps<typeof Button> & {
+  tooltipContent?: React.ReactNode
+}) {
+  if (!tooltipContent) {
+    return <Button {...props} />
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span tabIndex={0} className="inline-flex">
+          <Button {...props} />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>
+        {tooltipContent}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+export { Button, buttonVariants, ButtonWithTooltip }

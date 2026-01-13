@@ -12,7 +12,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export function ItemList() {
+import { Doc } from "../convex/_generated/dataModel";
+import { ReactNode } from "react";
+
+export function ItemList({
+  action,
+}: {
+  action?: (item: Doc<"items">) => ReactNode;
+}) {
   const items = useQuery(api.items.get);
   const [search, setSearch] = useState("");
 
@@ -60,10 +67,11 @@ export function ItemList() {
                   <p className="text-gray-600">{item.description}</p>
                 )}
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex justify-between items-center">
                 <p className="text-xs text-gray-400">
                   Owner: {item.ownerId ?? "Unknown"}
                 </p>
+                {action && action(item)}
               </CardFooter>
             </Card>
           ))

@@ -3,8 +3,11 @@
 import { AddItemForm } from "@/components/add-item-form";
 import { ItemList } from "@/components/item-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button, ButtonWithTooltip } from "@/components/ui/button";
+import { useAuth } from "@clerk/nextjs";
 
 export default function Home() {
+  const { isSignedIn } = useAuth();
   return (
     <main className="min-h-screen flex flex-col items-center bg-gray-50/50">
       <div className="w-full max-w-6xl p-4 md:p-8 space-y-8">
@@ -21,7 +24,17 @@ export default function Home() {
             <AddItemForm />
           </div>
           <div className="w-full">
-            <ItemList />
+            <ItemList
+              action={(item) => (
+                <ButtonWithTooltip
+                  size="sm"
+                  disabled={!isSignedIn}
+                  tooltipContent={!isSignedIn ? "Sign in to claim this item" : undefined}
+                >
+                  Claim
+                </ButtonWithTooltip>
+              )}
+            />
           </div>
         </div>
 
@@ -30,7 +43,19 @@ export default function Home() {
           <Tabs defaultValue="browse" className="w-full">
             <TabsContent value="browse" className="mt-0 space-y-4">
               <h2 className="text-lg font-semibold px-1">Browse Items</h2>
-              <ItemList />
+              <ItemList
+                action={(item) => (
+                  <ButtonWithTooltip
+                    size="sm"
+                    disabled={!isSignedIn}
+                    tooltipContent={
+                      !isSignedIn ? "Sign in to claim this item" : undefined
+                    }
+                  >
+                    Claim
+                  </ButtonWithTooltip>
+                )}
+              />
             </TabsContent>
             
             <TabsContent value="manage" className="mt-0 space-y-4">
