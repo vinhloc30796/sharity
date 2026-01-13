@@ -8,6 +8,8 @@ import { Button, ButtonWithTooltip } from "@/components/ui/button";
 import { useAuth, SignedIn } from "@clerk/nextjs";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { toast } from "sonner";
+import { ClaimButton } from "@/components/claim-button";
 // Removed unused sonner import
 // Actually no toast imported in file, let's stick to standard alert or nothing for now, or use console.
 // Re-reading: The file uses ButtonWithTooltip.
@@ -20,8 +22,14 @@ export default function Home() {
   const handleClaim = async (itemId: any) => {
     try {
       await requestItem({ itemId });
+      toast.success("Item requested successfully");
     } catch (error: any) {
-      alert(error.message);
+      if (error.message.includes("own item")) {
+        toast.error("You cannot claim your own item");
+      } else {
+        toast.error("Failed to request item");
+        console.error(error);
+      }
     }
   };
 
@@ -49,25 +57,7 @@ export default function Home() {
           <div className="w-full">
             <ItemList
               action={(item) => (
-                 item.isRequested ? (
-                   <Button size="sm" variant="secondary" disabled>
-                     Requested
-                   </Button>
-                 ) : (
-                  <ButtonWithTooltip
-                    size="sm"
-                    disabled={!isSignedIn || !item.isAvailable}
-                    // If not signed in -> claim (tooltip handles msg)
-                    // If signed in and not available -> Disabled
-                    tooltipContent={
-                        !isSignedIn ? "Sign in to claim this item" : 
-                        !item.isAvailable ? "Item is unavailable" : undefined
-                    }
-                    onClick={() => handleClaim(item._id)}
-                  >
-                    {item.isAvailable ? "Claim" : "Unavailable"}
-                  </ButtonWithTooltip>
-                 )
+                <ClaimButton item={item} onClaim={handleClaim} />
               )}
             />
           </div>
@@ -80,23 +70,7 @@ export default function Home() {
               <h2 className="text-lg font-semibold px-1">Browse Items</h2>
               <ItemList
                 action={(item) => (
-                 item.isRequested ? (
-                   <Button size="sm" variant="secondary" disabled>
-                     Requested
-                   </Button>
-                 ) : (
-                  <ButtonWithTooltip
-                    size="sm"
-                    disabled={!isSignedIn || !item.isAvailable}
-                    tooltipContent={
-                        !isSignedIn ? "Sign in to claim this item" : 
-                        !item.isAvailable ? "Item is unavailable" : undefined
-                    }
-                    onClick={() => handleClaim(item._id)}
-                  >
-                    {item.isAvailable ? "Claim" : "Unavailable"}
-                  </ButtonWithTooltip>
-                 )
+                  <ClaimButton item={item} onClaim={handleClaim} />
                 )}
               />
             </TabsContent>

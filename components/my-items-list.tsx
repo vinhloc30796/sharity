@@ -17,8 +17,8 @@ export function MyItemsList() {
 
   return (
     <div className="space-y-4">
-      {items.map((item) => (
-        <MyItemCard key={item._id} item={item} />
+      {items.map((item: any) => (
+        <MyItemCard key={item._id} item={item} isOwner={item.isOwner} />
       ))}
     </div>
   );

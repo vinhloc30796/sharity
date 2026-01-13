@@ -40,10 +40,10 @@ export function ItemCard({
         </div>
       </CardHeader>
       <CardContent>
+        {children}
         {item.description && (
           <p className="text-gray-600 mb-4">{item.description}</p>
         )}
-        {children}
       </CardContent>
       {footer && <CardFooter>{footer}</CardFooter>}
     </Card>

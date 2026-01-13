@@ -18,7 +18,9 @@ export const get = query({
         
     const myClaimedItemIds = new Set(myClaims.map(c => c.itemId));
     
-    return items.map(item => ({
+    return items
+      .filter((item) => item.ownerId !== identity.subject)
+      .map(item => ({
         ...item,
         isRequested: myClaimedItemIds.has(item._id),
     }));
@@ -32,15 +34,39 @@ export const getMyItems = query({
     if (!identity) {
       return [];
     }
-    const items = await ctx.db
+    
+    // 1. Get items owned by the user
+    const ownedItems = await ctx.db
       .query("items")
       .filter((q) => q.eq(q.field("ownerId"), identity.subject))
       .order("desc")
       .collect();
 
-    // Enrich with request counts (optional but helpful)
-    // For now, let's just return items, and getClaims will handle details
-    return items;
+    // 2. Get items borrowed by the user (approved claims)
+    const myClaims = await ctx.db
+      .query("claims")
+      .withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
+      .filter((q) => q.eq(q.field("status"), "approved"))
+      .collect();
+      
+    const borrowedItemIds = myClaims.map(c => c.itemId);
+    
+    // Fetch the actual item documents for borrowed items
+    const borrowedItems = [];
+    for (const itemId of borrowedItemIds) {
+        const item = await ctx.db.get(itemId);
+        if (item) {
+            borrowedItems.push(item);
+        }
+    }
+
+    // 3. Combine and add isOwner flag
+    const result = [
+        ...ownedItems.map(item => ({ ...item, isOwner: true })),
+        ...borrowedItems.map(item => ({ ...item, isOwner: false }))
+    ];
+    
+    return result;
   },
 });
 
