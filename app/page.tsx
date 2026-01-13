@@ -2,9 +2,10 @@
 
 import { AddItemForm } from "@/components/add-item-form";
 import { ItemList } from "@/components/item-list";
+import { MyItemsList } from "@/components/my-items-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button, ButtonWithTooltip } from "@/components/ui/button";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, SignedIn } from "@clerk/nextjs";
 
 export default function Home() {
   const { isSignedIn } = useAuth();
@@ -22,6 +23,12 @@ export default function Home() {
         <div className="hidden md:grid md:grid-cols-[350px_1fr] lg:grid-cols-[400px_1fr] gap-8 items-start justify-center">
           <div className="sticky top-8">
             <AddItemForm />
+            <SignedIn>
+              <div className="mt-8">
+                <h2 className="text-lg font-semibold mb-4">My Items</h2>
+                <MyItemsList />
+              </div>
+            </SignedIn>
           </div>
           <div className="w-full">
             <ItemList
@@ -61,6 +68,12 @@ export default function Home() {
             <TabsContent value="manage" className="mt-0 space-y-4">
               <h2 className="text-lg font-semibold px-1">Share & Manage</h2>
               <AddItemForm />
+              <SignedIn>
+                <div className="mt-8">
+                  <h2 className="text-lg font-semibold mb-4">My Items</h2>
+                  <MyItemsList />
+                </div>
+              </SignedIn>
             </TabsContent>
 
             <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-2 z-50">
