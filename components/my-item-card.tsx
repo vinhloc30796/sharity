@@ -50,7 +50,6 @@ export function MyItemCard({
 	);
 
 	const [editingId, setEditingId] = useState<string | null>(null);
-	const [managingClaims, setManagingClaims] = useState(false);
 
 	const pendingClaims = claims?.filter((c) => c.status === "pending") || [];
 	const approvedClaim = claims?.find((c) => c.status === "approved");
