@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 
 export const get = query({
   args: {},
@@ -8,7 +9,28 @@ export const get = query({
     const items = await ctx.db.query("items").order("desc").collect();
     
     if (!identity) {
-      return items.map(item => ({ ...item, isRequested: false }));
+      const itemsWithUrls = await Promise.all(
+        items.map(async (item) => {
+            let imageUrls: (string | null)[] = [];
+            if (item.imageStorageIds) {
+               imageUrls = await Promise.all(item.imageStorageIds.map((id) => ctx.storage.getUrl(id)));
+            }
+            
+            const images = item.imageStorageIds
+              ? item.imageStorageIds
+                  .map((id, idx) => ({ id, url: imageUrls[idx] }))
+                  .filter((img) => img.url !== null) as { id: Id<"_storage">; url: string }[]
+              : [];
+
+            return {
+              ...item,
+              images, 
+              imageUrls: images.map(i => i.url),
+              isRequested: false
+            };
+        })
+      );
+      return itemsWithUrls;
     }
 
     const myClaims = await ctx.db
@@ -18,12 +40,29 @@ export const get = query({
         
     const myClaimedItemIds = new Set(myClaims.map(c => c.itemId));
     
-    return items
-      .filter((item) => item.ownerId !== identity.subject)
-      .map(item => ({
-        ...item,
-        isRequested: myClaimedItemIds.has(item._id),
-    }));
+    const itemsWithUrls = await Promise.all(
+      items
+        .filter((item) => item.ownerId !== identity.subject)
+        .map(async (item) => {
+          let imageUrls: (string | null)[] = [];
+          if (item.imageStorageIds) {
+             imageUrls = await Promise.all(item.imageStorageIds.map((id) => ctx.storage.getUrl(id)));
+          }
+          const images = item.imageStorageIds
+              ? item.imageStorageIds
+                  .map((id, idx) => ({ id, url: imageUrls[idx] }))
+                  .filter((img) => img.url !== null) as { id: Id<"_storage">; url: string }[]
+              : [];
+
+          return {
+            ...item,
+            images,
+            imageUrls: images.map(i => i.url),
+            isRequested: myClaimedItemIds.has(item._id),
+          };
+        })
+    );
+    return itemsWithUrls;
   },
 });
 
@@ -65,8 +104,28 @@ export const getMyItems = query({
         ...ownedItems.map(item => ({ ...item, isOwner: true })),
         ...borrowedItems.map(item => ({ ...item, isOwner: false }))
     ];
+
+    const resultWithUrls = await Promise.all(
+        result.map(async (item) => {
+            let imageUrls: (string | null)[] = [];
+            if (item.imageStorageIds) {
+                imageUrls = await Promise.all(item.imageStorageIds.map((id) => ctx.storage.getUrl(id)));
+            }
+            const images = item.imageStorageIds
+              ? item.imageStorageIds
+                  .map((id, idx) => ({ id, url: imageUrls[idx] }))
+                  .filter((img) => img.url !== null) as { id: Id<"_storage">; url: string }[]
+              : [];
+
+            return {
+                ...item,
+                images,
+                imageUrls: images.map(i => i.url),
+            };
+        })
+    );
     
-    return result;
+    return resultWithUrls;
   },
 });
 
@@ -74,6 +133,7 @@ export const create = mutation({
   args: {
     name: v.string(),
     description: v.optional(v.string()),
+    imageStorageIds: v.optional(v.array(v.id("_storage"))),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -86,6 +146,7 @@ export const create = mutation({
       name: args.name,
       description: args.description,
       ownerId,
+      imageStorageIds: args.imageStorageIds,
       isAvailable: true,
     });
   },
@@ -96,6 +157,7 @@ export const update = mutation({
     id: v.id("items"),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
+    imageStorageIds: v.optional(v.array(v.id("_storage"))),
     isAvailable: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
@@ -249,4 +311,8 @@ export const cancelClaim = mutation({
       
       await ctx.db.delete(claim._id);
   }
+});
+
+export const generateUploadUrl = mutation(async (ctx) => {
+  return await ctx.storage.generateUploadUrl();
 });

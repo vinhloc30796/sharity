@@ -6,6 +6,7 @@ export default defineSchema({
     name: v.string(),
     description: v.optional(v.string()),
     ownerId: v.string(), // For MVP, we'll just store a string ID
+    imageStorageIds: v.optional(v.array(v.id("_storage"))),
     isAvailable: v.boolean(),
   }),
   claims: defineTable({
