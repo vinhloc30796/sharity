@@ -128,7 +128,7 @@ export function ItemForm({ initialValues, onSubmit, submitLabel = "Submit" }: It
   const remainingSlots = 5 - existingImages.length;
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 min-w-0">
       <div className="flex flex-col gap-2">
         <Label htmlFor="name">Item Name</Label>
         <Input
@@ -184,6 +184,7 @@ export function ItemForm({ initialValues, onSubmit, submitLabel = "Submit" }: It
             accept="image/*"
             value={files}
             onValueChange={setFiles}
+            multiple={remainingSlots > 1}
             // Removed onUpload to disable auto-upload
             >
             <FileUploadDropzone className="h-32 bg-gray-50/50 border-dashed transition-colors hover:bg-gray-50/80 hover:border-primary/20">

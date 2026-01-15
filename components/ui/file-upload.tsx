@@ -1041,7 +1041,7 @@ function FileUploadItem(props: FileUploadItemProps) {
         dir={context.dir}
         {...itemProps}
         className={cn(
-          "relative flex items-center gap-2.5 rounded-md border p-3",
+          "relative flex min-w-0 items-center gap-2.5 rounded-md border p-3",
           className,
         )}
       >
