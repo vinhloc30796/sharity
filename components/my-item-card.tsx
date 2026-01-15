@@ -24,14 +24,14 @@ import {
   } from "@/components/ui/alert-dialog"
 import { ItemForm } from "./item-form";
 import { useState } from "react";
-import { Doc } from "../convex/_generated/dataModel";
+import { Doc, Id } from "../convex/_generated/dataModel";
 import { ItemCard } from "./item-card";
 import { Check, X } from "lucide-react";
 
 // Badge not available, using span
 
 
-export function MyItemCard({ item, isOwner = true }: { item: Doc<"items">, isOwner?: boolean }) {
+export function MyItemCard({ item, isOwner = true }: { item: Doc<"items"> & { imageUrls?: string[], images?: { id: Id<"_storage">; url: string }[] }, isOwner?: boolean }) {
   const updateItem = useMutation(api.items.update);
   const deleteItem = useMutation(api.items.deleteItem);
   const approveClaim = useMutation(api.items.approveClaim);
@@ -63,12 +63,16 @@ export function MyItemCard({ item, isOwner = true }: { item: Doc<"items">, isOwn
                   initialValues={{
                     name: item.name,
                     description: item.description || "",
+                    imageStorageIds: item.imageStorageIds,
+                    imageUrls: item.imageUrls,
+                    images: item.images,
                   }}
                   onSubmit={async (values) => {
                     await updateItem({
                       id: item._id,
                       name: values.name,
                       description: values.description,
+                      imageStorageIds: values.imageStorageIds,
                     });
                     setEditingId(null);
                   }}
