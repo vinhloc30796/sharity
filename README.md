@@ -34,6 +34,8 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
     - [ ] by location
     - [ ] by time
     - [~] by keywords
+    - [ ] by availability
+    - [ ] by deposit/no deposit
     - [ ] by owner (default to exclude all items submitted by current logged in user)
 - [ ] Getters should be able to claim an item
 - [ ] Givers & getters should be able to mark an item as exchanged & hide it from the market
