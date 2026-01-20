@@ -3,6 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
 
 import {
 	Dialog,
@@ -139,10 +140,9 @@ export function MyItemCard({
 				) : approvedClaim ? (
 					<span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-green-100 text-green-800 hover:bg-green-100/80">
 						Given to {approvedClaim.claimerId}
-					</span>
-				) : !item.isAvailable ? (
-					<span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-foreground">
-						Unavailable
+						{approvedClaim.startDate && approvedClaim.endDate
+							? ` (${format(approvedClaim.startDate, "MMM d")} - ${format(approvedClaim.endDate, "MMM d")})`
+							: ""}
 					</span>
 				) : (
 					<span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-blue-50 text-blue-700 hover:bg-blue-50/80">
@@ -151,7 +151,7 @@ export function MyItemCard({
 				)}
 			</div>
 
-			{isOwner && pendingClaims.length > 0 && item.isAvailable && (
+			{isOwner && pendingClaims.length > 0 && (
 				<div className="mt-4 p-3 bg-yellow-50 rounded-md border border-yellow-200">
 					<p className="text-sm font-medium text-yellow-800 mb-2">
 						{pendingClaims.length} Request{pendingClaims.length > 1 ? "s" : ""}
@@ -165,6 +165,10 @@ export function MyItemCard({
 								<span className="font-medium">User:</span>
 								<span className="text-xs text-gray-500 break-all">
 									{claim.claimerId}
+								</span>
+								<span className="text-xs font-medium">
+									{format(claim.startDate, "MMM d")} -{" "}
+									{format(claim.endDate, "MMM d")}
 								</span>
 								<div className="flex gap-2 justify-end w-full">
 									<Button

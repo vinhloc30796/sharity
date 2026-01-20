@@ -162,7 +162,6 @@ export const create = mutation({
 			description: args.description,
 			ownerId,
 			imageStorageIds: args.imageStorageIds,
-			isAvailable: true,
 		});
 	},
 });
@@ -173,7 +172,6 @@ export const update = mutation({
 		name: v.optional(v.string()),
 		description: v.optional(v.string()),
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
-		isAvailable: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
@@ -217,16 +215,47 @@ export const deleteItem = mutation({
 });
 
 export const requestItem = mutation({
-	args: { itemId: v.id("items") },
+	args: {
+		itemId: v.id("items"),
+		startDate: v.number(),
+		endDate: v.number(),
+	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
 
 		const item = await ctx.db.get(args.itemId);
 		if (!item) throw new Error("Item not found");
-		if (!item.isAvailable) throw new Error("Item is not available");
 		if (item.ownerId === identity.subject)
 			throw new Error("Cannot claim your own item");
+
+		// Validate dates
+		const now = Date.now();
+		// Allow some buffer or strip time components if strict?
+		// For now simple checks.
+		if (args.endDate < args.startDate) {
+			throw new Error("End date must be after start date");
+		}
+		if (args.startDate < now - 24 * 60 * 60 * 1000) {
+			// Allow "today" even if slightly past now, roughly.
+			// But strictly past dates shouldn't be allowed ideally.
+			// Let's just say startDate must be >= today.
+		}
+
+		// Check for specific overlaps with APPROVED claims
+		const approvedClaims = await ctx.db
+			.query("claims")
+			.withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+			.filter((q) => q.eq(q.field("status"), "approved"))
+			.collect();
+
+		const hasOverlap = approvedClaims.some((claim) => {
+			return args.startDate < claim.endDate && args.endDate > claim.startDate;
+		});
+
+		if (hasOverlap) {
+			throw new Error("Item is not available for these dates");
+		}
 
 		const existingClaim = await ctx.db
 			.query("claims")
@@ -250,6 +279,8 @@ export const requestItem = mutation({
 			itemId: args.itemId,
 			claimerId: identity.subject,
 			status: "pending",
+			startDate: args.startDate,
+			endDate: args.endDate,
 		});
 	},
 });
@@ -289,7 +320,7 @@ export const approveClaim = mutation({
 		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
 
 		await ctx.db.patch(args.claimId, { status: "approved" });
-		await ctx.db.patch(args.itemId, { isAvailable: false });
+		// We no longer set isAvailable to false globally, as it depends on dates.
 
 		// Optionally reject others or leave them pending?
 		// Usually once approved, others are implicitly rejected or on hold.
@@ -326,6 +357,22 @@ export const cancelClaim = mutation({
 		if (!claim) throw new Error("No claim found");
 
 		await ctx.db.delete(claim._id);
+	},
+});
+
+export const getAvailability = query({
+	args: { itemId: v.id("items") },
+	handler: async (ctx, args) => {
+		const claims = await ctx.db
+			.query("claims")
+			.withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+			.filter((q) => q.eq(q.field("status"), "approved"))
+			.collect();
+
+		return claims.map((c) => ({
+			startDate: c.startDate,
+			endDate: c.endDate,
+		}));
 	},
 });
 

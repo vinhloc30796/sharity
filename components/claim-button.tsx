@@ -9,14 +9,32 @@ import {
 	TooltipTrigger,
 	TooltipProvider,
 } from "@/components/ui/tooltip";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { useState } from "react";
+import { DateRange } from "react-day-picker";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../convex/_generated/api";
+import { toast } from "sonner";
+import { CalendarIcon, Loader2 } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { useItemCard } from "./item-card";
 
 interface ClaimButtonProps {
 	item: Doc<"items"> & { isRequested?: boolean };
-	onClaim: (itemId: string) => void;
 }
 
-export function ClaimButton({ item, onClaim }: ClaimButtonProps) {
+export function ClaimButton({ item }: ClaimButtonProps) {
 	const { isSignedIn } = useAuth();
+	// useItemCard must be called unconditionally at the top level
+	const { flipToBack } = useItemCard();
+	// requestItem and availability moved to ClaimItemBack
+	// state moved to ClaimItemBack
 
 	if (item.isRequested) {
 		return (
@@ -26,60 +44,44 @@ export function ClaimButton({ item, onClaim }: ClaimButtonProps) {
 		);
 	}
 
-	const isAvailable = item.isAvailable;
-
-	// Determine state
-	let tooltipText = "";
-	let isDisabled = false;
-	let buttonText = "Claim";
-	let variant: "default" | "secondary" | "destructive" | "outline" | "ghost" =
-		"default";
+	// This check relies on the parent query adding `isOwner` or similar check,
+	// checking strictly via auth might be safer but `isRequested` covers the "already interacted" case.
+	// If the user IS the owner, calling this might fail on backend, but UI wise we might want to hide it
+	// or rely on `item.ownerId === userId` check if we had userId.
+	// For now, if unsigned in, we show sign in tooltip.
 
 	if (!isSignedIn) {
-		isDisabled = true;
-		tooltipText = "Sign in to claim this item";
-		buttonText = "Claim";
-	} else if (!isAvailable) {
-		isDisabled = true;
-		tooltipText = "This item is currently unavailable";
-		buttonText = "Unavailable";
-		variant = "secondary";
-	} else {
-		// Signed in and Available
-		tooltipText = "Click to request this item";
+		return (
+			<TooltipProvider>
+				<Tooltip delayDuration={300}>
+					<TooltipTrigger asChild>
+						<span tabIndex={0} className="inline-flex cursor-default">
+							<Button size="sm" disabled className="opacity-50">
+								Claim
+							</Button>
+						</span>
+					</TooltipTrigger>
+					<TooltipContent>
+						<p>Sign in to claim this item</p>
+					</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>
+		);
 	}
 
-	// If there's no tooltip needed (available state), just render button?
-	// User asked for responsive tooltip. Even for available, "Click to request" is good.
+	// Calculate disabled dates
+	// Moved to ClaimItemBack
 
-	const content = (
-		<Button
-			size="sm"
-			variant={variant}
-			disabled={isDisabled}
-			onClick={() => onClaim(item._id)}
-			className={isDisabled ? "opacity-50 cursor-not-allowed" : ""}
-		>
-			{buttonText}
-		</Button>
-	);
+	// If not signed in, show tooltip (existing logic)
+	// ... (Wait, I need to keep the early return for not signed in)
 
-	if (!tooltipText) {
-		return content;
-	}
+	// Actually, let's just rewrite the component body.
+
+	// NOTE: The previous code handled `item.isRequested` check. Keeping it.
 
 	return (
-		<TooltipProvider>
-			<Tooltip delayDuration={300}>
-				<TooltipTrigger asChild>
-					<span tabIndex={0} className="inline-flex cursor-default">
-						{content}
-					</span>
-				</TooltipTrigger>
-				<TooltipContent>
-					<p>{tooltipText}</p>
-				</TooltipContent>
-			</Tooltip>
-		</TooltipProvider>
+		<Button size="sm" onClick={flipToBack}>
+			Claim
+		</Button>
 	);
 }

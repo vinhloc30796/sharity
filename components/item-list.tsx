@@ -12,8 +12,10 @@ import { ItemCard } from "./item-card";
 
 export function ItemList({
 	action,
+	actionBack,
 }: {
 	action?: (item: Doc<"items"> & { isRequested?: boolean }) => ReactNode;
+	actionBack?: (item: Doc<"items"> & { isRequested?: boolean }) => ReactNode;
 }) {
 	const items = useQuery(api.items.get);
 	const [search, setSearch] = useState("");
@@ -45,6 +47,7 @@ export function ItemList({
 						<ItemCard
 							key={item._id}
 							item={item}
+							backContent={actionBack && actionBack(item)}
 							footer={
 								<div className="flex justify-between items-center w-full">
 									<p className="text-xs text-gray-400">

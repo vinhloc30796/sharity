@@ -6,33 +6,15 @@ import { MyItemsList } from "@/components/my-items-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button, ButtonWithTooltip } from "@/components/ui/button";
 import { useAuth, SignedIn } from "@clerk/nextjs";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { toast } from "sonner";
+
 import { ClaimButton } from "@/components/claim-button";
+import { ClaimItemBack } from "@/components/claim-item-back";
 // Removed unused sonner import
 // Actually no toast imported in file, let's stick to standard alert or nothing for now, or use console.
 // Re-reading: The file uses ButtonWithTooltip.
 // I will just use console.error for failures or simple alert if needed, but UI updates automatically.
 
 export default function Home() {
-	const { isSignedIn } = useAuth();
-	const requestItem = useMutation(api.items.requestItem);
-
-	const handleClaim = async (itemId: any) => {
-		try {
-			await requestItem({ itemId });
-			toast.success("Item requested successfully");
-		} catch (error: any) {
-			if (error.message.includes("own item")) {
-				toast.error("You cannot claim your own item");
-			} else {
-				toast.error("Failed to request item");
-				console.error(error);
-			}
-		}
-	};
-
 	return (
 		<main className="min-h-screen flex flex-col items-center bg-gray-50/50">
 			<div className="w-full max-w-6xl p-4 md:p-8 space-y-8">
@@ -56,9 +38,8 @@ export default function Home() {
 					</div>
 					<div className="w-full">
 						<ItemList
-							action={(item) => (
-								<ClaimButton item={item} onClaim={handleClaim} />
-							)}
+							action={(item) => <ClaimButton item={item} />}
+							actionBack={(item) => <ClaimItemBack item={item} />}
 						/>
 					</div>
 				</div>
@@ -69,9 +50,8 @@ export default function Home() {
 						<TabsContent value="browse" className="mt-0 space-y-4">
 							<h2 className="text-lg font-semibold px-1">Browse Items</h2>
 							<ItemList
-								action={(item) => (
-									<ClaimButton item={item} onClaim={handleClaim} />
-								)}
+								action={(item) => <ClaimButton item={item} />}
+								actionBack={(item) => <ClaimItemBack item={item} />}
 							/>
 						</TabsContent>
 
