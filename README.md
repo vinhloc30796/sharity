@@ -32,7 +32,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - [ ] Givers should be able to block a spammer from claiming an item (or all items)
 - [x] Getters should be able to browse items aimlessly (for discovery)
 - [ ] Getters should be able to search for specific items
-    - [ ] by location
+    - [x] by location
     - [ ] by time
     - [~] by keywords
     - [ ] by availability
