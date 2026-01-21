@@ -16,7 +16,43 @@ import {
 	FileUploadItemMetadata,
 	FileUploadItemDelete,
 } from "@/components/ui/file-upload";
-import { UploadCloudIcon, X } from "lucide-react";
+import { UploadCloudIcon, X, MapPin, Loader2, Map } from "lucide-react";
+import {
+	LocationPickerDialog,
+	type LocationPickerValue,
+} from "./location-picker-dialog";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+
+export type ItemCategory =
+	| "kitchen"
+	| "furniture"
+	| "electronics"
+	| "clothing"
+	| "books"
+	| "sports"
+	| "other";
+
+export const CATEGORY_LABELS: Record<ItemCategory, string> = {
+	kitchen: "Kitchen",
+	furniture: "Furniture",
+	electronics: "Electronics",
+	clothing: "Clothing",
+	books: "Books",
+	sports: "Sports",
+	other: "Other",
+};
+
+export interface Location {
+	lat: number;
+	lng: number;
+	address?: string;
+}
 import { toast } from "sonner";
 
 interface ItemFormProps {
@@ -27,11 +63,15 @@ interface ItemFormProps {
 		images?: { id: Id<"_storage">; url: string }[];
 		imageStorageIds?: Id<"_storage">[]; // Fallback
 		imageUrls?: string[]; // Fallback
+		category?: ItemCategory;
+		location?: Location;
 	};
 	onSubmit: (values: {
 		name: string;
 		description: string;
 		imageStorageIds?: Id<"_storage">[];
+		category?: ItemCategory;
+		location?: Location;
 	}) => Promise<void>;
 	submitLabel?: string;
 }
@@ -45,6 +85,15 @@ export function ItemForm({
 	const [description, setDescription] = useState(
 		initialValues?.description || "",
 	);
+	const [category, setCategory] = useState<ItemCategory | undefined>(
+		initialValues?.category,
+	);
+	const [location, setLocation] = useState<Location | undefined>(
+		initialValues?.location,
+	);
+	const [address, setAddress] = useState(initialValues?.location?.address || "");
+	const [isGettingLocation, setIsGettingLocation] = useState(false);
+	const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
 
 	// Initialize existing images. Prefer 'images' field, else fallback to mapping if lengths match.
 	const [existingImages, setExistingImages] = useState<
@@ -73,7 +122,43 @@ export function ItemForm({
 	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
 
 	// Map to store storage IDs for newly uploaded files
-	const fileStorageIds = useRef<Map<File, Id<"_storage">>>(new Map());
+	const fileStorageIds = useRef<globalThis.Map<File, Id<"_storage">>>(
+		new globalThis.Map(),
+	);
+
+	const handleGetLocation = () => {
+		if (!navigator.geolocation) {
+			toast.error("Geolocation is not supported by your browser");
+			return;
+		}
+
+		setIsGettingLocation(true);
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				setLocation({
+					lat: position.coords.latitude,
+					lng: position.coords.longitude,
+					address: address || undefined,
+				});
+				setIsGettingLocation(false);
+				toast.success("Location captured successfully");
+			},
+			(error) => {
+				setIsGettingLocation(false);
+				toast.error(`Failed to get location: ${error.message}`);
+			},
+		);
+	};
+
+	const handleLocationSelect = (loc: LocationPickerValue) => {
+		setLocation({
+			lat: loc.lat,
+			lng: loc.lng,
+			address: loc.address,
+		});
+		setAddress(loc.address || "");
+		toast.success("Location selected");
+	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -117,11 +202,18 @@ export function ItemForm({
 
 			const finalStorageIds = [...existingIds, ...newIds];
 
+			// Build location with address if coordinates exist
+			const finalLocation = location
+				? { ...location, address: address || undefined }
+				: undefined;
+
 			await onSubmit({
 				name,
 				description,
 				imageStorageIds:
 					finalStorageIds.length > 0 ? finalStorageIds : undefined,
+				category,
+				location: finalLocation,
 			});
 
 			if (!initialValues) {
@@ -130,6 +222,9 @@ export function ItemForm({
 				setExistingImages([]);
 				setFiles([]);
 				fileStorageIds.current.clear();
+				setCategory(undefined);
+				setLocation(undefined);
+				setAddress("");
 			}
 		} catch (error) {
 			console.error("Error submitting form:", error);
@@ -163,6 +258,73 @@ export function ItemForm({
 					value={description}
 					onChange={(e) => setDescription(e.target.value)}
 					disabled={isSubmitting}
+				/>
+			</div>
+
+			<div className="flex flex-col gap-2">
+				<Label htmlFor="category">Category</Label>
+				<Select
+					value={category}
+					onValueChange={(value) => setCategory(value as ItemCategory)}
+					disabled={isSubmitting}
+				>
+					<SelectTrigger id="category">
+						<SelectValue placeholder="Select a category" />
+					</SelectTrigger>
+					<SelectContent>
+						{(Object.keys(CATEGORY_LABELS) as ItemCategory[]).map((cat) => (
+							<SelectItem key={cat} value={cat}>
+								{CATEGORY_LABELS[cat]}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			</div>
+
+			<div className="flex flex-col gap-2">
+				<Label>Location</Label>
+				<div className="flex gap-2">
+					<Input
+						type="text"
+						placeholder="Address (auto-filled from map)"
+						value={address}
+						onChange={(e) => setAddress(e.target.value)}
+						disabled={isSubmitting}
+						className="flex-1"
+					/>
+					<Button
+						type="button"
+						variant="outline"
+						onClick={() => setIsLocationDialogOpen(true)}
+						disabled={isSubmitting}
+						title="Pick on map"
+					>
+						<Map className="h-4 w-4" />
+					</Button>
+					<Button
+						type="button"
+						variant="outline"
+						onClick={handleGetLocation}
+						disabled={isSubmitting || isGettingLocation}
+						title="Get current location"
+					>
+						{isGettingLocation ? (
+							<Loader2 className="h-4 w-4 animate-spin" />
+						) : (
+							<MapPin className="h-4 w-4" />
+						)}
+					</Button>
+				</div>
+				{location && (
+					<p className="text-xs text-muted-foreground">
+						📍 {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+					</p>
+				)}
+				<LocationPickerDialog
+					open={isLocationDialogOpen}
+					onOpenChange={setIsLocationDialogOpen}
+					value={location}
+					onSelect={handleLocationSelect}
 				/>
 			</div>
 

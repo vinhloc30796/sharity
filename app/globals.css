@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "leaflet/dist/leaflet.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -113,6 +114,38 @@
 	--sidebar-accent-foreground: oklch(0.985 0 0);
 	--sidebar-border: oklch(1 0 0 / 10%);
 	--sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Custom Leaflet marker icon - remove default styling */
+.custom-marker-icon {
+	background: transparent !important;
+	border: none !important;
+}
+
+/* Fix Leaflet tiles broken by Tailwind CSS reset */
+.leaflet-container {
+	width: 100%;
+	height: 100%;
+}
+
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	max-width: none !important;
+	max-height: none !important;
+}
+
+.leaflet-tile-pane img {
+	max-width: none !important;
+	max-height: none !important;
+}
+
+.leaflet-pane {
+	z-index: 400;
+}
+
+.leaflet-control {
+	z-index: 800;
 }
 
 @layer base {
