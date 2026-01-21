@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
@@ -22,7 +23,7 @@ export function NotificationFeed() {
 		);
 	}
 
-	const handleMarkRead = async (id: any) => {
+	const handleMarkRead = async (id: Id<"notifications">) => {
 		await markAsRead({ notificationId: id });
 	};
 

@@ -7,6 +7,24 @@ export default defineSchema({
 		description: v.optional(v.string()),
 		ownerId: v.string(), // For MVP, we'll just store a string ID
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
+		category: v.optional(
+			v.union(
+				v.literal("kitchen"),
+				v.literal("furniture"),
+				v.literal("electronics"),
+				v.literal("clothing"),
+				v.literal("books"),
+				v.literal("sports"),
+				v.literal("other"),
+			),
+		),
+		location: v.optional(
+			v.object({
+				lat: v.number(),
+				lng: v.number(),
+				address: v.optional(v.string()),
+			}),
+		),
 	}),
 	claims: defineTable({
 		itemId: v.id("items"),

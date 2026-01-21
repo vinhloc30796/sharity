@@ -1,6 +1,96 @@
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { api, internal } from "./_generated/api";
+
+// Seed function for testing (no auth required)
+export const seed = internalMutation({
+	args: {},
+	handler: async (ctx) => {
+		// Check if already seeded
+		const existing = await ctx.db.query("items").first();
+		if (existing) {
+			return { message: "Already seeded", count: 0 };
+		}
+
+		const testOwnerId = "test-user-seed";
+
+		const testItems = [
+			{
+				name: "Rice Cooker",
+				description: "Electric rice cooker, 1.8L capacity. Perfect for 2-4 people.",
+				category: "kitchen" as const,
+				location: { lat: 11.9404, lng: 108.4583, address: "Da Lat Market" },
+			},
+			{
+				name: "Camping Tent",
+				description: "2-person waterproof tent. Great for weekend trips.",
+				category: "sports" as const,
+				location: { lat: 11.9450, lng: 108.4420, address: "Xuan Huong Lake" },
+			},
+			{
+				name: "LED Desk Lamp",
+				description: "Adjustable brightness LED lamp with USB charging port.",
+				category: "electronics" as const,
+				location: { lat: 11.9380, lng: 108.4550, address: "Da Lat University" },
+			},
+			{
+				name: "Winter Jacket",
+				description: "Warm fleece jacket, size M. Perfect for Da Lat evenings.",
+				category: "clothing" as const,
+				location: { lat: 11.9420, lng: 108.4610, address: "Hoa Binh Square" },
+			},
+			{
+				name: "Vietnamese Cookbook",
+				description: "Traditional recipes from Central Vietnam. 200+ recipes.",
+				category: "books" as const,
+				location: { lat: 11.9360, lng: 108.4480, address: "Crazy House" },
+			},
+			{
+				name: "Folding Chair",
+				description: "Portable folding chair for outdoor use. Lightweight aluminum.",
+				category: "furniture" as const,
+				location: { lat: 11.9480, lng: 108.4530, address: "Valley of Love" },
+			},
+			{
+				name: "Yoga Mat",
+				description: "Non-slip yoga mat, 6mm thick. Includes carrying strap.",
+				category: "sports" as const,
+				location: { lat: 11.9340, lng: 108.4620, address: "Langbiang Mountain" },
+			},
+			{
+				name: "Bluetooth Speaker",
+				description: "Portable waterproof speaker. 10 hour battery life.",
+				category: "electronics" as const,
+				location: { lat: 11.9410, lng: 108.4500, address: "Da Lat Night Market" },
+			},
+			{
+				name: "Coffee Grinder",
+				description: "Manual burr coffee grinder. Perfect for Da Lat coffee!",
+				category: "kitchen" as const,
+				location: { lat: 11.9390, lng: 108.4560, address: "Big C Da Lat" },
+			},
+			{
+				name: "Board Games Set",
+				description: "Collection of classic board games: Chess, Checkers, Backgammon.",
+				category: "other" as const,
+				location: { lat: 11.9430, lng: 108.4470, address: "Da Lat Railway Station" },
+			},
+		];
+
+		for (const item of testItems) {
+			await ctx.db.insert("items", {
+				name: item.name,
+				description: item.description,
+				ownerId: testOwnerId,
+				category: item.category,
+				location: item.location,
+			});
+		}
+
+		return { message: "Seeded successfully", count: testItems.length };
+	},
+});
 
 export const get = query({
 	args: {},
@@ -144,11 +234,33 @@ export const getMyItems = query({
 	},
 });
 
+const categoryValidator = v.optional(
+	v.union(
+		v.literal("kitchen"),
+		v.literal("furniture"),
+		v.literal("electronics"),
+		v.literal("clothing"),
+		v.literal("books"),
+		v.literal("sports"),
+		v.literal("other"),
+	),
+);
+
+const locationValidator = v.optional(
+	v.object({
+		lat: v.number(),
+		lng: v.number(),
+		address: v.optional(v.string()),
+	}),
+);
+
 export const create = mutation({
 	args: {
 		name: v.string(),
 		description: v.optional(v.string()),
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
+		category: categoryValidator,
+		location: locationValidator,
 	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
@@ -162,6 +274,8 @@ export const create = mutation({
 			description: args.description,
 			ownerId,
 			imageStorageIds: args.imageStorageIds,
+			category: args.category,
+			location: args.location,
 		});
 	},
 });
@@ -172,6 +286,8 @@ export const update = mutation({
 		name: v.optional(v.string()),
 		description: v.optional(v.string()),
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
+		category: categoryValidator,
+		location: locationValidator,
 	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
@@ -432,4 +548,94 @@ export const getAvailability = query({
 
 export const generateUploadUrl = mutation(async (ctx) => {
 	return await ctx.storage.generateUploadUrl();
+});
+
+// Internal mutation for seed script (no auth required)
+export const updateImageInternal = internalMutation({
+	args: {
+		id: v.id("items"),
+		imageStorageIds: v.array(v.id("_storage")),
+	},
+	handler: async (ctx, args) => {
+		await ctx.db.patch(args.id, { imageStorageIds: args.imageStorageIds });
+	},
+});
+
+// Image URLs for seeding
+const SEED_IMAGE_URLS: Record<string, string> = {
+	"Rice Cooker":
+		"https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop",
+	"Camping Tent":
+		"https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=400&h=300&fit=crop",
+	"LED Desk Lamp":
+		"https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400&h=300&fit=crop",
+	"Winter Jacket":
+		"https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400&h=300&fit=crop",
+	"Vietnamese Cookbook":
+		"https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&h=300&fit=crop",
+	"Folding Chair":
+		"https://images.unsplash.com/photo-1503602642458-232111445657?w=400&h=300&fit=crop",
+	"Yoga Mat":
+		"https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=400&h=300&fit=crop",
+	"Bluetooth Speaker":
+		"https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=400&h=300&fit=crop",
+	"Coffee Grinder":
+		"https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=400&h=300&fit=crop",
+	"Board Games Set":
+		"https://images.unsplash.com/photo-1611371805429-8b5c1b2c34ba?w=400&h=300&fit=crop",
+};
+
+// Action to seed images (can fetch external URLs)
+export const seedImages = action({
+	args: {},
+	handler: async (ctx): Promise<{ success: number; failed: number }> => {
+		const items = await ctx.runQuery(api.items.get);
+		let success = 0;
+		let failed = 0;
+
+		for (const item of items) {
+			const imageUrl = SEED_IMAGE_URLS[item.name];
+			if (!imageUrl) continue;
+
+			// Skip if already has images
+			if (item.imageUrls && item.imageUrls.length > 0) {
+				console.log(`Skipping ${item.name} - already has images`);
+				continue;
+			}
+
+			try {
+				console.log(`Downloading image for: ${item.name}`);
+				const response = await fetch(imageUrl);
+				if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+				const imageBlob = await response.blob();
+
+				// Get upload URL and upload
+				const uploadUrl = await ctx.runMutation(api.items.generateUploadUrl);
+				const uploadResponse = await fetch(uploadUrl, {
+					method: "POST",
+					headers: { "Content-Type": imageBlob.type || "image/jpeg" },
+					body: imageBlob,
+				});
+
+				if (!uploadResponse.ok) throw new Error("Upload failed");
+
+				const { storageId } = await uploadResponse.json();
+
+				// Update item
+				await ctx.runMutation(internal.items.updateImageInternal, {
+					id: item._id,
+					imageStorageIds: [storageId],
+				});
+
+				console.log(`✅ ${item.name} - done`);
+				success++;
+			} catch (error) {
+				console.error(`❌ ${item.name}:`, error);
+				failed++;
+			}
+		}
+
+		return { success, failed };
+	},
 });

@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "project": {
+    "name": "sharity-vinhloc",
+    "description": "Sharing economy platform with Convex backend"
+  }
+}

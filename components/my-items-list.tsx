@@ -14,14 +14,14 @@ export function MyItemsList() {
 	if (items.length === 0) {
 		return (
 			<div className="text-center p-4 text-gray-500">
-				You haven't shared any items yet.
+				You haven&apos;t shared any items yet.
 			</div>
 		);
 	}
 
 	return (
 		<div className="space-y-4">
-			{items.map((item: any) => (
+			{items.map((item) => (
 				<MyItemCard key={item._id} item={item} isOwner={item.isOwner} />
 			))}
 		</div>
