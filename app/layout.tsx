@@ -12,6 +12,7 @@ import "./globals.css";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -50,6 +51,7 @@ export default function RootLayout({
 								</SignUpButton>
 							</SignedOut>
 							<SignedIn>
+								<NotificationBell />
 								<UserButton />
 							</SignedIn>
 						</header>

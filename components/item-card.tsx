@@ -19,6 +19,8 @@ import {
 	useContext,
 	useState,
 	useCallback,
+	useRef,
+	useEffect,
 } from "react";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +64,31 @@ export function ItemCard({
 	const flipToFront = useCallback(() => setIsFlipped(false), []);
 	const flipToBack = useCallback(() => setIsFlipped(true), []);
 
+	const [height, setHeight] = useState<number | undefined>(undefined);
+	const frontRef = useRef<HTMLDivElement>(null);
+	const backRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		const updateHeight = () => {
+			const frontHeight = frontRef.current?.scrollHeight;
+			const backHeight = backRef.current?.scrollHeight;
+
+			if (isFlipped) {
+				setHeight(backHeight);
+			} else {
+				setHeight(frontHeight);
+			}
+		};
+
+		updateHeight();
+
+		const observer = new ResizeObserver(updateHeight);
+		if (frontRef.current) observer.observe(frontRef.current);
+		if (backRef.current) observer.observe(backRef.current);
+
+		return () => observer.disconnect();
+	}, [isFlipped]);
+
 	return (
 		<ItemCardContext.Provider
 			value={{ isFlipped, toggleFlip, flipToFront, flipToBack }}
@@ -72,9 +99,10 @@ export function ItemCard({
 						"relative w-full transition-all duration-500 transform-style-3d",
 						isFlipped ? "rotate-y-180" : "",
 					)}
+					style={{ height: height ? `${height}px` : undefined }}
 				>
 					{/* Front Face */}
-					<div className="relative w-full backface-hidden">
+					<div className="relative w-full backface-hidden" ref={frontRef}>
 						<Card>
 							<CardHeader>
 								{item.imageUrls && item.imageUrls.length > 0 && (
@@ -118,8 +146,11 @@ export function ItemCard({
 					</div>
 
 					{/* Back Face */}
-					<div className="absolute top-0 left-0 w-full h-full backface-hidden rotate-y-180">
-						<Card className="h-full flex flex-col">{backContent}</Card>
+					<div
+						className="absolute top-0 left-0 w-full backface-hidden rotate-y-180"
+						ref={backRef}
+					>
+						<Card className="flex flex-col">{backContent}</Card>
 					</div>
 				</div>
 			</div>

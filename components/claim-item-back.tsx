@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useItemCard } from "./item-card";
+import { AvailabilityToggle } from "./notifications/availability-toggle";
 
 interface ClaimItemBackProps {
 	item: Doc<"items">;
@@ -73,7 +74,7 @@ export function ClaimItemBack({ item }: ClaimItemBackProps) {
 	};
 
 	return (
-		<div className="flex flex-col h-full bg-card rounded-lg p-2">
+		<div className="flex flex-col bg-card rounded-lg p-2">
 			<div className="flex-1 flex flex-col items-center justify-center p-2">
 				<h4 className="font-medium text-lg mb-1">Select Dates</h4>
 				<p className="text-sm text-muted-foreground mb-4 text-center">
@@ -94,26 +95,29 @@ export function ClaimItemBack({ item }: ClaimItemBackProps) {
 					/>
 				</div>
 			</div>
-			<div className="p-3 border-t border-border flex justify-end gap-2 mt-auto">
-				<Button
-					variant="ghost"
-					size="sm"
-					onClick={flipToFront}
-					disabled={isSubmitting}
-				>
-					Cancel
-				</Button>
-				<Button
-					size="sm"
-					onClick={handleClaim}
-					disabled={!date?.from || !date?.to || isSubmitting}
-				>
-					{isSubmitting ? (
-						<Loader2 className="h-4 w-4 animate-spin" />
-					) : (
-						"Request"
-					)}
-				</Button>
+			<div className="p-3 border-t border-border flex justify-between gap-2 mt-auto">
+				<AvailabilityToggle itemId={item._id} />
+				<div className="flex gap-2">
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={flipToFront}
+						disabled={isSubmitting}
+					>
+						Cancel
+					</Button>
+					<Button
+						size="sm"
+						onClick={handleClaim}
+						disabled={!date?.from || !date?.to || isSubmitting}
+					>
+						{isSubmitting ? (
+							<Loader2 className="h-4 w-4 animate-spin" />
+						) : (
+							"Request"
+						)}
+					</Button>
+				</div>
 			</div>
 		</div>
 	);

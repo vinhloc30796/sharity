@@ -275,12 +275,22 @@ export const requestItem = mutation({
 			throw new Error("Waitlist is full");
 		}
 
-		await ctx.db.insert("claims", {
+		const claimId = await ctx.db.insert("claims", {
 			itemId: args.itemId,
 			claimerId: identity.subject,
 			status: "pending",
 			startDate: args.startDate,
 			endDate: args.endDate,
+		});
+
+		// Notify owner
+		await ctx.db.insert("notifications", {
+			recipientId: item.ownerId,
+			type: "new_request",
+			itemId: args.itemId,
+			requestId: claimId,
+			isRead: false,
+			createdAt: Date.now(),
 		});
 	},
 });
@@ -320,6 +330,17 @@ export const approveClaim = mutation({
 		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
 
 		await ctx.db.patch(args.claimId, { status: "approved" });
+
+		// Notify claimer
+		await ctx.db.insert("notifications", {
+			recipientId: claim.claimerId,
+			type: "request_approved",
+			itemId: args.itemId,
+			requestId: args.claimId,
+			isRead: false,
+			createdAt: Date.now(),
+		});
+
 		// We no longer set isAvailable to false globally, as it depends on dates.
 
 		// Optionally reject others or leave them pending?
@@ -338,7 +359,20 @@ export const rejectClaim = mutation({
 		if (!item) throw new Error("Item not found");
 		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
 
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+
 		await ctx.db.patch(args.claimId, { status: "rejected" });
+
+		// Notify claimer
+		await ctx.db.insert("notifications", {
+			recipientId: claim.claimerId,
+			type: "request_rejected",
+			itemId: args.itemId,
+			requestId: args.claimId,
+			isRead: false,
+			createdAt: Date.now(),
+		});
 	},
 });
 
@@ -357,6 +391,26 @@ export const cancelClaim = mutation({
 		if (!claim) throw new Error("No claim found");
 
 		await ctx.db.delete(claim._id);
+
+		if (claim.status === "approved") {
+			// Notify subscribers that item is available
+			const subscriptions = await ctx.db
+				.query("availability_alerts")
+				.withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+				.collect();
+
+			for (const sub of subscriptions) {
+				await ctx.db.insert("notifications", {
+					recipientId: sub.userId,
+					type: "item_available",
+					itemId: args.itemId,
+					isRead: false,
+					createdAt: Date.now(),
+				});
+				// Remove subscription after notifying
+				await ctx.db.delete(sub._id);
+			}
+		}
 	},
 });
 
