@@ -38,8 +38,8 @@ export function ClaimButton({ item }: ClaimButtonProps) {
 
 	if (item.isRequested) {
 		return (
-			<Button size="sm" variant="secondary" disabled>
-				Requested
+			<Button size="sm" variant="secondary" onClick={flipToBack}>
+				Manage Request
 			</Button>
 		);
 	}

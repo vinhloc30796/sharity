@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
+import { Id, Doc } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -41,6 +41,7 @@ import { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 import { useConvexAuth } from "convex/react";
 import { AvailabilityToggle } from "@/components/notifications/availability-toggle";
+import { useClaimItem } from "@/hooks/use-claim-item";
 
 import { use } from "react";
 
@@ -61,24 +62,16 @@ export default function ItemDetailPage({
 	const approveClaim = useMutation(api.items.approveClaim);
 	const rejectClaim = useMutation(api.items.rejectClaim);
 
-	// Mutations/State for Borrower
-	const requestItem = useMutation(api.items.requestItem);
-	const availability = useQuery(api.items.getAvailability, { id });
-	const [date, setDate] = useState<DateRange | undefined>();
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [numberOfMonths, setNumberOfMonths] = useState(1);
+	// Borrower Logic
+	// Logic moved to BorrowerRequestPanel
+
+	// Owner Logic Variables
+	const pendingClaims =
+		item?.requests?.filter((c) => c.status === "pending") || [];
+	const approvedClaim = item?.requests?.find((c) => c.status === "approved");
 
 	// UI State
 	const [editingId, setEditingId] = useState<string | null>(null);
-
-	useEffect(() => {
-		const updateMonths = () => {
-			setNumberOfMonths(window.innerWidth >= 768 ? 2 : 1);
-		};
-		updateMonths();
-		window.addEventListener("resize", updateMonths);
-		return () => window.removeEventListener("resize", updateMonths);
-	}, []);
 
 	if (item === undefined) {
 		return <div className="p-8 text-center">Loading...</div>;
@@ -87,60 +80,6 @@ export default function ItemDetailPage({
 	if (item === null) {
 		return <div className="p-8 text-center">Item not found</div>;
 	}
-
-	// Borrower Logic
-	const disabledDates = [
-		{ before: new Date() },
-		...(availability?.map((range) => ({
-			from: new Date(range.startDate),
-			to: new Date(range.endDate),
-		})) || []),
-	];
-
-	const handleClaim = async () => {
-		if (!date?.from || !date?.to) return;
-		if (!isAuthenticated) {
-			toast.error("Please sign in to request this item");
-			return;
-		}
-		setIsSubmitting(true);
-		try {
-			await requestItem({
-				id: item._id,
-				startDate: date.from.getTime(),
-				endDate: date.to.getTime(),
-			});
-			toast.success("Item requested successfully");
-			// Optionally redirect or refresh?
-			// The query should auto-update if we fetched 'myRequest' status,
-			// but currently getById doesn't return *my* request status specifically for non-owners easily
-			// without extra logic.
-			// actually getById returns `requests` ONLY if owner.
-			// So as a borrower, I might want to see my request status.
-			// Let's rely on toast for now.
-		} catch (error: unknown) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error);
-
-			if (errorMessage.includes("Unauthenticated")) {
-				toast.error("Please sign in to request this item");
-			} else if (errorMessage.includes("own item")) {
-				toast.error("You cannot claim your own item");
-			} else if (errorMessage.includes("available")) {
-				toast.error("Selected dates are not available");
-			} else {
-				toast.error("Failed to request item");
-				console.error(error);
-			}
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
-	// Owner Logic Variables
-	const pendingClaims =
-		item.requests?.filter((c) => c.status === "pending") || [];
-	const approvedClaim = item.requests?.find((c) => c.status === "approved");
 
 	return (
 		<div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -365,46 +304,7 @@ export default function ItemDetailPage({
 									<h3 className="text-xl font-semibold">
 										Checks Availability & Request
 									</h3>
-									<div className="bg-white border rounded-lg p-4 inline-block w-full max-w-md mx-auto md:mx-0">
-										<Calendar
-											mode="range"
-											selected={date}
-											onSelect={setDate}
-											disabled={disabledDates}
-											numberOfMonths={numberOfMonths}
-											className="mx-auto"
-										/>
-									</div>
-
-									<div className="flex flex-col sm:flex-row gap-4 items-center">
-										<Button
-											size="lg"
-											className="w-full sm:w-auto"
-											onClick={handleClaim}
-											disabled={
-												!date?.from ||
-												!date?.to ||
-												isSubmitting ||
-												!isAuthenticated ||
-												isAuthLoading
-											}
-										>
-											{isSubmitting ? (
-												<>
-													<Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
-													Requesting...
-												</>
-											) : (
-												"Request to Borrow"
-											)}
-										</Button>
-										{!isAuthenticated && (
-											<span className="text-sm text-muted-foreground">
-												Sign in to request
-											</span>
-										)}
-									</div>
-									<AvailabilityToggle id={item._id} />
+									<BorrowerRequestPanel item={item} />
 								</div>
 							</div>
 						)}
@@ -412,5 +312,124 @@ export default function ItemDetailPage({
 				</div>
 			</div>
 		</div>
+	);
+}
+
+function BorrowerRequestPanel({ item }: { item: Doc<"items"> }) {
+	const {
+		requestItem,
+		disabledDates,
+		isSubmitting,
+		isAuthenticated,
+		isAuthLoading,
+		myRequests,
+		cancelRequest,
+	} = useClaimItem(item._id);
+
+	const [date, setDate] = useState<DateRange | undefined>();
+	const [numberOfMonths, setNumberOfMonths] = useState(1);
+
+	useEffect(() => {
+		const updateMonths = () => {
+			setNumberOfMonths(window.innerWidth >= 768 ? 2 : 1);
+		};
+		updateMonths();
+		window.addEventListener("resize", updateMonths);
+		return () => window.removeEventListener("resize", updateMonths);
+	}, []);
+
+	const onClaim = () => {
+		if (!date?.from || !date?.to) return;
+		requestItem(date.from, date.to, () => {
+			setDate(undefined);
+		});
+	};
+
+	return (
+		<>
+			<div className="bg-white border rounded-lg p-4 inline-block w-full max-w-md mx-auto md:mx-0">
+				<Calendar
+					mode="range"
+					selected={date}
+					onSelect={setDate}
+					disabled={disabledDates}
+					numberOfMonths={numberOfMonths}
+					className="mx-auto"
+				/>
+			</div>
+
+			<div className="flex flex-col sm:flex-row gap-4 items-center">
+				<Button
+					size="lg"
+					className="w-full sm:w-auto"
+					onClick={onClaim}
+					disabled={
+						!date?.from ||
+						!date?.to ||
+						isSubmitting ||
+						!isAuthenticated ||
+						isAuthLoading
+					}
+				>
+					{isSubmitting ? (
+						<>
+							<Loader2 className="mr-2 h-4 w-4 animate-spin" /> Requesting...
+						</>
+					) : (
+						"Request to Borrow"
+					)}
+				</Button>
+				{!isAuthenticated && (
+					<span className="text-sm text-muted-foreground">
+						Sign in to request
+					</span>
+				)}
+			</div>
+
+			{isAuthenticated && myRequests && myRequests.length > 0 && (
+				<div className="mt-6">
+					<h4 className="font-medium mb-3">Your Pending/Approved Requests</h4>
+					<div className="space-y-3">
+						{myRequests.map((req) => (
+							<div
+								key={req._id}
+								className="flex items-center justify-between p-3 bg-secondary/10 border rounded-lg"
+							>
+								<div>
+									<p className="font-medium">
+										{format(new Date(req.startDate), "MMM d, yyyy")} -{" "}
+										{format(new Date(req.endDate), "MMM d, yyyy")}
+									</p>
+									<p className="text-sm text-muted-foreground capitalize">
+										Status:{" "}
+										<span
+											className={
+												req.status === "approved"
+													? "text-green-600 font-bold"
+													: ""
+											}
+										>
+											{req.status}
+										</span>
+									</p>
+								</div>
+								<Button
+									variant="outline"
+									size="sm"
+									className="text-destructive hover:bg-destructive/10"
+									onClick={() => cancelRequest(req._id)}
+								>
+									Cancel
+								</Button>
+							</div>
+						))}
+					</div>
+				</div>
+			)}
+
+			<div className="mt-4">
+				<AvailabilityToggle id={item._id} />
+			</div>
+		</>
 	);
 }

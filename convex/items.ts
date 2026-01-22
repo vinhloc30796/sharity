@@ -207,12 +207,22 @@ export const getById = query({
 				.collect();
 		}
 
+		// Always fetch my claims for this item to support multiple requests
+		const myClaims = await ctx.db
+			.query("claims")
+			.withIndex("by_claimer", (q) =>
+				q.eq("claimerId", identity?.subject ?? ""),
+			)
+			.filter((q) => q.eq(q.field("itemId"), args.id))
+			.collect();
+
 		return {
 			...item,
 			images,
 			imageUrls: images.map((i) => i.url),
 			isOwner,
 			requests,
+			myClaims,
 		};
 	},
 });
@@ -424,13 +434,23 @@ export const requestItem = mutation({
 			throw new Error("Item is not available for these dates");
 		}
 
-		const existingClaim = await ctx.db
+		// Check for self-overlap (User cannot have overlapping requests for the same item)
+		const myRequests = await ctx.db
 			.query("claims")
 			.withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
 			.filter((q) => q.eq(q.field("itemId"), args.id))
-			.first();
+			.collect();
 
-		if (existingClaim) throw new Error("Already requested this item");
+		const hasSelfOverlap = myRequests.some((req) => {
+			// Check if new request overlaps with existing request
+			return args.startDate < req.endDate && args.endDate > req.startDate;
+		});
+
+		if (hasSelfOverlap) {
+			throw new Error(
+				"You already have a request that overlaps with these dates",
+			);
+		}
 
 		const pendingClaims = await ctx.db
 			.query("claims")
@@ -544,18 +564,17 @@ export const rejectClaim = mutation({
 });
 
 export const cancelClaim = mutation({
-	args: { id: v.id("items") },
+	args: { claimId: v.id("claims"), itemId: v.optional(v.id("items")) },
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
 
-		const claim = await ctx.db
-			.query("claims")
-			.withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
-			.filter((q) => q.eq(q.field("itemId"), args.id))
-			.first();
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
 
-		if (!claim) throw new Error("No claim found");
+		if (claim.claimerId !== identity.subject) {
+			throw new Error("Unauthorized: You cannot cancel this claim");
+		}
 
 		await ctx.db.delete(claim._id);
 
@@ -563,14 +582,14 @@ export const cancelClaim = mutation({
 			// Notify subscribers that item is available
 			const subscriptions = await ctx.db
 				.query("availability_alerts")
-				.withIndex("by_item", (q) => q.eq("itemId", args.id))
+				.withIndex("by_item", (q) => q.eq("itemId", claim.itemId))
 				.collect();
 
 			for (const sub of subscriptions) {
 				await ctx.db.insert("notifications", {
 					recipientId: sub.userId,
 					type: "item_available",
-					itemId: args.id,
+					itemId: claim.itemId,
 					isRead: false,
 					createdAt: Date.now(),
 				});
@@ -594,6 +613,20 @@ export const getAvailability = query({
 			startDate: c.startDate,
 			endDate: c.endDate,
 		}));
+	},
+});
+
+export const getMyRequests = query({
+	args: { itemId: v.id("items") },
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) return [];
+
+		return await ctx.db
+			.query("claims")
+			.withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
+			.filter((q) => q.eq(q.field("itemId"), args.itemId))
+			.collect();
 	},
 });
 
