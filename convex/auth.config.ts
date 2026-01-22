@@ -1,6 +1,9 @@
-// Local development: hardcoded Clerk issuer URL
-// For production: restore process.env.CLERK_ISSUER_URL
-const CLERK_ISSUER_URL = "https://trusted-shiner-99.clerk.accounts.dev";
+const CLERK_ISSUER_URL = process.env.CLERK_ISSUER_URL;
+if (!CLERK_ISSUER_URL) {
+	throw new Error(
+		"Missing CLERK_ISSUER_URL. Set it in your Convex environment (not just Next.js).",
+	);
+}
 
 export default {
 	providers: [

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Doc } from "../convex/_generated/dataModel";
 import { useState, useEffect } from "react";
@@ -18,6 +18,7 @@ interface ClaimItemBackProps {
 
 export function ClaimItemBack({ item }: ClaimItemBackProps) {
 	const { flipToFront } = useItemCard();
+	const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
 	const requestItem = useMutation(api.items.requestItem);
 	const availability = useQuery(api.items.getAvailability, {
 		itemId: item._id,
@@ -47,6 +48,10 @@ export function ClaimItemBack({ item }: ClaimItemBackProps) {
 
 	const handleClaim = async () => {
 		if (!date?.from || !date?.to) return;
+		if (!isAuthenticated) {
+			toast.error("Please sign in to request this item");
+			return;
+		}
 		setIsSubmitting(true);
 		try {
 			await requestItem({
@@ -60,7 +65,9 @@ export function ClaimItemBack({ item }: ClaimItemBackProps) {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
 
-			if (errorMessage.includes("own item")) {
+			if (errorMessage.includes("Unauthenticated")) {
+				toast.error("Please sign in to request this item");
+			} else if (errorMessage.includes("own item")) {
 				toast.error("You cannot claim your own item");
 			} else if (errorMessage.includes("available")) {
 				toast.error("Selected dates are not available");
@@ -80,6 +87,13 @@ export function ClaimItemBack({ item }: ClaimItemBackProps) {
 				<p className="text-sm text-muted-foreground mb-4 text-center">
 					Select the range you want to borrow this item for.
 				</p>
+				{!isAuthenticated && (
+					<p className="text-sm text-muted-foreground mb-3 text-center">
+						{isAuthLoading
+							? "Connecting your session..."
+							: "Sign in to request this item."}
+					</p>
+				)}
 				<div className="border rounded-md p-2 bg-background flex justify-center w-full overflow-hidden">
 					<Calendar
 						mode="range"
@@ -109,7 +123,13 @@ export function ClaimItemBack({ item }: ClaimItemBackProps) {
 					<Button
 						size="sm"
 						onClick={handleClaim}
-						disabled={!date?.from || !date?.to || isSubmitting}
+						disabled={
+							!date?.from ||
+							!date?.to ||
+							isSubmitting ||
+							isAuthLoading ||
+							!isAuthenticated
+						}
 					>
 						{isSubmitting ? (
 							<Loader2 className="h-4 w-4 animate-spin" />
