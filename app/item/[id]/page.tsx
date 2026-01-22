@@ -39,7 +39,7 @@ import { useState, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { DateRange } from "react-day-picker";
 import { toast } from "sonner";
-import { useConvexAuth } from "convex/react";
+
 import { AvailabilityToggle } from "@/components/notifications/availability-toggle";
 import { useClaimItem } from "@/hooks/use-claim-item";
 
@@ -52,7 +52,6 @@ export default function ItemDetailPage({
 }) {
 	const { id } = use(params);
 	const router = useRouter();
-	const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
 
 	const item = useQuery(api.items.getById, { id });
 
