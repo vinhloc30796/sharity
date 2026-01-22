@@ -21,7 +21,7 @@ export function ClaimItemBack({ item }: ClaimItemBackProps) {
 	const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
 	const requestItem = useMutation(api.items.requestItem);
 	const availability = useQuery(api.items.getAvailability, {
-		itemId: item._id,
+		id: item._id,
 	});
 
 	const [date, setDate] = useState<DateRange | undefined>();
@@ -55,7 +55,7 @@ export function ClaimItemBack({ item }: ClaimItemBackProps) {
 		setIsSubmitting(true);
 		try {
 			await requestItem({
-				itemId: item._id,
+				id: item._id,
 				startDate: date.from.getTime(),
 				endDate: date.to.getTime(),
 			});
@@ -110,7 +110,7 @@ export function ClaimItemBack({ item }: ClaimItemBackProps) {
 				</div>
 			</div>
 			<div className="p-3 border-t border-border flex justify-between gap-2 mt-auto">
-				<AvailabilityToggle itemId={item._id} />
+				<AvailabilityToggle id={item._id} />
 				<div className="flex gap-2">
 					<Button
 						variant="ghost"

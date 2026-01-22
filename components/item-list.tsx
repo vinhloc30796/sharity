@@ -17,14 +17,17 @@ import type { ItemCategory } from "./item-form";
 import { cn } from "@/lib/utils";
 
 // Dynamic import to avoid SSR hydration issues with Leaflet
-const ItemsMap = dynamic(() => import("./items-map").then((mod) => mod.ItemsMap), {
-	ssr: false,
-	loading: () => (
-		<div className="w-full h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
-			<p className="text-muted-foreground">Loading map...</p>
-		</div>
-	),
-});
+const ItemsMap = dynamic(
+	() => import("./items-map").then((mod) => mod.ItemsMap),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="w-full h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
+				<p className="text-muted-foreground">Loading map...</p>
+			</div>
+		),
+	},
+);
 
 type ViewMode = "list" | "map";
 
@@ -78,10 +81,7 @@ export function ItemList({
 							variant="ghost"
 							size="icon"
 							onClick={() => setViewMode("map")}
-							className={cn(
-								"rounded-l-none",
-								viewMode === "map" && "bg-muted",
-							)}
+							className={cn("rounded-l-none", viewMode === "map" && "bg-muted")}
 						>
 							<Map className="h-4 w-4" />
 						</Button>

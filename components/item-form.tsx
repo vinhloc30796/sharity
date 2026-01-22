@@ -91,7 +91,9 @@ export function ItemForm({
 	const [location, setLocation] = useState<Location | undefined>(
 		initialValues?.location,
 	);
-	const [address, setAddress] = useState(initialValues?.location?.address || "");
+	const [address, setAddress] = useState(
+		initialValues?.location?.address || "",
+	);
 	const [isGettingLocation, setIsGettingLocation] = useState(false);
 	const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
 

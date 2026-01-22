@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -47,7 +49,7 @@ export function MyItemCard({
 	const rejectClaim = useMutation(api.items.rejectClaim);
 	const claims = useQuery(
 		api.items.getClaims,
-		isOwner ? { itemId: item._id } : "skip",
+		isOwner ? { id: item._id } : "skip",
 	);
 
 	const [editingId, setEditingId] = useState<string | null>(null);
@@ -62,6 +64,11 @@ export function MyItemCard({
 			footer={
 				isOwner ? (
 					<div className="flex justify-end gap-2 w-full">
+						<Link href={`/item/${item._id}`}>
+							<Button variant="secondary" size="sm">
+								Manage
+							</Button>
+						</Link>
 						<Dialog
 							open={editingId === item._id}
 							onOpenChange={(open) => setEditingId(open ? item._id : null)}
@@ -176,7 +183,7 @@ export function MyItemCard({
 										variant="outline"
 										className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
 										onClick={() =>
-											rejectClaim({ claimId: claim._id, itemId: item._id })
+											rejectClaim({ claimId: claim._id, id: item._id })
 										}
 									>
 										<X className="h-4 w-4" />
@@ -186,7 +193,7 @@ export function MyItemCard({
 										size="sm"
 										className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700 text-white"
 										onClick={() =>
-											approveClaim({ claimId: claim._id, itemId: item._id })
+											approveClaim({ claimId: claim._id, id: item._id })
 										}
 									>
 										<Check className="h-4 w-4" />

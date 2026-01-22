@@ -24,12 +24,12 @@ Alternatively see the [Pages Router](/client/nextjs/pages-router/quickstart.md) 
 
 1. Create a Next.js app
 
-   Create a Next.js app using the `npx create-next-app` command.
+   Create a Next.js app using the `pnpm create` command.
 
    Choose the default option for every prompt (hit Enter).
 
    ```
-   npx create-next-app@latest my-app
+   pnpm create next-app@latest my-app
    ```
 
 2. Install the Convex client and server library
@@ -44,12 +44,12 @@ Alternatively see the [Pages Router](/client/nextjs/pages-router/quickstart.md) 
 
 3. Set up a Convex dev deployment
 
-   Next, run `npx convex dev`. This will prompt you to log in with GitHub, create a project, and save your production and deployment URLs.
+   Next, run `pnpm convex dev`. This will prompt you to log in with GitHub, create a project, and save your production and deployment URLs.
 
    It will also create a `convex/` folder for you to write your backend API functions in. The `dev` command will then continue running to sync your functions with your dev deployment in the cloud.
 
    ```
-   npx convex dev
+   pnpm convex dev
    ```
 
 4. Create sample data for your database
@@ -69,7 +69,7 @@ Alternatively see the [Pages Router](/client/nextjs/pages-router/quickstart.md) 
    Use the [`import`](/database/import-export/import.md) command to add a `tasks` table with the sample data into your Convex database.
 
    ```
-   npx convex import --table tasks sampleData.jsonl
+   pnpm convex import --table tasks sampleData.jsonl
    ```
 
 6. Expose a database query

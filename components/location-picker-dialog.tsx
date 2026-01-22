@@ -125,20 +125,17 @@ export function LocationPickerDialog({
 		}
 	}, [open, value]);
 
-	const handleLocationChange = useCallback(
-		async (lat: number, lng: number) => {
-			const roundedLat = roundCoordinate(lat);
-			const roundedLng = roundCoordinate(lng);
-			setSelectedLocation({ lat: roundedLat, lng: roundedLng });
+	const handleLocationChange = useCallback(async (lat: number, lng: number) => {
+		const roundedLat = roundCoordinate(lat);
+		const roundedLng = roundCoordinate(lng);
+		setSelectedLocation({ lat: roundedLat, lng: roundedLng });
 
-			// Reverse geocode
-			setIsGeocoding(true);
-			const newAddress = await reverseGeocode(roundedLat, roundedLng);
-			setAddress(newAddress);
-			setIsGeocoding(false);
-		},
-		[],
-	);
+		// Reverse geocode
+		setIsGeocoding(true);
+		const newAddress = await reverseGeocode(roundedLat, roundedLng);
+		setAddress(newAddress);
+		setIsGeocoding(false);
+	}, []);
 
 	const handleGetCurrentLocation = useCallback(() => {
 		if (!navigator.geolocation) {

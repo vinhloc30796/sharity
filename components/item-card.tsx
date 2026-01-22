@@ -5,6 +5,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import Link from "next/link";
 import {
 	Carousel,
 	CarouselContent,
@@ -138,7 +139,14 @@ export function ItemCard({
 									</div>
 								)}
 								<div className="flex justify-between items-start">
-									<CardTitle>{item.name}</CardTitle>
+									<CardTitle>
+										<Link
+											href={`/item/${item._id}`}
+											className="hover:underline"
+										>
+											{item.name}
+										</Link>
+									</CardTitle>
 									{rightHeader}
 								</div>
 							</CardHeader>
@@ -158,7 +166,8 @@ export function ItemCard({
 											className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
 										>
 											<MapPin className="h-3 w-3" />
-											{item.location.address || `${item.location.lat.toFixed(2)}, ${item.location.lng.toFixed(2)}`}
+											{item.location.address ||
+												`${item.location.lat.toFixed(2)}, ${item.location.lng.toFixed(2)}`}
 											<ExternalLink className="h-3 w-3" />
 										</a>
 									)}

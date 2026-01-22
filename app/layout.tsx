@@ -8,6 +8,7 @@ import {
 	SignedOut,
 	UserButton,
 } from "@clerk/nextjs";
+import "leaflet/dist/leaflet.css";
 import "./globals.css";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import { Button } from "@/components/ui/button";

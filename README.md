@@ -24,25 +24,34 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Roadmap
 
-- [x] Givers should be able to submit an item
-- [ ] Givers should be able to approve or reject a getter's claim
-    - there should be a queue of 5 claimer (this should be a server-side config, not exposed to users)
-    - this should affect status badge of the item: avail, waitlist open, waitlist closed, exchanged
-    - rejection may (optionally) come with a rejection reason
-- [ ] Givers should be able to block a spammer from claiming an item (or all items)
-- [x] Getters should be able to browse items aimlessly (for discovery)
-- [ ] Getters should be able to search for specific items
-    - [x] by location
-    - [ ] by time
-    - [~] by keywords
-    - [ ] by availability
-    - [ ] by deposit/no deposit
-    - [ ] by owner (default to exclude all items submitted by current logged in user)
-- [ ] Getters should be able to claim an item
-- [ ] Givers & getters should be able to mark an item as exchanged & hide it from the market
-- [ ] Givers should be able to set a (optional) deposit amount for an item
-- [ ] Getters should be able to request an non-existent item
-- ...
+### 🎁 Giving & Managing Items
+- [x] Submit an item for sharing
+- [ ] Manage owned items:
+    - [ ] View pending and approved requests
+    - [ ] Set unavailability periods (calendar blocking)
+    - [ ] Set a fixed rental price (optional, cannot be changed once set)
+    - [ ] Set a deposit amount (optional)
+- [ ] Approve or reject claims:
+    - [ ] Manage queue of claimants (limit to 5)
+    - [ ] Provide rejection reasons (optional)
+- [ ] Block specific users from claiming items
+
+### 🔍 Finding & Requesting Items
+- [x] Browse items for discovery
+- [ ] Search for items:
+    - [x] By location
+    - [ ] By keyword [~]
+    - [ ] By availability time
+    - [ ] By deposit/price requirements
+    - [ ] By owner (exclude own items)
+- [ ] Claim/Request an item:
+    - [ ] Specify pick-up time (defaulting to item location)
+    - [ ] Specify return time
+    - [ ] Request non-existent items (wishlist)
+
+### 🤝 Exchange & Trust
+- [ ] Mark items as exchanged (hides from market)
+- [ ] Status badges for items (Available, Waitlist Open/Closed, Exchanged)
     
 ## Deployment
 

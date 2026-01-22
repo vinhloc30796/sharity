@@ -18,7 +18,8 @@ export const seed = internalMutation({
 		const testItems = [
 			{
 				name: "Rice Cooker",
-				description: "Electric rice cooker, 1.8L capacity. Perfect for 2-4 people.",
+				description:
+					"Electric rice cooker, 1.8L capacity. Perfect for 2-4 people.",
 				category: "kitchen" as const,
 				location: { lat: 11.9404, lng: 108.4583, address: "Da Lat Market" },
 			},
@@ -26,55 +27,61 @@ export const seed = internalMutation({
 				name: "Camping Tent",
 				description: "2-person waterproof tent. Great for weekend trips.",
 				category: "sports" as const,
-				location: { lat: 11.9450, lng: 108.4420, address: "Xuan Huong Lake" },
+				location: { lat: 11.945, lng: 108.442, address: "Xuan Huong Lake" },
 			},
 			{
 				name: "LED Desk Lamp",
 				description: "Adjustable brightness LED lamp with USB charging port.",
 				category: "electronics" as const,
-				location: { lat: 11.9380, lng: 108.4550, address: "Da Lat University" },
+				location: { lat: 11.938, lng: 108.455, address: "Da Lat University" },
 			},
 			{
 				name: "Winter Jacket",
 				description: "Warm fleece jacket, size M. Perfect for Da Lat evenings.",
 				category: "clothing" as const,
-				location: { lat: 11.9420, lng: 108.4610, address: "Hoa Binh Square" },
+				location: { lat: 11.942, lng: 108.461, address: "Hoa Binh Square" },
 			},
 			{
 				name: "Vietnamese Cookbook",
 				description: "Traditional recipes from Central Vietnam. 200+ recipes.",
 				category: "books" as const,
-				location: { lat: 11.9360, lng: 108.4480, address: "Crazy House" },
+				location: { lat: 11.936, lng: 108.448, address: "Crazy House" },
 			},
 			{
 				name: "Folding Chair",
-				description: "Portable folding chair for outdoor use. Lightweight aluminum.",
+				description:
+					"Portable folding chair for outdoor use. Lightweight aluminum.",
 				category: "furniture" as const,
-				location: { lat: 11.9480, lng: 108.4530, address: "Valley of Love" },
+				location: { lat: 11.948, lng: 108.453, address: "Valley of Love" },
 			},
 			{
 				name: "Yoga Mat",
 				description: "Non-slip yoga mat, 6mm thick. Includes carrying strap.",
 				category: "sports" as const,
-				location: { lat: 11.9340, lng: 108.4620, address: "Langbiang Mountain" },
+				location: { lat: 11.934, lng: 108.462, address: "Langbiang Mountain" },
 			},
 			{
 				name: "Bluetooth Speaker",
 				description: "Portable waterproof speaker. 10 hour battery life.",
 				category: "electronics" as const,
-				location: { lat: 11.9410, lng: 108.4500, address: "Da Lat Night Market" },
+				location: { lat: 11.941, lng: 108.45, address: "Da Lat Night Market" },
 			},
 			{
 				name: "Coffee Grinder",
 				description: "Manual burr coffee grinder. Perfect for Da Lat coffee!",
 				category: "kitchen" as const,
-				location: { lat: 11.9390, lng: 108.4560, address: "Big C Da Lat" },
+				location: { lat: 11.939, lng: 108.456, address: "Big C Da Lat" },
 			},
 			{
 				name: "Board Games Set",
-				description: "Collection of classic board games: Chess, Checkers, Backgammon.",
+				description:
+					"Collection of classic board games: Chess, Checkers, Backgammon.",
 				category: "other" as const,
-				location: { lat: 11.9430, lng: 108.4470, address: "Da Lat Railway Station" },
+				location: {
+					lat: 11.943,
+					lng: 108.447,
+					address: "Da Lat Railway Station",
+				},
 			},
 		];
 
@@ -163,6 +170,50 @@ export const get = query({
 				}),
 		);
 		return itemsWithUrls;
+	},
+});
+
+export const getById = query({
+	args: { id: v.id("items") },
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		const item = await ctx.db.get(args.id);
+
+		if (!item) return null;
+
+		let imageUrls: (string | null)[] = [];
+		if (item.imageStorageIds) {
+			imageUrls = await Promise.all(
+				item.imageStorageIds.map((id) => ctx.storage.getUrl(id)),
+			);
+		}
+
+		const images = item.imageStorageIds
+			? (item.imageStorageIds
+					.map((id, idx) => ({ id, url: imageUrls[idx] }))
+					.filter((img) => img.url !== null) as {
+					id: Id<"_storage">;
+					url: string;
+				}[])
+			: [];
+
+		const isOwner = identity?.subject === item.ownerId;
+
+		let requests = undefined;
+		if (isOwner) {
+			requests = await ctx.db
+				.query("claims")
+				.withIndex("by_item", (q) => q.eq("itemId", args.id))
+				.collect();
+		}
+
+		return {
+			...item,
+			images,
+			imageUrls: images.map((i) => i.url),
+			isOwner,
+			requests,
+		};
 	},
 });
 
@@ -332,7 +383,7 @@ export const deleteItem = mutation({
 
 export const requestItem = mutation({
 	args: {
-		itemId: v.id("items"),
+		id: v.id("items"),
 		startDate: v.number(),
 		endDate: v.number(),
 	},
@@ -340,7 +391,7 @@ export const requestItem = mutation({
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
 
-		const item = await ctx.db.get(args.itemId);
+		const item = await ctx.db.get(args.id);
 		if (!item) throw new Error("Item not found");
 		if (item.ownerId === identity.subject)
 			throw new Error("Cannot claim your own item");
@@ -361,7 +412,7 @@ export const requestItem = mutation({
 		// Check for specific overlaps with APPROVED claims
 		const approvedClaims = await ctx.db
 			.query("claims")
-			.withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+			.withIndex("by_item", (q) => q.eq("itemId", args.id))
 			.filter((q) => q.eq(q.field("status"), "approved"))
 			.collect();
 
@@ -376,14 +427,14 @@ export const requestItem = mutation({
 		const existingClaim = await ctx.db
 			.query("claims")
 			.withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
-			.filter((q) => q.eq(q.field("itemId"), args.itemId))
+			.filter((q) => q.eq(q.field("itemId"), args.id))
 			.first();
 
 		if (existingClaim) throw new Error("Already requested this item");
 
 		const pendingClaims = await ctx.db
 			.query("claims")
-			.withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+			.withIndex("by_item", (q) => q.eq("itemId", args.id))
 			.filter((q) => q.eq(q.field("status"), "pending"))
 			.collect();
 
@@ -392,7 +443,7 @@ export const requestItem = mutation({
 		}
 
 		const claimId = await ctx.db.insert("claims", {
-			itemId: args.itemId,
+			itemId: args.id,
 			claimerId: identity.subject,
 			status: "pending",
 			startDate: args.startDate,
@@ -403,7 +454,7 @@ export const requestItem = mutation({
 		await ctx.db.insert("notifications", {
 			recipientId: item.ownerId,
 			type: "new_request",
-			itemId: args.itemId,
+			itemId: args.id,
 			requestId: claimId,
 			isRead: false,
 			createdAt: Date.now(),
@@ -412,12 +463,12 @@ export const requestItem = mutation({
 });
 
 export const getClaims = query({
-	args: { itemId: v.id("items") },
+	args: { id: v.id("items") },
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) return [];
 
-		const item = await ctx.db.get(args.itemId);
+		const item = await ctx.db.get(args.id);
 		if (!item) return [];
 
 		if (item.ownerId !== identity.subject) {
@@ -426,24 +477,24 @@ export const getClaims = query({
 
 		return await ctx.db
 			.query("claims")
-			.withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+			.withIndex("by_item", (q) => q.eq("itemId", args.id))
 			.collect();
 	},
 });
 
 export const approveClaim = mutation({
-	args: { claimId: v.id("claims"), itemId: v.id("items") },
+	args: { claimId: v.id("claims"), id: v.id("items") },
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
 
-		const item = await ctx.db.get(args.itemId);
+		const item = await ctx.db.get(args.id);
 		if (!item) throw new Error("Item not found");
 		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
 
 		const claim = await ctx.db.get(args.claimId);
 		if (!claim) throw new Error("Claim not found");
-		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.itemId !== args.id) throw new Error("Mismatch item/claim");
 
 		await ctx.db.patch(args.claimId, { status: "approved" });
 
@@ -451,7 +502,7 @@ export const approveClaim = mutation({
 		await ctx.db.insert("notifications", {
 			recipientId: claim.claimerId,
 			type: "request_approved",
-			itemId: args.itemId,
+			itemId: args.id,
 			requestId: args.claimId,
 			isRead: false,
 			createdAt: Date.now(),
@@ -466,12 +517,12 @@ export const approveClaim = mutation({
 });
 
 export const rejectClaim = mutation({
-	args: { claimId: v.id("claims"), itemId: v.id("items") },
+	args: { claimId: v.id("claims"), id: v.id("items") },
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
 
-		const item = await ctx.db.get(args.itemId);
+		const item = await ctx.db.get(args.id);
 		if (!item) throw new Error("Item not found");
 		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
 
@@ -484,7 +535,7 @@ export const rejectClaim = mutation({
 		await ctx.db.insert("notifications", {
 			recipientId: claim.claimerId,
 			type: "request_rejected",
-			itemId: args.itemId,
+			itemId: args.id,
 			requestId: args.claimId,
 			isRead: false,
 			createdAt: Date.now(),
@@ -493,7 +544,7 @@ export const rejectClaim = mutation({
 });
 
 export const cancelClaim = mutation({
-	args: { itemId: v.id("items") },
+	args: { id: v.id("items") },
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
@@ -501,7 +552,7 @@ export const cancelClaim = mutation({
 		const claim = await ctx.db
 			.query("claims")
 			.withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
-			.filter((q) => q.eq(q.field("itemId"), args.itemId))
+			.filter((q) => q.eq(q.field("itemId"), args.id))
 			.first();
 
 		if (!claim) throw new Error("No claim found");
@@ -512,14 +563,14 @@ export const cancelClaim = mutation({
 			// Notify subscribers that item is available
 			const subscriptions = await ctx.db
 				.query("availability_alerts")
-				.withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+				.withIndex("by_item", (q) => q.eq("itemId", args.id))
 				.collect();
 
 			for (const sub of subscriptions) {
 				await ctx.db.insert("notifications", {
 					recipientId: sub.userId,
 					type: "item_available",
-					itemId: args.itemId,
+					itemId: args.id,
 					isRead: false,
 					createdAt: Date.now(),
 				});
@@ -531,11 +582,11 @@ export const cancelClaim = mutation({
 });
 
 export const getAvailability = query({
-	args: { itemId: v.id("items") },
+	args: { id: v.id("items") },
 	handler: async (ctx, args) => {
 		const claims = await ctx.db
 			.query("claims")
-			.withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+			.withIndex("by_item", (q) => q.eq("itemId", args.id))
 			.filter((q) => q.eq(q.field("status"), "approved"))
 			.collect();
 

@@ -1,6 +1,5 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
 
 export const get = query({
 	args: {},
@@ -59,7 +58,7 @@ export const markAllAsRead = mutation({
 });
 
 export const subscribeAvailability = mutation({
-	args: { itemId: v.id("items") },
+	args: { id: v.id("items") },
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
@@ -67,7 +66,7 @@ export const subscribeAvailability = mutation({
 		const existing = await ctx.db
 			.query("availability_alerts")
 			.withIndex("by_user_item", (q) =>
-				q.eq("userId", identity.subject).eq("itemId", args.itemId),
+				q.eq("userId", identity.subject).eq("itemId", args.id),
 			)
 			.first();
 
@@ -77,7 +76,7 @@ export const subscribeAvailability = mutation({
 			return false; // Subscribed: false
 		} else {
 			await ctx.db.insert("availability_alerts", {
-				itemId: args.itemId,
+				itemId: args.id,
 				userId: identity.subject,
 				createdAt: Date.now(),
 			});
@@ -87,7 +86,7 @@ export const subscribeAvailability = mutation({
 });
 
 export const getAvailabilitySubscription = query({
-	args: { itemId: v.id("items") },
+	args: { id: v.id("items") },
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) return false;
@@ -95,7 +94,7 @@ export const getAvailabilitySubscription = query({
 		const existing = await ctx.db
 			.query("availability_alerts")
 			.withIndex("by_user_item", (q) =>
-				q.eq("userId", identity.subject).eq("itemId", args.itemId),
+				q.eq("userId", identity.subject).eq("itemId", args.id),
 			)
 			.first();
 

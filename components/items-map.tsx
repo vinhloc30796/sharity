@@ -28,7 +28,9 @@ function InvalidateSize() {
 
 function InvalidateSizeInner({
 	useMap,
-}: { useMap: typeof import("react-leaflet").useMap }) {
+}: {
+	useMap: typeof import("react-leaflet").useMap;
+}) {
 	const map = useMap();
 
 	useEffect(() => {
@@ -52,7 +54,7 @@ interface ItemsMapProps {
 		category?: ItemCategory;
 		location?: { lat: number; lng: number; address?: string };
 	})[];
-	onItemClick?: (itemId: string) => void;
+	onItemClick?: (id: string) => void;
 }
 
 export function ItemsMap({ items, onItemClick }: ItemsMapProps) {
