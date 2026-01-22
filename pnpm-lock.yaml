@@ -121,7 +121,7 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0
       typescript:
-        specifier: 5.8.3
+        specifier: ^5
         version: 5.8.3
 
 packages:
