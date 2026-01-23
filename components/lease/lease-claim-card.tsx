@@ -366,7 +366,7 @@ export function LeaseClaimCard(props: {
 							)}
 
 							{isOwner && (canMarkExpired || canMarkMissing) && (
-								<div className="flex gap-2 pt-1.5 border-t">
+								<div className="flex gap-2">
 									{canMarkExpired && markExpired && (
 										<LeaseActionDialog
 											title="Mark lease as expired"

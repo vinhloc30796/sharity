@@ -104,27 +104,29 @@ export function BorrowerRequestActions() {
 
 	return (
 		<>
-			<div className="flex flex-col sm:flex-row gap-4 items-center">
-				<Button
-					size="lg"
-					className="w-full sm:w-auto"
-					onClick={onClaim}
-					disabled={
-						!calendar.date?.from ||
-						!calendar.date?.to ||
-						isSubmitting ||
-						!isAuthenticated ||
-						isAuthLoading
-					}
-				>
-					{isSubmitting ? (
-						<>
-							<Loader2 className="mr-2 h-4 w-4 animate-spin" /> Requesting...
-						</>
-					) : (
-						"Request to Borrow"
-					)}
-				</Button>
+			<div className="flex flex-col gap-3">
+				<div className="flex flex-wrap items-center gap-3">
+					<Button
+						className="h-10 w-full sm:w-auto"
+						onClick={onClaim}
+						disabled={
+							!calendar.date?.from ||
+							!calendar.date?.to ||
+							isSubmitting ||
+							!isAuthenticated ||
+							isAuthLoading
+						}
+					>
+						{isSubmitting ? (
+							<>
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" /> Requesting...
+							</>
+						) : (
+							"Request to Borrow"
+						)}
+					</Button>
+					<AvailabilityToggle id={item._id} />
+				</div>
 				{!isAuthenticated && (
 					<span className="text-sm text-muted-foreground">
 						Sign in to request
@@ -180,10 +182,6 @@ export function BorrowerRequestActions() {
 					</div>
 				</div>
 			)}
-
-			<div className="mt-4">
-				<AvailabilityToggle id={item._id} />
-			</div>
 		</>
 	);
 }

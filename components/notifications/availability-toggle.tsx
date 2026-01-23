@@ -25,8 +25,7 @@ export function AvailabilityToggle({ id }: { id: Id<"items"> }) {
 	return (
 		<Button
 			variant={isSubscribed ? "secondary" : "outline"}
-			size="sm"
-			className="gap-2"
+			className="h-10 gap-2"
 			onClick={handleToggle}
 		>
 			{isSubscribed ? (
