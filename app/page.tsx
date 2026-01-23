@@ -11,6 +11,7 @@ import { ClaimButton } from "@/components/claim-button";
 import { ClaimItemBack } from "@/components/claim-item-back";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Suspense } from "react";
 
 export default function Home() {
 	return (
@@ -38,10 +39,14 @@ export default function Home() {
 						</SignedIn>
 					</div>
 					<div className="w-full">
-						<ItemList
-							action={(item) => <ClaimButton item={item} />}
-							actionBack={(item) => <ClaimItemBack item={item} />}
-						/>
+						<Suspense
+							fallback={<div className="w-full max-w-2xl">Loading…</div>}
+						>
+							<ItemList
+								action={(item) => <ClaimButton item={item} />}
+								actionBack={(item) => <ClaimItemBack item={item} />}
+							/>
+						</Suspense>
 						<div className="mt-8">
 							<div className="p-6 bg-white rounded-lg border shadow-sm space-y-4 text-center">
 								<h3 className="text-lg font-semibold">
@@ -66,10 +71,14 @@ export default function Home() {
 					<Tabs defaultValue="browse" className="w-full">
 						<TabsContent value="browse" className="mt-0 space-y-4">
 							<h2 className="text-lg font-semibold px-1">Browse Items</h2>
-							<ItemList
-								action={(item) => <ClaimButton item={item} />}
-								actionBack={(item) => <ClaimItemBack item={item} />}
-							/>
+							<Suspense
+								fallback={<div className="w-full max-w-2xl">Loading…</div>}
+							>
+								<ItemList
+									action={(item) => <ClaimButton item={item} />}
+									actionBack={(item) => <ClaimItemBack item={item} />}
+								/>
+							</Suspense>
 						</TabsContent>
 
 						<TabsContent value="wishlist" className="mt-0 space-y-4">
