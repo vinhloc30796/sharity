@@ -118,4 +118,10 @@ export default defineSchema({
 		endDate: v.number(),
 		note: v.optional(v.string()),
 	}).index("by_owner", ["ownerId"]),
+	wishlist: defineTable({
+		text: v.string(),
+		userId: v.string(),
+		votes: v.array(v.string()), // Array of userIds who voted
+		createdAt: v.number(),
+	}).index("by_createdAt", ["createdAt"]),
 });
