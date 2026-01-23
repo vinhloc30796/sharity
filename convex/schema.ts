@@ -112,4 +112,10 @@ export default defineSchema({
 	})
 		.index("by_item", ["itemId"])
 		.index("by_user_item", ["userId", "itemId"]),
+	owner_unavailability: defineTable({
+		ownerId: v.string(),
+		startDate: v.number(),
+		endDate: v.number(),
+		note: v.optional(v.string()),
+	}).index("by_owner", ["ownerId"]),
 });

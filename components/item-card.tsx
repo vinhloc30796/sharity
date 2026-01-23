@@ -125,7 +125,9 @@ export function ItemCard({
 									<div
 										className={cn(
 											"w-full relative rounded-md overflow-hidden bg-gray-100 group",
-											density === "compact" ? "aspect-4/3 mb-3" : "aspect-video mb-4",
+											density === "compact"
+												? "aspect-4/3 mb-3"
+												: "aspect-video mb-4",
 										)}
 									>
 										<Carousel className="w-full h-full">
@@ -135,7 +137,9 @@ export function ItemCard({
 														<div
 															className={cn(
 																"w-full relative",
-																density === "compact" ? "aspect-4/3" : "aspect-video",
+																density === "compact"
+																	? "aspect-4/3"
+																	: "aspect-video",
 															)}
 														>
 															<img

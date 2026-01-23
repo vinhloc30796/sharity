@@ -26,14 +26,14 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ### 🎁 Giving & Managing Items
 - [x] Submit an item for sharing
-- [ ] Manage owned items:
-    - [ ] View pending and approved requests
-    - [ ] Set unavailability periods (calendar blocking)
+- [~] Manage owned items:
+    - [x] View pending and approved requests
+    - [x] Set unavailability periods (calendar blocking)
     - [ ] Set a fixed rental price (optional, cannot be changed once set)
     - [ ] Set a deposit amount (optional)
-- [ ] Approve or reject claims:
-    - [ ] Manage queue of claimants (limit to 5)
-    - [ ] Provide rejection reasons (optional)
+- [x] Approve or reject claims:
+    - [x] Manage queue of claimants (limit to 5)
+    - [x] Provide rejection reasons (optional)
 - [ ] Block specific users from claiming items
 
 ### 🔍 Finding & Requesting Items
@@ -44,9 +44,9 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
     - [ ] By availability time
     - [ ] By deposit/price requirements
     - [ ] By owner (exclude own items)
-- [ ] Claim/Request an item:
-    - [ ] Specify pick-up time (defaulting to item location)
-    - [ ] Specify return time
+- [x] Claim/Request an item:
+    - [x] Specify pick-up time
+    - [x] Specify return time
     - [ ] Request non-existent items (wishlist)
 
 ### 🤝 Exchange & Trust

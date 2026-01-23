@@ -6,6 +6,21 @@ import { action, internalMutation, mutation, query } from "./_generated/server";
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 
+function hasDateOverlap(
+	a: { startDate: number; endDate: number },
+	b: { startDate: number; endDate: number },
+): boolean {
+	return a.startDate < b.endDate && a.endDate > b.startDate;
+}
+
+function isRangeActiveNow(range: {
+	startDate: number;
+	endDate: number;
+}): boolean {
+	const now = Date.now();
+	return range.startDate <= now && now <= range.endDate;
+}
+
 function assertHourAligned(windowStartAt: number): void {
 	if (windowStartAt % ONE_HOUR_MS !== 0) {
 		throw new Error("Time must be aligned to the hour");
@@ -124,32 +139,42 @@ export const get = query({
 		const identity = await ctx.auth.getUserIdentity();
 		const items = await ctx.db.query("items").order("desc").collect();
 
+		const activeUnavailableOwners = new Set<string>();
+		const ownerBlocks = await ctx.db.query("owner_unavailability").collect();
+		for (const block of ownerBlocks) {
+			if (isRangeActiveNow(block)) {
+				activeUnavailableOwners.add(block.ownerId);
+			}
+		}
+
 		if (!identity) {
 			const itemsWithUrls = await Promise.all(
-				items.map(async (item) => {
-					let imageUrls: (string | null)[] = [];
-					if (item.imageStorageIds) {
-						imageUrls = await Promise.all(
-							item.imageStorageIds.map((id) => ctx.storage.getUrl(id)),
-						);
-					}
+				items
+					.filter((item) => !activeUnavailableOwners.has(item.ownerId))
+					.map(async (item) => {
+						let imageUrls: (string | null)[] = [];
+						if (item.imageStorageIds) {
+							imageUrls = await Promise.all(
+								item.imageStorageIds.map((id) => ctx.storage.getUrl(id)),
+							);
+						}
 
-					const images = item.imageStorageIds
-						? (item.imageStorageIds
-								.map((id, idx) => ({ id, url: imageUrls[idx] }))
-								.filter((img) => img.url !== null) as {
-								id: Id<"_storage">;
-								url: string;
-							}[])
-						: [];
+						const images = item.imageStorageIds
+							? (item.imageStorageIds
+									.map((id, idx) => ({ id, url: imageUrls[idx] }))
+									.filter((img) => img.url !== null) as {
+									id: Id<"_storage">;
+									url: string;
+								}[])
+							: [];
 
-					return {
-						...item,
-						images,
-						imageUrls: images.map((i) => i.url),
-						isRequested: false,
-					};
-				}),
+						return {
+							...item,
+							images,
+							imageUrls: images.map((i) => i.url),
+							isRequested: false,
+						};
+					}),
 			);
 			return itemsWithUrls;
 		}
@@ -164,6 +189,7 @@ export const get = query({
 		const itemsWithUrls = await Promise.all(
 			items
 				.filter((item) => item.ownerId !== identity.subject)
+				.filter((item) => !activeUnavailableOwners.has(item.ownerId))
 				.map(async (item) => {
 					let imageUrls: (string | null)[] = [];
 					if (item.imageStorageIds) {
@@ -243,6 +269,57 @@ export const getById = query({
 			requests,
 			myClaims,
 		};
+	},
+});
+
+export const getOwnerUnavailability = query({
+	args: {},
+	handler: async (ctx) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const rows = await ctx.db
+			.query("owner_unavailability")
+			.withIndex("by_owner", (q) => q.eq("ownerId", identity.subject))
+			.collect();
+
+		return rows.sort((a, b) => a.startDate - b.startDate);
+	},
+});
+
+export const addOwnerUnavailabilityRange = mutation({
+	args: {
+		startDate: v.number(),
+		endDate: v.number(),
+		note: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+		if (args.endDate < args.startDate) {
+			throw new Error("End date must be after start date");
+		}
+
+		await ctx.db.insert("owner_unavailability", {
+			ownerId: identity.subject,
+			startDate: args.startDate,
+			endDate: args.endDate,
+			note: args.note,
+		});
+	},
+});
+
+export const deleteOwnerUnavailabilityRange = mutation({
+	args: { id: v.id("owner_unavailability") },
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const row = await ctx.db.get(args.id);
+		if (!row) throw new Error("Unavailability range not found");
+		if (row.ownerId !== identity.subject) throw new Error("Unauthorized");
+
+		await ctx.db.delete(args.id);
 	},
 });
 
@@ -436,6 +513,20 @@ export const requestItem = mutation({
 		if (item.ownerId === identity.subject)
 			throw new Error("Cannot claim your own item");
 
+		const ownerBlocks = await ctx.db
+			.query("owner_unavailability")
+			.withIndex("by_owner", (q) => q.eq("ownerId", item.ownerId))
+			.collect();
+		const blocksOverlap = ownerBlocks.some((b) =>
+			hasDateOverlap(
+				{ startDate: args.startDate, endDate: args.endDate },
+				{ startDate: b.startDate, endDate: b.endDate },
+			),
+		);
+		if (blocksOverlap) {
+			throw new Error("Item is not available for these dates");
+		}
+
 		// Validate dates
 		const now = Date.now();
 		const todayStart = new Date(now);
@@ -460,9 +551,12 @@ export const requestItem = mutation({
 			(c) => !c.expiredAt && !c.returnedAt,
 		);
 
-		const hasOverlap = activeApprovedClaims.some((claim) => {
-			return args.startDate < claim.endDate && args.endDate > claim.startDate;
-		});
+		const hasOverlap = activeApprovedClaims.some((claim) =>
+			hasDateOverlap(
+				{ startDate: args.startDate, endDate: args.endDate },
+				{ startDate: claim.startDate, endDate: claim.endDate },
+			),
+		);
 
 		if (hasOverlap) {
 			throw new Error("Item is not available for these dates");
@@ -488,10 +582,12 @@ export const requestItem = mutation({
 				(r.status === "approved" && !r.expiredAt && !r.returnedAt),
 		);
 
-		const hasSelfOverlap = myBlockingRequests.some((req) => {
-			// Check if new request overlaps with existing request
-			return args.startDate < req.endDate && args.endDate > req.startDate;
-		});
+		const hasSelfOverlap = myBlockingRequests.some((req) =>
+			hasDateOverlap(
+				{ startDate: args.startDate, endDate: args.endDate },
+				{ startDate: req.startDate, endDate: req.endDate },
+			),
+		);
 
 		if (hasSelfOverlap) {
 			throw new Error(
@@ -1353,6 +1449,9 @@ export const cancelClaim = mutation({
 export const getAvailability = query({
 	args: { id: v.id("items") },
 	handler: async (ctx, args) => {
+		const item = await ctx.db.get(args.id);
+		if (!item) throw new Error("Item not found");
+
 		const claims = await ctx.db
 			.query("claims")
 			.withIndex("by_item", (q) => q.eq("itemId", args.id))
@@ -1361,10 +1460,21 @@ export const getAvailability = query({
 
 		const activeClaims = claims.filter((c) => !c.expiredAt && !c.returnedAt);
 
-		return activeClaims.map((c) => ({
-			startDate: c.startDate,
-			endDate: c.endDate,
-		}));
+		const ownerBlocks = await ctx.db
+			.query("owner_unavailability")
+			.withIndex("by_owner", (q) => q.eq("ownerId", item.ownerId))
+			.collect();
+
+		return [
+			...activeClaims.map((c) => ({
+				startDate: c.startDate,
+				endDate: c.endDate,
+			})),
+			...ownerBlocks.map((b) => ({
+				startDate: b.startDate,
+				endDate: b.endDate,
+			})),
+		];
 	},
 });
 

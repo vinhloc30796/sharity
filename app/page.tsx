@@ -3,16 +3,12 @@
 import { AddItemForm } from "@/components/add-item-form";
 import { ItemList } from "@/components/item-list";
 import { MyItemsList } from "@/components/my-items-list";
+import { OwnerUnavailabilityButton } from "@/components/owner-unavailability-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button, ButtonWithTooltip } from "@/components/ui/button";
-import { useAuth, SignedIn } from "@clerk/nextjs";
+import { SignedIn } from "@clerk/nextjs";
 
 import { ClaimButton } from "@/components/claim-button";
 import { ClaimItemBack } from "@/components/claim-item-back";
-// Removed unused sonner import
-// Actually no toast imported in file, let's stick to standard alert or nothing for now, or use console.
-// Re-reading: The file uses ButtonWithTooltip.
-// I will just use console.error for failures or simple alert if needed, but UI updates automatically.
 
 export default function Home() {
 	return (
@@ -31,7 +27,10 @@ export default function Home() {
 						<AddItemForm />
 						<SignedIn>
 							<div className="mt-8">
-								<h2 className="text-lg font-semibold mb-4">My Items</h2>
+								<div className="flex items-center justify-between mb-4">
+									<h2 className="text-lg font-semibold">My Items</h2>
+									<OwnerUnavailabilityButton />
+								</div>
 								<MyItemsList />
 							</div>
 						</SignedIn>
@@ -60,13 +59,16 @@ export default function Home() {
 							<AddItemForm />
 							<SignedIn>
 								<div className="mt-8">
-									<h2 className="text-lg font-semibold mb-4">My Items</h2>
+									<div className="flex items-center justify-between mb-4">
+										<h2 className="text-lg font-semibold">My Items</h2>
+										<OwnerUnavailabilityButton />
+									</div>
 									<MyItemsList />
 								</div>
 							</SignedIn>
 						</TabsContent>
 
-						<div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-2 z-50">
+						<div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 p-2 z-50">
 							<TabsList className="w-full grid grid-cols-2 h-auto">
 								<TabsTrigger value="browse" className="py-3">
 									Browse

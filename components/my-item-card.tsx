@@ -40,7 +40,14 @@ function formatActor(actorId: string): string {
 
 function primaryStatusForOwnerClaims(
 	claims: Doc<"claims">[] | undefined,
-): "available" | "pending" | "approved" | "picked_up" | "returned" | "expired" | "missing" {
+):
+	| "available"
+	| "pending"
+	| "approved"
+	| "picked_up"
+	| "returned"
+	| "expired"
+	| "missing" {
 	const list = claims ?? [];
 
 	const activeApproved = list.filter((c) => {
