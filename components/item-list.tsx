@@ -2,11 +2,12 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { List, Map } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 
 import { Doc } from "../convex/_generated/dataModel";
 
@@ -39,16 +40,21 @@ export function ItemList({
 	actionBack?: (item: Doc<"items"> & { isRequested?: boolean }) => ReactNode;
 }) {
 	const items = useQuery(api.items.get);
+	const searchParams = useSearchParams();
 	const [search, setSearch] = useState("");
 	const [selectedCategories, setSelectedCategories] = useState<ItemCategory[]>(
 		[],
 	);
 	const [viewMode, setViewMode] = useState<ViewMode>("list");
 
+	const urlQuery = searchParams.get("q") ?? "";
+	useEffect(() => {
+		if (urlQuery !== search) setSearch(urlQuery);
+	}, [urlQuery, search]);
+
 	const filteredItems = items?.filter((item) => {
-		const matchesSearch = item.name
-			.toLowerCase()
-			.includes(search.toLowerCase());
+		const itemText = `${item.name} ${item.description ?? ""}`.toLowerCase();
+		const matchesSearch = itemText.includes(search.toLowerCase());
 		const matchesCategory =
 			selectedCategories.length === 0 ||
 			(item.category && selectedCategories.includes(item.category));

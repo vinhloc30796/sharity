@@ -25,10 +25,12 @@ import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export function AddWishlistDialog() {
+	const router = useRouter();
 	const [open, setOpen] = useState(false);
 	const [text, setText] = useState("");
 	const [showMatchAlert, setShowMatchAlert] = useState(false);
@@ -72,6 +74,14 @@ export function AddWishlistDialog() {
 		} catch {
 			toast.error("Failed to add request");
 		}
+	};
+
+	const onViewItems = () => {
+		const trimmed = text.trim();
+		setShowMatchAlert(false);
+		setOpen(false);
+		if (!trimmed) return;
+		router.push(`/?q=${encodeURIComponent(trimmed)}`);
 	};
 
 	return (
@@ -119,7 +129,7 @@ export function AddWishlistDialog() {
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel onClick={() => setOpen(false)}>
+						<AlertDialogCancel onClick={onViewItems}>
 							View Items
 						</AlertDialogCancel>
 						<AlertDialogAction onClick={doCreate}>
