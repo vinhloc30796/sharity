@@ -107,6 +107,27 @@ export function useItemCalendar<TRequest extends OwnerRequestBase>(
 		myRequests,
 		cancelRequest,
 	} = useClaimItem(config.itemId);
+	// #region agent log
+	fetch("http://127.0.0.1:7247/ingest/7d86e2b7-8839-45c8-8f25-a8834042afa0", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			sessionId: "debug-session",
+			runId: "pre-fix",
+			hypothesisId: "H1",
+			location: "use-item-calendar.ts:111",
+			message: "useClaimItem disabledDates summary",
+			data: {
+				mode: config.mode,
+				disabledCount: disabledDates.length,
+				hasPastRule: disabledDates.some(
+					(entry) => typeof (entry as { before?: Date }).before !== "undefined",
+				),
+			},
+			timestamp: Date.now(),
+		}),
+	}).catch(() => {});
+	// #endregion
 
 	const [date, setDate] = React.useState<DateRange | undefined>(undefined);
 
@@ -176,6 +197,30 @@ export function useItemCalendar<TRequest extends OwnerRequestBase>(
 	const onFocusClaim =
 		config.mode === "owner" ? config.onFocusClaim : undefined;
 	const isOwnerMode = config.mode === "owner";
+	// #region agent log
+	fetch("http://127.0.0.1:7247/ingest/7d86e2b7-8839-45c8-8f25-a8834042afa0", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			sessionId: "debug-session",
+			runId: "pre-fix",
+			hypothesisId: "H2",
+			location: "use-item-calendar.ts:183",
+			message: "owner request counts",
+			data: {
+				isOwnerMode,
+				requestCount: ownerRequests.length,
+				pendingCount: ownerRequests.filter((r) => r.status === "pending")
+					.length,
+				approvedCount: ownerRequests.filter((r) => r.status === "approved")
+					.length,
+				rejectedCount: ownerRequests.filter((r) => r.status === "rejected")
+					.length,
+			},
+			timestamp: Date.now(),
+		}),
+	}).catch(() => {});
+	// #endregion
 
 	const pendingRanges = React.useMemo(() => {
 		if (!isOwnerMode) return [];
@@ -195,6 +240,7 @@ export function useItemCalendar<TRequest extends OwnerRequestBase>(
 	const ownerCalendarProps: CalendarProps = {
 		mode: "single",
 		numberOfMonths: isOwnerMode ? config.months : 2,
+		disabled: disabledDates,
 		onDayMouseEnter: (day) => {
 			if (!isOwnerMode) return;
 			const match = ownerRequests.find((r) => isWithinClaimRange(day, r));
@@ -220,6 +266,26 @@ export function useItemCalendar<TRequest extends OwnerRequestBase>(
 				"bg-rose-100 text-rose-950 hover:bg-rose-200 dark:bg-rose-900/30 dark:text-rose-100",
 		},
 	};
+	// #region agent log
+	fetch("http://127.0.0.1:7247/ingest/7d86e2b7-8839-45c8-8f25-a8834042afa0", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			sessionId: "debug-session",
+			runId: "pre-fix",
+			hypothesisId: "H1",
+			location: "use-item-calendar.ts:229",
+			message: "owner calendar props disabled presence",
+			data: {
+				isOwnerMode,
+				hasDisabled:
+					typeof (ownerCalendarProps as { disabled?: unknown }).disabled !==
+					"undefined",
+			},
+			timestamp: Date.now(),
+		}),
+	}).catch(() => {});
+	// #endregion
 
 	if (config.mode === "borrower") {
 		return {

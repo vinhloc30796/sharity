@@ -5,6 +5,7 @@ import { useMutation } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { AvailabilityToggle } from "@/components/notifications/availability-toggle";
 import { Button } from "@/components/ui/button";
+import { Toggle } from "@/components/ui/toggle";
 import { ItemCalendar } from "@/components/item-calendar";
 import {
 	useItemCalendar,
@@ -99,6 +100,7 @@ export function BorrowerRequestActions() {
 	const markPickedUp = useMutation(api.items.markPickedUp);
 	const markReturned = useMutation(api.items.markReturned);
 	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
+	const [showInactive, setShowInactive] = React.useState(false);
 
 	return (
 		<>
@@ -132,29 +134,49 @@ export function BorrowerRequestActions() {
 
 			{isAuthenticated && myRequests && myRequests.length > 0 && (
 				<div className="mt-6">
-					<h4 className="font-medium mb-3">Your Pending/Approved Requests</h4>
+					<div className="flex justify-between items-center mb-3">
+						<h4 className="font-medium">Your Requests</h4>
+						<Toggle
+							pressed={showInactive}
+							onPressedChange={setShowInactive}
+							variant="outline"
+							size="sm"
+							aria-label="Toggle inactive requests"
+						>
+							{showInactive ? "Hide Inactive" : "Show Inactive"}
+						</Toggle>
+					</div>
 					<div className="space-y-4">
-						{myRequests.map((claim) => (
-							<div
-								key={claim._id}
-								className={cn(
-									calendar.hoveredClaimId === claim._id &&
-										"ring-2 ring-primary rounded-lg",
-								)}
-							>
-								<LeaseClaimCard
-									itemId={item._id}
-									claim={claim}
-									viewerRole="borrower"
-									cancelClaim={async ({ claimId }) =>
-										await cancelRequest(claimId)
-									}
-									markPickedUp={markPickedUp}
-									markReturned={markReturned}
-									generateUploadUrl={async () => await generateUploadUrl()}
-								/>
-							</div>
-						))}
+						{myRequests
+							.filter((req) => {
+								if (showInactive) return true;
+								if (req.status === "pending") return true;
+								if (req.status === "approved") {
+									return !req.returnedAt && !req.expiredAt && !req.missingAt;
+								}
+								return false;
+							})
+							.map((claim) => (
+								<div
+									key={claim._id}
+									className={cn(
+										calendar.hoveredClaimId === claim._id &&
+											"ring-2 ring-primary rounded-lg",
+									)}
+								>
+									<LeaseClaimCard
+										itemId={item._id}
+										claim={claim}
+										viewerRole="borrower"
+										cancelClaim={async ({ claimId }) =>
+											await cancelRequest(claimId)
+										}
+										markPickedUp={markPickedUp}
+										markReturned={markReturned}
+										generateUploadUrl={async () => await generateUploadUrl()}
+									/>
+								</div>
+							))}
 					</div>
 				</div>
 			)}

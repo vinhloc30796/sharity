@@ -1,4 +1,4 @@
-@use"use client";
+"use client";
 
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, ExternalLink, MapPin } from "lucide-react";
@@ -40,18 +40,12 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import { Toggle } from "@/components/ui/toggle";
 import { ItemCalendar } from "@/components/item-calendar";
 import { cn } from "@/lib/utils";
 import { useItemCalendar } from "@/hooks/use-item-calendar";
 import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
-
-type ItemRequest = {
-	_id: Id<"claims">;
-	status: "pending" | "approved" | "rejected";
-	startDate: number;
-	endDate: number;
-};
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
 
 export default function ItemDetailPage({
 	params,
@@ -80,6 +74,7 @@ export default function ItemDetailPage({
 
 	// UI State
 	const [editingId, setEditingId] = useState<string | null>(null);
+	const [showInactive, setShowInactive] = useState(false);
 	const claimCardRefs = useRef<Map<Id<"claims">, HTMLDivElement>>(new Map());
 
 	const focusClaimCard = (claimId: Id<"claims">) => {
@@ -89,13 +84,25 @@ export default function ItemDetailPage({
 		el.focus();
 	};
 
-	const ownerRequests = ((item?.requests ?? []) as ItemRequest[]) ?? [];
+	const ownerRequests = ((item?.requests ?? []) as Doc<"claims">[]) ?? [];
 	const ownerCalendarState = useItemCalendar({
 		mode: "owner",
 		itemId: id,
 		requests: ownerRequests,
 		months: 2,
 		onFocusClaim: focusClaimCard,
+	});
+
+	const requestsToShow = ownerRequests.filter((req) => {
+		if (showInactive) return true;
+		// Active means:
+		// 1. Pending
+		// 2. Approved AND NOT (returned OR expired OR missing)
+		if (req.status === "pending") return true;
+		if (req.status === "approved") {
+			return !req.returnedAt && !req.expiredAt && !req.missingAt;
+		}
+		return false;
 	});
 
 	const approveClaimAction = async (
@@ -288,12 +295,23 @@ export default function ItemDetailPage({
 								</div>
 
 								<div>
-									<h3 className="text-xl font-semibold mb-4">
-										Requests ({item.requests?.length || 0})
-									</h3>
+									<div className="flex justify-between items-center mb-4">
+										<h3 className="text-xl font-semibold">
+											Requests ({item.requests?.length || 0})
+										</h3>
+										<Toggle
+											pressed={showInactive}
+											onPressedChange={setShowInactive}
+											variant="outline"
+											size="sm"
+											aria-label="Toggle inactive requests"
+										>
+											{showInactive ? "Hide Inactive" : "Show Inactive"}
+										</Toggle>
+									</div>
 									{item.requests && item.requests.length > 0 ? (
 										<div className="space-y-4">
-											{item.requests.map((claim) => (
+											{requestsToShow.map((claim) => (
 												<div
 													key={claim._id}
 													tabIndex={-1}
