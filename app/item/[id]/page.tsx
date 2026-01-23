@@ -1,4 +1,4 @@
-"use client";
+@use"use client";
 
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, ExternalLink, MapPin } from "lucide-react";

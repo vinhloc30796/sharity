@@ -82,7 +82,11 @@ export function useClaimItem(itemId: Id<"items">) {
 	};
 
 	// Calculate disabled dates (approved requests from ANYONE)
+	const todayStart = new Date();
+	todayStart.setHours(0, 0, 0, 0);
+
 	const disabledDates = [
+		{ before: todayStart },
 		...(availability?.map((range) => ({
 			from: new Date(range.startDate),
 			to: new Date(range.endDate),
