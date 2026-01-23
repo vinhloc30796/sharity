@@ -6,16 +6,16 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 
-export function AvailabilityToggle({ itemId }: { itemId: Id<"items"> }) {
+export function AvailabilityToggle({ id }: { id: Id<"items"> }) {
 	const isSubscribed = useQuery(api.notifications.getAvailabilitySubscription, {
-		itemId,
+		id,
 	});
 	const toggleSubscription = useMutation(
 		api.notifications.subscribeAvailability,
 	);
 
 	const handleToggle = async () => {
-		await toggleSubscription({ itemId });
+		await toggleSubscription({ id });
 	};
 
 	if (isSubscribed === undefined) {
@@ -25,8 +25,7 @@ export function AvailabilityToggle({ itemId }: { itemId: Id<"items"> }) {
 	return (
 		<Button
 			variant={isSubscribed ? "secondary" : "outline"}
-			size="sm"
-			className="gap-2"
+			className="h-10 gap-2"
 			onClick={handleToggle}
 		>
 			{isSubscribed ? (

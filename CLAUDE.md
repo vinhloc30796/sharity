@@ -110,7 +110,7 @@ claims: defineTable({
 # Разработка
 pnpm dev              # Запуск Next.js dev сервера
 pnpm convex:dev       # Запуск Convex dev (в отдельном терминале)
-# или: npx convex dev
+# или: pnpm convex dev
 
 # Сборка
 pnpm build            # Production build

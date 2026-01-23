@@ -38,8 +38,8 @@ export function ClaimButton({ item }: ClaimButtonProps) {
 
 	if (item.isRequested) {
 		return (
-			<Button size="sm" variant="secondary" disabled>
-				Requested
+			<Button variant="secondary" onClick={flipToBack}>
+				Manage Request
 			</Button>
 		);
 	}
@@ -56,7 +56,7 @@ export function ClaimButton({ item }: ClaimButtonProps) {
 				<Tooltip delayDuration={300}>
 					<TooltipTrigger asChild>
 						<span tabIndex={0} className="inline-flex cursor-default">
-							<Button size="sm" disabled className="opacity-50">
+							<Button disabled className="opacity-50">
 								Claim
 							</Button>
 						</span>
@@ -79,9 +79,5 @@ export function ClaimButton({ item }: ClaimButtonProps) {
 
 	// NOTE: The previous code handled `item.isRequested` check. Keeping it.
 
-	return (
-		<Button size="sm" onClick={flipToBack}>
-			Claim
-		</Button>
-	);
+	return <Button onClick={flipToBack}>Claim</Button>;
 }

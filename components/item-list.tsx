@@ -2,11 +2,12 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { List, Map } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 
 import { Doc } from "../convex/_generated/dataModel";
 
@@ -17,14 +18,17 @@ import type { ItemCategory } from "./item-form";
 import { cn } from "@/lib/utils";
 
 // Dynamic import to avoid SSR hydration issues with Leaflet
-const ItemsMap = dynamic(() => import("./items-map").then((mod) => mod.ItemsMap), {
-	ssr: false,
-	loading: () => (
-		<div className="w-full h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
-			<p className="text-muted-foreground">Loading map...</p>
-		</div>
-	),
-});
+const ItemsMap = dynamic(
+	() => import("./items-map").then((mod) => mod.ItemsMap),
+	{
+		ssr: false,
+		loading: () => (
+			<div className="w-full h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
+				<p className="text-muted-foreground">Loading map...</p>
+			</div>
+		),
+	},
+);
 
 type ViewMode = "list" | "map";
 
@@ -36,16 +40,21 @@ export function ItemList({
 	actionBack?: (item: Doc<"items"> & { isRequested?: boolean }) => ReactNode;
 }) {
 	const items = useQuery(api.items.get);
+	const searchParams = useSearchParams();
 	const [search, setSearch] = useState("");
 	const [selectedCategories, setSelectedCategories] = useState<ItemCategory[]>(
 		[],
 	);
 	const [viewMode, setViewMode] = useState<ViewMode>("list");
 
+	const urlQuery = searchParams.get("q") ?? "";
+	useEffect(() => {
+		if (urlQuery !== search) setSearch(urlQuery);
+	}, [urlQuery, search]);
+
 	const filteredItems = items?.filter((item) => {
-		const matchesSearch = item.name
-			.toLowerCase()
-			.includes(search.toLowerCase());
+		const itemText = `${item.name} ${item.description ?? ""}`.toLowerCase();
+		const matchesSearch = itemText.includes(search.toLowerCase());
 		const matchesCategory =
 			selectedCategories.length === 0 ||
 			(item.category && selectedCategories.includes(item.category));
@@ -78,10 +87,7 @@ export function ItemList({
 							variant="ghost"
 							size="icon"
 							onClick={() => setViewMode("map")}
-							className={cn(
-								"rounded-l-none",
-								viewMode === "map" && "bg-muted",
-							)}
+							className={cn("rounded-l-none", viewMode === "map" && "bg-muted")}
 						>
 							<Map className="h-4 w-4" />
 						</Button>

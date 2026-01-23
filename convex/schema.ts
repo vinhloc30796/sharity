@@ -26,6 +26,51 @@ export default defineSchema({
 			}),
 		),
 	}),
+	item_activity: defineTable({
+		itemId: v.id("items"),
+		type: v.union(
+			v.literal("item_created"),
+			v.literal("loan_started"),
+			v.literal("item_picked_up"),
+			v.literal("item_returned"),
+		),
+		actorId: v.string(),
+		createdAt: v.number(),
+		claimId: v.optional(v.id("claims")),
+		note: v.optional(v.string()),
+		startDate: v.optional(v.number()),
+		endDate: v.optional(v.number()),
+		borrowerId: v.optional(v.string()),
+	})
+		.index("by_item", ["itemId"])
+		.index("by_item_createdAt", ["itemId", "createdAt"]),
+	lease_activity: defineTable({
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+		type: v.union(
+			v.literal("lease_requested"),
+			v.literal("lease_approved"),
+			v.literal("lease_rejected"),
+			v.literal("lease_expired"),
+			v.literal("lease_missing"),
+			v.literal("lease_pickup_proposed"),
+			v.literal("lease_pickup_approved"),
+			v.literal("lease_return_proposed"),
+			v.literal("lease_return_approved"),
+			v.literal("lease_picked_up"),
+			v.literal("lease_returned"),
+		),
+		actorId: v.string(),
+		createdAt: v.number(),
+		note: v.optional(v.string()),
+		photoStorageIds: v.optional(v.array(v.id("_storage"))),
+		proposalId: v.optional(v.string()),
+		windowStartAt: v.optional(v.number()),
+		windowEndAt: v.optional(v.number()),
+	})
+		.index("by_claim_createdAt", ["claimId", "createdAt"])
+		.index("by_item_createdAt", ["itemId", "createdAt"])
+		.index("by_type_windowEndAt", ["type", "windowEndAt"]),
 	claims: defineTable({
 		itemId: v.id("items"),
 		claimerId: v.string(),
@@ -36,6 +81,14 @@ export default defineSchema({
 		),
 		startDate: v.number(),
 		endDate: v.number(),
+		// Temporarily optional so existing rows can be migrated safely.
+		requestedAt: v.optional(v.number()),
+		approvedAt: v.optional(v.number()),
+		rejectedAt: v.optional(v.number()),
+		pickedUpAt: v.optional(v.number()),
+		returnedAt: v.optional(v.number()),
+		expiredAt: v.optional(v.number()),
+		missingAt: v.optional(v.number()),
 	})
 		.index("by_item", ["itemId"])
 		.index("by_claimer", ["claimerId"]),
@@ -59,4 +112,16 @@ export default defineSchema({
 	})
 		.index("by_item", ["itemId"])
 		.index("by_user_item", ["userId", "itemId"]),
+	owner_unavailability: defineTable({
+		ownerId: v.string(),
+		startDate: v.number(),
+		endDate: v.number(),
+		note: v.optional(v.string()),
+	}).index("by_owner", ["ownerId"]),
+	wishlist: defineTable({
+		text: v.string(),
+		userId: v.string(),
+		votes: v.array(v.string()), // Array of userIds who voted
+		createdAt: v.number(),
+	}).index("by_createdAt", ["createdAt"]),
 });

@@ -1,7 +1,41 @@
-import { query, mutation, internalMutation, action } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
 import { api, internal } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
+import { action, internalMutation, mutation, query } from "./_generated/server";
+
+const ONE_HOUR_MS = 60 * 60 * 1000;
+const ONE_DAY_MS = 24 * ONE_HOUR_MS;
+
+function hasDateOverlap(
+	a: { startDate: number; endDate: number },
+	b: { startDate: number; endDate: number },
+): boolean {
+	return a.startDate < b.endDate && a.endDate > b.startDate;
+}
+
+function isRangeActiveNow(range: {
+	startDate: number;
+	endDate: number;
+}): boolean {
+	const now = Date.now();
+	return range.startDate <= now && now <= range.endDate;
+}
+
+function assertHourAligned(windowStartAt: number): void {
+	if (windowStartAt % ONE_HOUR_MS !== 0) {
+		throw new Error("Time must be aligned to the hour");
+	}
+}
+
+function assertOnDay(
+	windowStartAt: number,
+	dayStartAt: number,
+	label: string,
+): void {
+	if (windowStartAt < dayStartAt || windowStartAt >= dayStartAt + ONE_DAY_MS) {
+		throw new Error(`Time must be on the ${label} day`);
+	}
+}
 
 // Seed function for testing (no auth required)
 export const seed = internalMutation({
@@ -18,7 +52,8 @@ export const seed = internalMutation({
 		const testItems = [
 			{
 				name: "Rice Cooker",
-				description: "Electric rice cooker, 1.8L capacity. Perfect for 2-4 people.",
+				description:
+					"Electric rice cooker, 1.8L capacity. Perfect for 2-4 people.",
 				category: "kitchen" as const,
 				location: { lat: 11.9404, lng: 108.4583, address: "Da Lat Market" },
 			},
@@ -26,55 +61,61 @@ export const seed = internalMutation({
 				name: "Camping Tent",
 				description: "2-person waterproof tent. Great for weekend trips.",
 				category: "sports" as const,
-				location: { lat: 11.9450, lng: 108.4420, address: "Xuan Huong Lake" },
+				location: { lat: 11.945, lng: 108.442, address: "Xuan Huong Lake" },
 			},
 			{
 				name: "LED Desk Lamp",
 				description: "Adjustable brightness LED lamp with USB charging port.",
 				category: "electronics" as const,
-				location: { lat: 11.9380, lng: 108.4550, address: "Da Lat University" },
+				location: { lat: 11.938, lng: 108.455, address: "Da Lat University" },
 			},
 			{
 				name: "Winter Jacket",
 				description: "Warm fleece jacket, size M. Perfect for Da Lat evenings.",
 				category: "clothing" as const,
-				location: { lat: 11.9420, lng: 108.4610, address: "Hoa Binh Square" },
+				location: { lat: 11.942, lng: 108.461, address: "Hoa Binh Square" },
 			},
 			{
 				name: "Vietnamese Cookbook",
 				description: "Traditional recipes from Central Vietnam. 200+ recipes.",
 				category: "books" as const,
-				location: { lat: 11.9360, lng: 108.4480, address: "Crazy House" },
+				location: { lat: 11.936, lng: 108.448, address: "Crazy House" },
 			},
 			{
 				name: "Folding Chair",
-				description: "Portable folding chair for outdoor use. Lightweight aluminum.",
+				description:
+					"Portable folding chair for outdoor use. Lightweight aluminum.",
 				category: "furniture" as const,
-				location: { lat: 11.9480, lng: 108.4530, address: "Valley of Love" },
+				location: { lat: 11.948, lng: 108.453, address: "Valley of Love" },
 			},
 			{
 				name: "Yoga Mat",
 				description: "Non-slip yoga mat, 6mm thick. Includes carrying strap.",
 				category: "sports" as const,
-				location: { lat: 11.9340, lng: 108.4620, address: "Langbiang Mountain" },
+				location: { lat: 11.934, lng: 108.462, address: "Langbiang Mountain" },
 			},
 			{
 				name: "Bluetooth Speaker",
 				description: "Portable waterproof speaker. 10 hour battery life.",
 				category: "electronics" as const,
-				location: { lat: 11.9410, lng: 108.4500, address: "Da Lat Night Market" },
+				location: { lat: 11.941, lng: 108.45, address: "Da Lat Night Market" },
 			},
 			{
 				name: "Coffee Grinder",
 				description: "Manual burr coffee grinder. Perfect for Da Lat coffee!",
 				category: "kitchen" as const,
-				location: { lat: 11.9390, lng: 108.4560, address: "Big C Da Lat" },
+				location: { lat: 11.939, lng: 108.456, address: "Big C Da Lat" },
 			},
 			{
 				name: "Board Games Set",
-				description: "Collection of classic board games: Chess, Checkers, Backgammon.",
+				description:
+					"Collection of classic board games: Chess, Checkers, Backgammon.",
 				category: "other" as const,
-				location: { lat: 11.9430, lng: 108.4470, address: "Da Lat Railway Station" },
+				location: {
+					lat: 11.943,
+					lng: 108.447,
+					address: "Da Lat Railway Station",
+				},
 			},
 		];
 
@@ -98,32 +139,42 @@ export const get = query({
 		const identity = await ctx.auth.getUserIdentity();
 		const items = await ctx.db.query("items").order("desc").collect();
 
+		const activeUnavailableOwners = new Set<string>();
+		const ownerBlocks = await ctx.db.query("owner_unavailability").collect();
+		for (const block of ownerBlocks) {
+			if (isRangeActiveNow(block)) {
+				activeUnavailableOwners.add(block.ownerId);
+			}
+		}
+
 		if (!identity) {
 			const itemsWithUrls = await Promise.all(
-				items.map(async (item) => {
-					let imageUrls: (string | null)[] = [];
-					if (item.imageStorageIds) {
-						imageUrls = await Promise.all(
-							item.imageStorageIds.map((id) => ctx.storage.getUrl(id)),
-						);
-					}
+				items
+					.filter((item) => !activeUnavailableOwners.has(item.ownerId))
+					.map(async (item) => {
+						let imageUrls: (string | null)[] = [];
+						if (item.imageStorageIds) {
+							imageUrls = await Promise.all(
+								item.imageStorageIds.map((id) => ctx.storage.getUrl(id)),
+							);
+						}
 
-					const images = item.imageStorageIds
-						? (item.imageStorageIds
-								.map((id, idx) => ({ id, url: imageUrls[idx] }))
-								.filter((img) => img.url !== null) as {
-								id: Id<"_storage">;
-								url: string;
-							}[])
-						: [];
+						const images = item.imageStorageIds
+							? (item.imageStorageIds
+									.map((id, idx) => ({ id, url: imageUrls[idx] }))
+									.filter((img) => img.url !== null) as {
+									id: Id<"_storage">;
+									url: string;
+								}[])
+							: [];
 
-					return {
-						...item,
-						images,
-						imageUrls: images.map((i) => i.url),
-						isRequested: false,
-					};
-				}),
+						return {
+							...item,
+							images,
+							imageUrls: images.map((i) => i.url),
+							isRequested: false,
+						};
+					}),
 			);
 			return itemsWithUrls;
 		}
@@ -138,6 +189,7 @@ export const get = query({
 		const itemsWithUrls = await Promise.all(
 			items
 				.filter((item) => item.ownerId !== identity.subject)
+				.filter((item) => !activeUnavailableOwners.has(item.ownerId))
 				.map(async (item) => {
 					let imageUrls: (string | null)[] = [];
 					if (item.imageStorageIds) {
@@ -166,6 +218,111 @@ export const get = query({
 	},
 });
 
+export const getById = query({
+	args: { id: v.id("items") },
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		const item = await ctx.db.get(args.id);
+
+		if (!item) return null;
+
+		let imageUrls: (string | null)[] = [];
+		if (item.imageStorageIds) {
+			imageUrls = await Promise.all(
+				item.imageStorageIds.map((id) => ctx.storage.getUrl(id)),
+			);
+		}
+
+		const images = item.imageStorageIds
+			? (item.imageStorageIds
+					.map((id, idx) => ({ id, url: imageUrls[idx] }))
+					.filter((img) => img.url !== null) as {
+					id: Id<"_storage">;
+					url: string;
+				}[])
+			: [];
+
+		const isOwner = identity?.subject === item.ownerId;
+
+		let requests = undefined;
+		if (isOwner) {
+			requests = await ctx.db
+				.query("claims")
+				.withIndex("by_item", (q) => q.eq("itemId", args.id))
+				.collect();
+		}
+
+		// Always fetch my claims for this item to support multiple requests
+		const myClaims = await ctx.db
+			.query("claims")
+			.withIndex("by_claimer", (q) =>
+				q.eq("claimerId", identity?.subject ?? ""),
+			)
+			.filter((q) => q.eq(q.field("itemId"), args.id))
+			.collect();
+
+		return {
+			...item,
+			images,
+			imageUrls: images.map((i) => i.url),
+			isOwner,
+			requests,
+			myClaims,
+		};
+	},
+});
+
+export const getOwnerUnavailability = query({
+	args: {},
+	handler: async (ctx) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const rows = await ctx.db
+			.query("owner_unavailability")
+			.withIndex("by_owner", (q) => q.eq("ownerId", identity.subject))
+			.collect();
+
+		return rows.sort((a, b) => a.startDate - b.startDate);
+	},
+});
+
+export const addOwnerUnavailabilityRange = mutation({
+	args: {
+		startDate: v.number(),
+		endDate: v.number(),
+		note: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+		if (args.endDate < args.startDate) {
+			throw new Error("End date must be after start date");
+		}
+
+		await ctx.db.insert("owner_unavailability", {
+			ownerId: identity.subject,
+			startDate: args.startDate,
+			endDate: args.endDate,
+			note: args.note,
+		});
+	},
+});
+
+export const deleteOwnerUnavailabilityRange = mutation({
+	args: { id: v.id("owner_unavailability") },
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const row = await ctx.db.get(args.id);
+		if (!row) throw new Error("Unavailability range not found");
+		if (row.ownerId !== identity.subject) throw new Error("Unauthorized");
+
+		await ctx.db.delete(args.id);
+	},
+});
+
 export const getMyItems = query({
 	args: {},
 	handler: async (ctx) => {
@@ -188,7 +345,11 @@ export const getMyItems = query({
 			.filter((q) => q.eq(q.field("status"), "approved"))
 			.collect();
 
-		const borrowedItemIds = myClaims.map((c) => c.itemId);
+		const activeBorrowedClaims = myClaims.filter(
+			(c) => !!c.pickedUpAt && !c.returnedAt && !c.expiredAt && !c.missingAt,
+		);
+
+		const borrowedItemIds = activeBorrowedClaims.map((c) => c.itemId);
 
 		// Fetch the actual item documents for borrowed items
 		const borrowedItems = [];
@@ -269,13 +430,20 @@ export const create = mutation({
 		}
 		const ownerId = identity.subject;
 
-		await ctx.db.insert("items", {
+		const itemId = await ctx.db.insert("items", {
 			name: args.name,
 			description: args.description,
 			ownerId,
 			imageStorageIds: args.imageStorageIds,
 			category: args.category,
 			location: args.location,
+		});
+
+		await ctx.db.insert("item_activity", {
+			itemId,
+			type: "item_created",
+			actorId: ownerId,
+			createdAt: Date.now(),
 		});
 	},
 });
@@ -332,7 +500,7 @@ export const deleteItem = mutation({
 
 export const requestItem = mutation({
 	args: {
-		itemId: v.id("items"),
+		id: v.id("items"),
 		startDate: v.number(),
 		endDate: v.number(),
 	},
@@ -340,50 +508,96 @@ export const requestItem = mutation({
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
 
-		const item = await ctx.db.get(args.itemId);
+		const item = await ctx.db.get(args.id);
 		if (!item) throw new Error("Item not found");
 		if (item.ownerId === identity.subject)
 			throw new Error("Cannot claim your own item");
 
+		const ownerBlocks = await ctx.db
+			.query("owner_unavailability")
+			.withIndex("by_owner", (q) => q.eq("ownerId", item.ownerId))
+			.collect();
+		const blocksOverlap = ownerBlocks.some((b) =>
+			hasDateOverlap(
+				{ startDate: args.startDate, endDate: args.endDate },
+				{ startDate: b.startDate, endDate: b.endDate },
+			),
+		);
+		if (blocksOverlap) {
+			throw new Error("Item is not available for these dates");
+		}
+
 		// Validate dates
 		const now = Date.now();
+		const todayStart = new Date(now);
+		todayStart.setHours(0, 0, 0, 0);
 		// Allow some buffer or strip time components if strict?
 		// For now simple checks.
 		if (args.endDate < args.startDate) {
 			throw new Error("End date must be after start date");
 		}
-		if (args.startDate < now - 24 * 60 * 60 * 1000) {
-			// Allow "today" even if slightly past now, roughly.
-			// But strictly past dates shouldn't be allowed ideally.
-			// Let's just say startDate must be >= today.
+		if (args.startDate < todayStart.getTime()) {
+			throw new Error("Start date must be today or later");
 		}
 
 		// Check for specific overlaps with APPROVED claims
 		const approvedClaims = await ctx.db
 			.query("claims")
-			.withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+			.withIndex("by_item", (q) => q.eq("itemId", args.id))
 			.filter((q) => q.eq(q.field("status"), "approved"))
 			.collect();
 
-		const hasOverlap = approvedClaims.some((claim) => {
-			return args.startDate < claim.endDate && args.endDate > claim.startDate;
-		});
+		const activeApprovedClaims = approvedClaims.filter(
+			(c) => !c.expiredAt && !c.returnedAt,
+		);
+
+		const hasOverlap = activeApprovedClaims.some((claim) =>
+			hasDateOverlap(
+				{ startDate: args.startDate, endDate: args.endDate },
+				{ startDate: claim.startDate, endDate: claim.endDate },
+			),
+		);
 
 		if (hasOverlap) {
 			throw new Error("Item is not available for these dates");
 		}
 
-		const existingClaim = await ctx.db
+		// Check for self-overlap (User cannot have overlapping requests for the same item)
+		// Only consider active requests (pending/approved). Ignore rejected/cancelled.
+		const myActiveRequests = await ctx.db
 			.query("claims")
 			.withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
-			.filter((q) => q.eq(q.field("itemId"), args.itemId))
-			.first();
+			.filter((q) => q.eq(q.field("itemId"), args.id))
+			.filter((q) =>
+				q.or(
+					q.eq(q.field("status"), "pending"),
+					q.eq(q.field("status"), "approved"),
+				),
+			)
+			.collect();
 
-		if (existingClaim) throw new Error("Already requested this item");
+		const myBlockingRequests = myActiveRequests.filter(
+			(r) =>
+				r.status === "pending" ||
+				(r.status === "approved" && !r.expiredAt && !r.returnedAt),
+		);
+
+		const hasSelfOverlap = myBlockingRequests.some((req) =>
+			hasDateOverlap(
+				{ startDate: args.startDate, endDate: args.endDate },
+				{ startDate: req.startDate, endDate: req.endDate },
+			),
+		);
+
+		if (hasSelfOverlap) {
+			throw new Error(
+				"You already have a request that overlaps with these dates",
+			);
+		}
 
 		const pendingClaims = await ctx.db
 			.query("claims")
-			.withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+			.withIndex("by_item", (q) => q.eq("itemId", args.id))
 			.filter((q) => q.eq(q.field("status"), "pending"))
 			.collect();
 
@@ -392,32 +606,40 @@ export const requestItem = mutation({
 		}
 
 		const claimId = await ctx.db.insert("claims", {
-			itemId: args.itemId,
+			itemId: args.id,
 			claimerId: identity.subject,
 			status: "pending",
 			startDate: args.startDate,
 			endDate: args.endDate,
 		});
 
+		await ctx.db.insert("lease_activity", {
+			itemId: args.id,
+			claimId,
+			type: "lease_requested",
+			actorId: identity.subject,
+			createdAt: now,
+		});
+
 		// Notify owner
 		await ctx.db.insert("notifications", {
 			recipientId: item.ownerId,
 			type: "new_request",
-			itemId: args.itemId,
+			itemId: args.id,
 			requestId: claimId,
 			isRead: false,
-			createdAt: Date.now(),
+			createdAt: now,
 		});
 	},
 });
 
 export const getClaims = query({
-	args: { itemId: v.id("items") },
+	args: { id: v.id("items") },
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) return [];
 
-		const item = await ctx.db.get(args.itemId);
+		const item = await ctx.db.get(args.id);
 		if (!item) return [];
 
 		if (item.ownerId !== identity.subject) {
@@ -426,35 +648,55 @@ export const getClaims = query({
 
 		return await ctx.db
 			.query("claims")
-			.withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+			.withIndex("by_item", (q) => q.eq("itemId", args.id))
 			.collect();
 	},
 });
 
 export const approveClaim = mutation({
-	args: { claimId: v.id("claims"), itemId: v.id("items") },
+	args: { claimId: v.id("claims"), id: v.id("items") },
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
 
-		const item = await ctx.db.get(args.itemId);
+		const item = await ctx.db.get(args.id);
 		if (!item) throw new Error("Item not found");
 		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
 
 		const claim = await ctx.db.get(args.claimId);
 		if (!claim) throw new Error("Claim not found");
-		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.itemId !== args.id) throw new Error("Mismatch item/claim");
 
+		const now = Date.now();
 		await ctx.db.patch(args.claimId, { status: "approved" });
+
+		await ctx.db.insert("item_activity", {
+			itemId: args.id,
+			type: "loan_started",
+			actorId: identity.subject,
+			createdAt: now,
+			claimId: args.claimId,
+			borrowerId: claim.claimerId,
+			startDate: claim.startDate,
+			endDate: claim.endDate,
+		});
+
+		await ctx.db.insert("lease_activity", {
+			itemId: args.id,
+			claimId: args.claimId,
+			type: "lease_approved",
+			actorId: identity.subject,
+			createdAt: now,
+		});
 
 		// Notify claimer
 		await ctx.db.insert("notifications", {
 			recipientId: claim.claimerId,
 			type: "request_approved",
-			itemId: args.itemId,
+			itemId: args.id,
 			requestId: args.claimId,
 			isRead: false,
-			createdAt: Date.now(),
+			createdAt: now,
 		});
 
 		// We no longer set isAvailable to false globally, as it depends on dates.
@@ -465,61 +707,735 @@ export const approveClaim = mutation({
 	},
 });
 
-export const rejectClaim = mutation({
-	args: { claimId: v.id("claims"), itemId: v.id("items") },
+export const getLeaseActivity = query({
+	args: { claimId: v.optional(v.id("claims")) },
+	handler: async (ctx, args) => {
+		const claimId = args.claimId;
+		if (!claimId) return [];
+
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const claim = await ctx.db.get(claimId);
+		if (!claim) throw new Error("Claim not found");
+
+		const item = await ctx.db.get(claim.itemId);
+		if (!item) throw new Error("Item not found");
+
+		const userId = identity.subject;
+		if (userId !== item.ownerId && userId !== claim.claimerId) {
+			throw new Error("Unauthorized");
+		}
+
+		const events = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", claimId))
+			.order("desc")
+			.take(50);
+
+		const eventsWithPhotos = await Promise.all(
+			events.map(async (event) => {
+				const ids = event.photoStorageIds ?? [];
+				const urls = await Promise.all(ids.map((id) => ctx.storage.getUrl(id)));
+				const photoUrls = urls.filter(
+					(u): u is string => typeof u === "string",
+				);
+				return { ...event, photoUrls };
+			}),
+		);
+
+		return eventsWithPhotos;
+	},
+});
+
+export const proposePickupWindow = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+		windowStartAt: v.number(),
+	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
 
+		const now = Date.now();
+		if (args.windowStartAt < now) {
+			throw new Error("Pickup time must be in the future");
+		}
+
+		assertHourAligned(args.windowStartAt);
+
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can propose pickup");
+		}
+		if (claim.pickedUpAt)
+			throw new Error("Pickup already recorded for this lease");
+		if (claim.expiredAt)
+			throw new Error("Cannot propose pickup for an expired lease");
+		if (claim.returnedAt) throw new Error("Cannot propose pickup after return");
+		if (claim.missingAt)
+			throw new Error("Cannot propose pickup for a missing item");
+
+		assertOnDay(args.windowStartAt, claim.startDate, "start");
+
 		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+
+		const userId = identity.subject;
+		if (userId !== item.ownerId && userId !== claim.claimerId) {
+			throw new Error("Unauthorized");
+		}
+
+		const existing = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		if (existing.some((e) => e.type === "lease_picked_up")) {
+			throw new Error("Pickup already recorded for this lease");
+		}
+		if (existing.some((e) => e.type === "lease_expired")) {
+			throw new Error("Cannot propose pickup for an expired lease");
+		}
+		if (existing.some((e) => e.type === "lease_rejected")) {
+			throw new Error("Cannot propose pickup for a rejected lease");
+		}
+
+		const windowEndAt = args.windowStartAt + ONE_HOUR_MS;
+		const proposalId = `${args.claimId}-${now}-${Math.random().toString(16).slice(2)}`;
+
+		await ctx.db.insert("lease_activity", {
+			itemId: args.itemId,
+			claimId: args.claimId,
+			type: "lease_pickup_proposed",
+			actorId: userId,
+			createdAt: now,
+			proposalId,
+			windowStartAt: args.windowStartAt,
+			windowEndAt,
+		});
+	},
+});
+
+export const proposeReturnWindow = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+		windowStartAt: v.number(),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const now = Date.now();
+		if (args.windowStartAt < now) {
+			throw new Error("Return time must be in the future");
+		}
+
+		assertHourAligned(args.windowStartAt);
+
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can propose return");
+		}
+		if (claim.returnedAt)
+			throw new Error("Return already recorded for this lease");
+		if (claim.expiredAt)
+			throw new Error("Cannot propose return for an expired lease");
+		if (claim.missingAt)
+			throw new Error("Cannot propose return for a missing item");
+
+		assertOnDay(args.windowStartAt, claim.endDate, "end");
+
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+
+		const userId = identity.subject;
+		if (userId !== item.ownerId && userId !== claim.claimerId) {
+			throw new Error("Unauthorized");
+		}
+
+		const existing = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		const hasPickup =
+			claim.pickedUpAt !== undefined ||
+			existing.some((e) => e.type === "lease_picked_up");
+		if (!hasPickup) {
+			throw new Error("Cannot propose return before pickup is recorded");
+		}
+		if (existing.some((e) => e.type === "lease_returned")) {
+			throw new Error("Return already recorded for this lease");
+		}
+		if (existing.some((e) => e.type === "lease_missing")) {
+			throw new Error("Cannot propose return for a missing item");
+		}
+		if (existing.some((e) => e.type === "lease_rejected")) {
+			throw new Error("Cannot propose return for a rejected lease");
+		}
+
+		const windowEndAt = args.windowStartAt + ONE_HOUR_MS;
+		const proposalId = `${args.claimId}-${now}-${Math.random().toString(16).slice(2)}`;
+
+		await ctx.db.insert("lease_activity", {
+			itemId: args.itemId,
+			claimId: args.claimId,
+			type: "lease_return_proposed",
+			actorId: userId,
+			createdAt: now,
+			proposalId,
+			windowStartAt: args.windowStartAt,
+			windowEndAt,
+		});
+	},
+});
+
+export const approvePickupWindow = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const now = Date.now();
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can approve pickup time");
+		}
+		if (claim.pickedUpAt)
+			throw new Error("Pickup already recorded for this lease");
+		if (claim.expiredAt)
+			throw new Error("Cannot approve pickup for an expired lease");
+
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+
+		const userId = identity.subject;
+		if (userId !== item.ownerId && userId !== claim.claimerId) {
+			throw new Error("Unauthorized");
+		}
+
+		const events = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		const latestProposal = events.find(
+			(e) => e.type === "lease_pickup_proposed",
+		);
+		if (
+			!latestProposal ||
+			typeof latestProposal.windowStartAt !== "number" ||
+			typeof latestProposal.windowEndAt !== "number"
+		) {
+			throw new Error("Pickup time must be proposed before it can be approved");
+		}
+		if (now > latestProposal.windowEndAt) {
+			throw new Error("Pickup proposal has expired");
+		}
+		if (latestProposal.actorId === userId) {
+			throw new Error("Only the counterparty can approve pickup time");
+		}
+
+		const latestApproval = events.find(
+			(e) => e.type === "lease_pickup_approved",
+		);
+		if (
+			latestApproval?.proposalId &&
+			latestApproval.proposalId === latestProposal.proposalId
+		) {
+			throw new Error("Pickup time already approved");
+		}
+
+		await ctx.db.insert("lease_activity", {
+			itemId: args.itemId,
+			claimId: args.claimId,
+			type: "lease_pickup_approved",
+			actorId: userId,
+			createdAt: now,
+			proposalId: latestProposal.proposalId,
+			windowStartAt: latestProposal.windowStartAt,
+			windowEndAt: latestProposal.windowEndAt,
+		});
+	},
+});
+
+export const approveReturnWindow = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const now = Date.now();
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can approve return time");
+		}
+		if (claim.returnedAt)
+			throw new Error("Return already recorded for this lease");
+		if (claim.expiredAt)
+			throw new Error("Cannot approve return for an expired lease");
+		if (claim.missingAt)
+			throw new Error("Cannot approve return for a missing item");
+
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+
+		const userId = identity.subject;
+		if (userId !== item.ownerId && userId !== claim.claimerId) {
+			throw new Error("Unauthorized");
+		}
+
+		const events = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		const hasPickup =
+			claim.pickedUpAt !== undefined ||
+			events.some((e) => e.type === "lease_picked_up");
+		if (!hasPickup) {
+			throw new Error("Cannot approve return before pickup is recorded");
+		}
+
+		const latestProposal = events.find(
+			(e) => e.type === "lease_return_proposed",
+		);
+		if (
+			!latestProposal ||
+			typeof latestProposal.windowStartAt !== "number" ||
+			typeof latestProposal.windowEndAt !== "number"
+		) {
+			throw new Error("Return time must be proposed before it can be approved");
+		}
+		if (now > latestProposal.windowEndAt) {
+			throw new Error("Return proposal has expired");
+		}
+		if (latestProposal.actorId === userId) {
+			throw new Error("Only the counterparty can approve return time");
+		}
+
+		const latestApproval = events.find(
+			(e) => e.type === "lease_return_approved",
+		);
+		if (
+			latestApproval?.proposalId &&
+			latestApproval.proposalId === latestProposal.proposalId
+		) {
+			throw new Error("Return time already approved");
+		}
+
+		await ctx.db.insert("lease_activity", {
+			itemId: args.itemId,
+			claimId: args.claimId,
+			type: "lease_return_approved",
+			actorId: userId,
+			createdAt: now,
+			proposalId: latestProposal.proposalId,
+			windowStartAt: latestProposal.windowStartAt,
+			windowEndAt: latestProposal.windowEndAt,
+		});
+	},
+});
+
+export const markPickedUp = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+		note: v.optional(v.string()),
+		photoStorageIds: v.optional(v.array(v.id("_storage"))),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const createdAt = Date.now();
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can be marked as picked up");
+		}
+		if (claim.pickedUpAt) {
+			throw new Error("Pickup already recorded for this lease");
+		}
+		if (claim.expiredAt) {
+			throw new Error("Cannot confirm pickup for an expired lease");
+		}
+
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+
+		const userId = identity.subject;
+		if (userId !== item.ownerId && userId !== claim.claimerId) {
+			throw new Error("Unauthorized");
+		}
+
+		const existing = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		if (existing.some((e) => e.type === "lease_picked_up")) {
+			throw new Error("Pickup already recorded for this lease");
+		}
+		if (existing.some((e) => e.type === "lease_expired")) {
+			throw new Error("Cannot confirm pickup for an expired lease");
+		}
+		if (existing.some((e) => e.type === "lease_rejected")) {
+			throw new Error("Cannot confirm pickup for a rejected lease");
+		}
+
+		const latestProposal = existing.find(
+			(e) => e.type === "lease_pickup_proposed",
+		);
+		if (
+			!latestProposal ||
+			typeof latestProposal.windowStartAt !== "number" ||
+			typeof latestProposal.windowEndAt !== "number"
+		) {
+			throw new Error(
+				"Pickup time must be proposed before it can be confirmed",
+			);
+		}
+		if (createdAt > latestProposal.windowEndAt) {
+			throw new Error("Pickup proposal has expired");
+		}
+		if (createdAt < latestProposal.windowStartAt) {
+			throw new Error(
+				"Pickup can only be confirmed during the proposed window",
+			);
+		}
+
+		const latestApproval = existing.find(
+			(e) => e.type === "lease_pickup_approved",
+		);
+		if (
+			!latestApproval ||
+			latestApproval.proposalId !== latestProposal.proposalId
+		) {
+			throw new Error(
+				"Pickup time must be approved before it can be confirmed",
+			);
+		}
+
+		await ctx.db.insert("lease_activity", {
+			itemId: args.itemId,
+			claimId: args.claimId,
+			type: "lease_picked_up",
+			actorId: userId,
+			createdAt,
+			note: args.note,
+			photoStorageIds: args.photoStorageIds,
+			proposalId: latestProposal.proposalId,
+			windowStartAt: latestProposal.windowStartAt,
+			windowEndAt: latestProposal.windowEndAt,
+		});
+
+		await ctx.db.patch(args.claimId, { pickedUpAt: createdAt });
+	},
+});
+
+export const markReturned = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+		note: v.optional(v.string()),
+		photoStorageIds: v.optional(v.array(v.id("_storage"))),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const createdAt = Date.now();
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can be marked as returned");
+		}
+		if (claim.returnedAt) {
+			throw new Error("Return already recorded for this lease");
+		}
+		if (claim.expiredAt) {
+			throw new Error("Cannot confirm return for an expired lease");
+		}
+		if (claim.missingAt) {
+			throw new Error("Cannot confirm return for a missing item");
+		}
+
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+
+		const userId = identity.subject;
+		if (userId !== item.ownerId && userId !== claim.claimerId) {
+			throw new Error("Unauthorized");
+		}
+
+		const existing = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		if (existing.some((e) => e.type === "lease_returned")) {
+			throw new Error("Return already recorded for this lease");
+		}
+
+		const hasPickup =
+			claim.pickedUpAt !== undefined ||
+			existing.some((e) => e.type === "lease_picked_up");
+		if (!hasPickup) {
+			throw new Error("Cannot mark returned before pickup is recorded");
+		}
+		if (existing.some((e) => e.type === "lease_missing")) {
+			throw new Error("Cannot confirm return for a missing item");
+		}
+		if (existing.some((e) => e.type === "lease_rejected")) {
+			throw new Error("Cannot confirm return for a rejected lease");
+		}
+
+		const latestProposal = existing.find(
+			(e) => e.type === "lease_return_proposed",
+		);
+		if (
+			!latestProposal ||
+			typeof latestProposal.windowStartAt !== "number" ||
+			typeof latestProposal.windowEndAt !== "number"
+		) {
+			throw new Error(
+				"Return time must be proposed before it can be confirmed",
+			);
+		}
+		if (createdAt > latestProposal.windowEndAt) {
+			throw new Error("Return proposal has expired");
+		}
+		if (createdAt < latestProposal.windowStartAt) {
+			throw new Error(
+				"Return can only be confirmed during the proposed window",
+			);
+		}
+
+		const latestApproval = existing.find(
+			(e) => e.type === "lease_return_approved",
+		);
+		if (
+			!latestApproval ||
+			latestApproval.proposalId !== latestProposal.proposalId
+		) {
+			throw new Error(
+				"Return time must be approved before it can be confirmed",
+			);
+		}
+
+		await ctx.db.insert("lease_activity", {
+			itemId: args.itemId,
+			claimId: args.claimId,
+			type: "lease_returned",
+			actorId: userId,
+			createdAt,
+			note: args.note,
+			photoStorageIds: args.photoStorageIds,
+			proposalId: latestProposal.proposalId,
+			windowStartAt: latestProposal.windowStartAt,
+			windowEndAt: latestProposal.windowEndAt,
+		});
+
+		await ctx.db.patch(args.claimId, { returnedAt: createdAt });
+	},
+});
+
+export const rejectClaim = mutation({
+	args: { claimId: v.id("claims"), id: v.id("items") },
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const item = await ctx.db.get(args.id);
 		if (!item) throw new Error("Item not found");
 		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
 
 		const claim = await ctx.db.get(args.claimId);
 		if (!claim) throw new Error("Claim not found");
 
+		const now = Date.now();
 		await ctx.db.patch(args.claimId, { status: "rejected" });
+
+		await ctx.db.insert("lease_activity", {
+			itemId: args.id,
+			claimId: args.claimId,
+			type: "lease_rejected",
+			actorId: identity.subject,
+			createdAt: now,
+		});
 
 		// Notify claimer
 		await ctx.db.insert("notifications", {
 			recipientId: claim.claimerId,
 			type: "request_rejected",
-			itemId: args.itemId,
+			itemId: args.id,
 			requestId: args.claimId,
 			isRead: false,
-			createdAt: Date.now(),
+			createdAt: now,
 		});
 	},
 });
 
-export const cancelClaim = mutation({
-	args: { itemId: v.id("items") },
+export const markExpired = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+		note: v.optional(v.string()),
+	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
 
-		const claim = await ctx.db
-			.query("claims")
-			.withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
-			.filter((q) => q.eq(q.field("itemId"), args.itemId))
-			.first();
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can be marked as expired");
+		}
+		if (claim.expiredAt) {
+			throw new Error("Expired already recorded for this lease");
+		}
 
-		if (!claim) throw new Error("No claim found");
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
 
+		const existing = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		if (existing.some((e) => e.type === "lease_picked_up")) {
+			throw new Error("Cannot mark expired after pickup is recorded");
+		}
+		if (existing.some((e) => e.type === "lease_expired")) {
+			throw new Error("Expired already recorded for this lease");
+		}
+
+		const now = Date.now();
+		await ctx.db.insert("lease_activity", {
+			itemId: args.itemId,
+			claimId: args.claimId,
+			type: "lease_expired",
+			actorId: identity.subject,
+			createdAt: now,
+			note: args.note,
+		});
+
+		await ctx.db.patch(args.claimId, { expiredAt: now });
+	},
+});
+
+export const markMissing = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+		note: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can be marked as missing");
+		}
+		if (claim.missingAt) {
+			throw new Error("Missing already recorded for this lease");
+		}
+
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
+
+		const existing = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		if (!existing.some((e) => e.type === "lease_picked_up")) {
+			throw new Error("Cannot mark missing before pickup is recorded");
+		}
+		if (existing.some((e) => e.type === "lease_returned")) {
+			throw new Error("Cannot mark missing after return is recorded");
+		}
+		if (existing.some((e) => e.type === "lease_missing")) {
+			throw new Error("Missing already recorded for this lease");
+		}
+
+		const now = Date.now();
+		await ctx.db.insert("lease_activity", {
+			itemId: args.itemId,
+			claimId: args.claimId,
+			type: "lease_missing",
+			actorId: identity.subject,
+			createdAt: now,
+			note: args.note,
+		});
+
+		await ctx.db.patch(args.claimId, { missingAt: now });
+	},
+});
+
+export const cancelClaim = mutation({
+	args: { claimId: v.id("claims"), itemId: v.optional(v.id("items")) },
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+
+		if (claim.claimerId !== identity.subject) {
+			throw new Error("Unauthorized: You cannot cancel this claim");
+		}
+
+		// Keep behavior: we still delete cancelled claims for now.
+		// Once we add a dedicated lease page, we can switch to a soft-cancel.
 		await ctx.db.delete(claim._id);
 
 		if (claim.status === "approved") {
 			// Notify subscribers that item is available
 			const subscriptions = await ctx.db
 				.query("availability_alerts")
-				.withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+				.withIndex("by_item", (q) => q.eq("itemId", claim.itemId))
 				.collect();
 
 			for (const sub of subscriptions) {
 				await ctx.db.insert("notifications", {
 					recipientId: sub.userId,
 					type: "item_available",
-					itemId: args.itemId,
+					itemId: claim.itemId,
 					isRead: false,
 					createdAt: Date.now(),
 				});
@@ -531,18 +1447,138 @@ export const cancelClaim = mutation({
 });
 
 export const getAvailability = query({
-	args: { itemId: v.id("items") },
+	args: { id: v.id("items") },
 	handler: async (ctx, args) => {
+		const item = await ctx.db.get(args.id);
+		if (!item) throw new Error("Item not found");
+
 		const claims = await ctx.db
 			.query("claims")
-			.withIndex("by_item", (q) => q.eq("itemId", args.itemId))
+			.withIndex("by_item", (q) => q.eq("itemId", args.id))
 			.filter((q) => q.eq(q.field("status"), "approved"))
 			.collect();
 
-		return claims.map((c) => ({
-			startDate: c.startDate,
-			endDate: c.endDate,
-		}));
+		const activeClaims = claims.filter((c) => !c.expiredAt && !c.returnedAt);
+
+		const ownerBlocks = await ctx.db
+			.query("owner_unavailability")
+			.withIndex("by_owner", (q) => q.eq("ownerId", item.ownerId))
+			.collect();
+
+		return [
+			...activeClaims.map((c) => ({
+				startDate: c.startDate,
+				endDate: c.endDate,
+			})),
+			...ownerBlocks.map((b) => ({
+				startDate: b.startDate,
+				endDate: b.endDate,
+			})),
+		];
+	},
+});
+
+export const getMyRequests = query({
+	args: { itemId: v.id("items") },
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) return [];
+
+		return await ctx.db
+			.query("claims")
+			.withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
+			.filter((q) => q.eq(q.field("itemId"), args.itemId))
+			.collect();
+	},
+});
+
+export const getItemActivity = query({
+	args: { itemId: v.id("items") },
+	handler: async (ctx, args) => {
+		const events = await ctx.db
+			.query("item_activity")
+			.withIndex("by_item_createdAt", (q) => q.eq("itemId", args.itemId))
+			.order("desc")
+			.take(50);
+
+		return events;
+	},
+});
+
+export const resolveOverdueProposals = internalMutation({
+	args: {},
+	handler: async (ctx) => {
+		const now = Date.now();
+
+		const overduePickup = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_type_windowEndAt", (q) =>
+				q.eq("type", "lease_pickup_proposed").lt("windowEndAt", now),
+			)
+			.order("asc")
+			.take(100);
+
+		const overdueReturn = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_type_windowEndAt", (q) =>
+				q.eq("type", "lease_return_proposed").lt("windowEndAt", now),
+			)
+			.order("asc")
+			.take(100);
+
+		for (const proposal of [...overduePickup, ...overdueReturn]) {
+			const claim = await ctx.db.get(proposal.claimId);
+			if (!claim) continue;
+			if (claim.status !== "approved") continue;
+
+			const events = await ctx.db
+				.query("lease_activity")
+				.withIndex("by_claim_createdAt", (q) =>
+					q.eq("claimId", proposal.claimId),
+				)
+				.order("desc")
+				.take(50);
+
+			const latestSameType = events.find((e) => e.type === proposal.type);
+			if (!latestSameType || latestSameType._id !== proposal._id) continue;
+
+			if (proposal.type === "lease_pickup_proposed") {
+				if (claim.pickedUpAt || claim.expiredAt) continue;
+				if (events.some((e) => e.type === "lease_picked_up")) continue;
+				if (events.some((e) => e.type === "lease_expired")) continue;
+
+				await ctx.db.insert("lease_activity", {
+					itemId: claim.itemId,
+					claimId: claim._id,
+					type: "lease_expired",
+					actorId: "system",
+					createdAt: now,
+					note: "Auto-expired after unconfirmed pickup window",
+				});
+
+				await ctx.db.patch(claim._id, { expiredAt: now });
+			} else if (proposal.type === "lease_return_proposed") {
+				if (claim.returnedAt || claim.missingAt) continue;
+				if (events.some((e) => e.type === "lease_returned")) continue;
+				if (events.some((e) => e.type === "lease_missing")) continue;
+
+				const hasPickup =
+					claim.pickedUpAt !== undefined ||
+					events.some((e) => e.type === "lease_picked_up");
+				if (!hasPickup) continue;
+
+				await ctx.db.insert("lease_activity", {
+					itemId: claim.itemId,
+					claimId: claim._id,
+					type: "lease_missing",
+					actorId: "system",
+					createdAt: now,
+					note: "Auto-marked missing after unconfirmed return window",
+				});
+
+				await ctx.db.patch(claim._id, { missingAt: now });
+			}
+		}
 	},
 });
 

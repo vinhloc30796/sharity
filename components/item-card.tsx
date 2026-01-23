@@ -5,6 +5,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import Link from "next/link";
 import {
 	Carousel,
 	CarouselContent,
@@ -56,6 +57,10 @@ interface ItemCardProps {
 	children?: ReactNode;
 	rightHeader?: ReactNode;
 	backContent?: ReactNode;
+	density?: "default" | "compact";
+	hideDescription?: boolean;
+	descriptionLines?: 1 | 2 | 3;
+	hideMetaRow?: boolean;
 }
 
 export function ItemCard({
@@ -64,6 +69,10 @@ export function ItemCard({
 	children,
 	rightHeader,
 	backContent,
+	density = "default",
+	hideDescription = false,
+	descriptionLines = 2,
+	hideMetaRow = false,
 }: ItemCardProps) {
 	const [isFlipped, setIsFlipped] = useState(false);
 
@@ -113,12 +122,26 @@ export function ItemCard({
 						<Card>
 							<CardHeader>
 								{item.imageUrls && item.imageUrls.length > 0 && (
-									<div className="w-full aspect-video mb-4 relative rounded-md overflow-hidden bg-gray-100 group">
+									<div
+										className={cn(
+											"w-full relative rounded-md overflow-hidden bg-gray-100 group",
+											density === "compact"
+												? "aspect-4/3 mb-3"
+												: "aspect-video mb-4",
+										)}
+									>
 										<Carousel className="w-full h-full">
 											<CarouselContent>
 												{item.imageUrls.map((url, index) => (
 													<CarouselItem key={index}>
-														<div className="w-full aspect-video relative">
+														<div
+															className={cn(
+																"w-full relative",
+																density === "compact"
+																	? "aspect-4/3"
+																	: "aspect-video",
+															)}
+														>
 															<img
 																src={url}
 																alt={`${item.name} - Image ${index + 1}`}
@@ -138,33 +161,58 @@ export function ItemCard({
 									</div>
 								)}
 								<div className="flex justify-between items-start">
-									<CardTitle>{item.name}</CardTitle>
+									<CardTitle>
+										<Link
+											href={`/item/${item._id}`}
+											className="hover:underline"
+										>
+											{item.name}
+										</Link>
+									</CardTitle>
 									{rightHeader}
 								</div>
 							</CardHeader>
 							<CardContent>
 								{children}
-								<div className="flex flex-wrap gap-2 mb-2">
-									{item.category && (
-										<Badge variant="secondary">
-											{CATEGORY_LABELS[item.category]}
-										</Badge>
-									)}
-									{item.location && (
-										<a
-											href={`https://maps.google.com/?q=${item.location.lat},${item.location.lng}`}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-										>
-											<MapPin className="h-3 w-3" />
-											{item.location.address || `${item.location.lat.toFixed(2)}, ${item.location.lng.toFixed(2)}`}
-											<ExternalLink className="h-3 w-3" />
-										</a>
-									)}
-								</div>
-								{item.description && (
-									<p className="text-gray-600 mb-4">{item.description}</p>
+								{!hideMetaRow && (
+									<div
+										className={cn(
+											"flex flex-wrap gap-2",
+											density === "compact" ? "mb-1.5" : "mb-2",
+										)}
+									>
+										{item.category && (
+											<Badge variant="secondary">
+												{CATEGORY_LABELS[item.category]}
+											</Badge>
+										)}
+										{item.location && (
+											<a
+												href={`https://maps.google.com/?q=${item.location.lat},${item.location.lng}`}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+											>
+												<MapPin className="h-3 w-3" />
+												{item.location.address ||
+													`${item.location.lat.toFixed(2)}, ${item.location.lng.toFixed(2)}`}
+												<ExternalLink className="h-3 w-3" />
+											</a>
+										)}
+									</div>
+								)}
+								{!hideDescription && item.description && (
+									<p
+										className={cn(
+											"text-gray-600",
+											density === "compact" ? "mb-3 text-sm" : "mb-4",
+											descriptionLines === 1 && "line-clamp-1",
+											descriptionLines === 2 && "line-clamp-2",
+											descriptionLines === 3 && "line-clamp-3",
+										)}
+									>
+										{item.description}
+									</p>
 								)}
 							</CardContent>
 							{footer && <CardFooter>{footer}</CardFooter>}

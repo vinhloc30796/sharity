@@ -1,12 +1,13 @@
 /**
  * Script to download images and upload to Convex Storage
- * Run with: npx tsx scripts/seed-images.ts
+ * Run with: pnpm dlx tsx scripts/seed-images.ts
  */
 
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
 
-const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL || "http://127.0.0.1:3210";
+const CONVEX_URL =
+	process.env.NEXT_PUBLIC_CONVEX_URL || "http://127.0.0.1:3210";
 
 // Unsplash source URLs for each item (400x300 size)
 const IMAGE_URLS: Record<string, string> = {

@@ -1,7 +1,9 @@
-// Clerk issuer URL from environment variable
-// Set via: npx convex env set CLERK_ISSUER_URL "https://xxx.clerk.accounts.dev"
-// For local dev: reads from .env.local
-const CLERK_ISSUER_URL = process.env.CLERK_ISSUER_URL!;
+const CLERK_ISSUER_URL = process.env.CLERK_ISSUER_URL;
+if (!CLERK_ISSUER_URL) {
+	throw new Error(
+		"Missing CLERK_ISSUER_URL. Set it in your Convex environment (not just Next.js).",
+	);
+}
 
 export default {
 	providers: [
