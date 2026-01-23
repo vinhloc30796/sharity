@@ -19,8 +19,15 @@ export function MyItemsList() {
 		);
 	}
 
+	const borrowedCount = items.filter((i) => !i.isOwner).length;
+
 	return (
 		<div className="space-y-4">
+			{borrowedCount > 0 ? (
+				<div className="text-xs text-muted-foreground">
+					Includes {borrowedCount} borrowed item{borrowedCount > 1 ? "s" : ""}.
+				</div>
+			) : null}
 			{items.map((item) => (
 				<MyItemCard key={item._id} item={item} isOwner={item.isOwner} />
 			))}
