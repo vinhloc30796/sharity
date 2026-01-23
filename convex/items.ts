@@ -3,6 +3,25 @@ import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { action, internalMutation, mutation, query } from "./_generated/server";
 
+const ONE_HOUR_MS = 60 * 60 * 1000;
+const ONE_DAY_MS = 24 * ONE_HOUR_MS;
+
+function assertHourAligned(windowStartAt: number): void {
+	if (windowStartAt % ONE_HOUR_MS !== 0) {
+		throw new Error("Time must be aligned to the hour");
+	}
+}
+
+function assertOnDay(
+	windowStartAt: number,
+	dayStartAt: number,
+	label: string,
+): void {
+	if (windowStartAt < dayStartAt || windowStartAt >= dayStartAt + ONE_DAY_MS) {
+		throw new Error(`Time must be on the ${label} day`);
+	}
+}
+
 // Seed function for testing (no auth required)
 export const seed = internalMutation({
 	args: {},
@@ -249,7 +268,11 @@ export const getMyItems = query({
 			.filter((q) => q.eq(q.field("status"), "approved"))
 			.collect();
 
-		const borrowedItemIds = myClaims.map((c) => c.itemId);
+		const activeBorrowedClaims = myClaims.filter(
+			(c) => !!c.pickedUpAt && !c.returnedAt && !c.expiredAt && !c.missingAt,
+		);
+
+		const borrowedItemIds = activeBorrowedClaims.map((c) => c.itemId);
 
 		// Fetch the actual item documents for borrowed items
 		const borrowedItems = [];
@@ -433,7 +456,11 @@ export const requestItem = mutation({
 			.filter((q) => q.eq(q.field("status"), "approved"))
 			.collect();
 
-		const hasOverlap = approvedClaims.some((claim) => {
+		const activeApprovedClaims = approvedClaims.filter(
+			(c) => !c.expiredAt && !c.returnedAt,
+		);
+
+		const hasOverlap = activeApprovedClaims.some((claim) => {
 			return args.startDate < claim.endDate && args.endDate > claim.startDate;
 		});
 
@@ -455,7 +482,13 @@ export const requestItem = mutation({
 			)
 			.collect();
 
-		const hasSelfOverlap = myActiveRequests.some((req) => {
+		const myBlockingRequests = myActiveRequests.filter(
+			(r) =>
+				r.status === "pending" ||
+				(r.status === "approved" && !r.expiredAt && !r.returnedAt),
+		);
+
+		const hasSelfOverlap = myBlockingRequests.some((req) => {
 			// Check if new request overlaps with existing request
 			return args.startDate < req.endDate && args.endDate > req.startDate;
 		});
@@ -619,6 +652,316 @@ export const getLeaseActivity = query({
 	},
 });
 
+export const proposePickupWindow = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+		windowStartAt: v.number(),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const now = Date.now();
+		if (args.windowStartAt < now) {
+			throw new Error("Pickup time must be in the future");
+		}
+
+		assertHourAligned(args.windowStartAt);
+
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can propose pickup");
+		}
+		if (claim.pickedUpAt)
+			throw new Error("Pickup already recorded for this lease");
+		if (claim.expiredAt)
+			throw new Error("Cannot propose pickup for an expired lease");
+		if (claim.returnedAt) throw new Error("Cannot propose pickup after return");
+		if (claim.missingAt)
+			throw new Error("Cannot propose pickup for a missing item");
+
+		assertOnDay(args.windowStartAt, claim.startDate, "start");
+
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+
+		const userId = identity.subject;
+		if (userId !== item.ownerId && userId !== claim.claimerId) {
+			throw new Error("Unauthorized");
+		}
+
+		const existing = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		if (existing.some((e) => e.type === "lease_picked_up")) {
+			throw new Error("Pickup already recorded for this lease");
+		}
+		if (existing.some((e) => e.type === "lease_expired")) {
+			throw new Error("Cannot propose pickup for an expired lease");
+		}
+		if (existing.some((e) => e.type === "lease_rejected")) {
+			throw new Error("Cannot propose pickup for a rejected lease");
+		}
+
+		const windowEndAt = args.windowStartAt + ONE_HOUR_MS;
+		const proposalId = `${args.claimId}-${now}-${Math.random().toString(16).slice(2)}`;
+
+		await ctx.db.insert("lease_activity", {
+			itemId: args.itemId,
+			claimId: args.claimId,
+			type: "lease_pickup_proposed",
+			actorId: userId,
+			createdAt: now,
+			proposalId,
+			windowStartAt: args.windowStartAt,
+			windowEndAt,
+		});
+	},
+});
+
+export const proposeReturnWindow = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+		windowStartAt: v.number(),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const now = Date.now();
+		if (args.windowStartAt < now) {
+			throw new Error("Return time must be in the future");
+		}
+
+		assertHourAligned(args.windowStartAt);
+
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can propose return");
+		}
+		if (claim.returnedAt)
+			throw new Error("Return already recorded for this lease");
+		if (claim.expiredAt)
+			throw new Error("Cannot propose return for an expired lease");
+		if (claim.missingAt)
+			throw new Error("Cannot propose return for a missing item");
+
+		assertOnDay(args.windowStartAt, claim.endDate, "end");
+
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+
+		const userId = identity.subject;
+		if (userId !== item.ownerId && userId !== claim.claimerId) {
+			throw new Error("Unauthorized");
+		}
+
+		const existing = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		const hasPickup =
+			claim.pickedUpAt !== undefined ||
+			existing.some((e) => e.type === "lease_picked_up");
+		if (!hasPickup) {
+			throw new Error("Cannot propose return before pickup is recorded");
+		}
+		if (existing.some((e) => e.type === "lease_returned")) {
+			throw new Error("Return already recorded for this lease");
+		}
+		if (existing.some((e) => e.type === "lease_missing")) {
+			throw new Error("Cannot propose return for a missing item");
+		}
+		if (existing.some((e) => e.type === "lease_rejected")) {
+			throw new Error("Cannot propose return for a rejected lease");
+		}
+
+		const windowEndAt = args.windowStartAt + ONE_HOUR_MS;
+		const proposalId = `${args.claimId}-${now}-${Math.random().toString(16).slice(2)}`;
+
+		await ctx.db.insert("lease_activity", {
+			itemId: args.itemId,
+			claimId: args.claimId,
+			type: "lease_return_proposed",
+			actorId: userId,
+			createdAt: now,
+			proposalId,
+			windowStartAt: args.windowStartAt,
+			windowEndAt,
+		});
+	},
+});
+
+export const approvePickupWindow = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const now = Date.now();
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can approve pickup time");
+		}
+		if (claim.pickedUpAt)
+			throw new Error("Pickup already recorded for this lease");
+		if (claim.expiredAt)
+			throw new Error("Cannot approve pickup for an expired lease");
+
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+
+		const userId = identity.subject;
+		if (userId !== item.ownerId && userId !== claim.claimerId) {
+			throw new Error("Unauthorized");
+		}
+
+		const events = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		const latestProposal = events.find(
+			(e) => e.type === "lease_pickup_proposed",
+		);
+		if (
+			!latestProposal ||
+			typeof latestProposal.windowStartAt !== "number" ||
+			typeof latestProposal.windowEndAt !== "number"
+		) {
+			throw new Error("Pickup time must be proposed before it can be approved");
+		}
+		if (now > latestProposal.windowEndAt) {
+			throw new Error("Pickup proposal has expired");
+		}
+		if (latestProposal.actorId === userId) {
+			throw new Error("Only the counterparty can approve pickup time");
+		}
+
+		const latestApproval = events.find(
+			(e) => e.type === "lease_pickup_approved",
+		);
+		if (
+			latestApproval?.proposalId &&
+			latestApproval.proposalId === latestProposal.proposalId
+		) {
+			throw new Error("Pickup time already approved");
+		}
+
+		await ctx.db.insert("lease_activity", {
+			itemId: args.itemId,
+			claimId: args.claimId,
+			type: "lease_pickup_approved",
+			actorId: userId,
+			createdAt: now,
+			proposalId: latestProposal.proposalId,
+			windowStartAt: latestProposal.windowStartAt,
+			windowEndAt: latestProposal.windowEndAt,
+		});
+	},
+});
+
+export const approveReturnWindow = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const now = Date.now();
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can approve return time");
+		}
+		if (claim.returnedAt)
+			throw new Error("Return already recorded for this lease");
+		if (claim.expiredAt)
+			throw new Error("Cannot approve return for an expired lease");
+		if (claim.missingAt)
+			throw new Error("Cannot approve return for a missing item");
+
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+
+		const userId = identity.subject;
+		if (userId !== item.ownerId && userId !== claim.claimerId) {
+			throw new Error("Unauthorized");
+		}
+
+		const events = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		const hasPickup =
+			claim.pickedUpAt !== undefined ||
+			events.some((e) => e.type === "lease_picked_up");
+		if (!hasPickup) {
+			throw new Error("Cannot approve return before pickup is recorded");
+		}
+
+		const latestProposal = events.find(
+			(e) => e.type === "lease_return_proposed",
+		);
+		if (
+			!latestProposal ||
+			typeof latestProposal.windowStartAt !== "number" ||
+			typeof latestProposal.windowEndAt !== "number"
+		) {
+			throw new Error("Return time must be proposed before it can be approved");
+		}
+		if (now > latestProposal.windowEndAt) {
+			throw new Error("Return proposal has expired");
+		}
+		if (latestProposal.actorId === userId) {
+			throw new Error("Only the counterparty can approve return time");
+		}
+
+		const latestApproval = events.find(
+			(e) => e.type === "lease_return_approved",
+		);
+		if (
+			latestApproval?.proposalId &&
+			latestApproval.proposalId === latestProposal.proposalId
+		) {
+			throw new Error("Return time already approved");
+		}
+
+		await ctx.db.insert("lease_activity", {
+			itemId: args.itemId,
+			claimId: args.claimId,
+			type: "lease_return_approved",
+			actorId: userId,
+			createdAt: now,
+			proposalId: latestProposal.proposalId,
+			windowStartAt: latestProposal.windowStartAt,
+			windowEndAt: latestProposal.windowEndAt,
+		});
+	},
+});
+
 export const markPickedUp = mutation({
 	args: {
 		itemId: v.id("items"),
@@ -636,6 +979,12 @@ export const markPickedUp = mutation({
 		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
 		if (claim.status !== "approved") {
 			throw new Error("Only approved claims can be marked as picked up");
+		}
+		if (claim.pickedUpAt) {
+			throw new Error("Pickup already recorded for this lease");
+		}
+		if (claim.expiredAt) {
+			throw new Error("Cannot confirm pickup for an expired lease");
 		}
 
 		const item = await ctx.db.get(args.itemId);
@@ -655,6 +1004,45 @@ export const markPickedUp = mutation({
 		if (existing.some((e) => e.type === "lease_picked_up")) {
 			throw new Error("Pickup already recorded for this lease");
 		}
+		if (existing.some((e) => e.type === "lease_expired")) {
+			throw new Error("Cannot confirm pickup for an expired lease");
+		}
+		if (existing.some((e) => e.type === "lease_rejected")) {
+			throw new Error("Cannot confirm pickup for a rejected lease");
+		}
+
+		const latestProposal = existing.find(
+			(e) => e.type === "lease_pickup_proposed",
+		);
+		if (
+			!latestProposal ||
+			typeof latestProposal.windowStartAt !== "number" ||
+			typeof latestProposal.windowEndAt !== "number"
+		) {
+			throw new Error(
+				"Pickup time must be proposed before it can be confirmed",
+			);
+		}
+		if (createdAt > latestProposal.windowEndAt) {
+			throw new Error("Pickup proposal has expired");
+		}
+		if (createdAt < latestProposal.windowStartAt) {
+			throw new Error(
+				"Pickup can only be confirmed during the proposed window",
+			);
+		}
+
+		const latestApproval = existing.find(
+			(e) => e.type === "lease_pickup_approved",
+		);
+		if (
+			!latestApproval ||
+			latestApproval.proposalId !== latestProposal.proposalId
+		) {
+			throw new Error(
+				"Pickup time must be approved before it can be confirmed",
+			);
+		}
 
 		await ctx.db.insert("lease_activity", {
 			itemId: args.itemId,
@@ -664,7 +1052,12 @@ export const markPickedUp = mutation({
 			createdAt,
 			note: args.note,
 			photoStorageIds: args.photoStorageIds,
+			proposalId: latestProposal.proposalId,
+			windowStartAt: latestProposal.windowStartAt,
+			windowEndAt: latestProposal.windowEndAt,
 		});
+
+		await ctx.db.patch(args.claimId, { pickedUpAt: createdAt });
 	},
 });
 
@@ -686,6 +1079,15 @@ export const markReturned = mutation({
 		if (claim.status !== "approved") {
 			throw new Error("Only approved claims can be marked as returned");
 		}
+		if (claim.returnedAt) {
+			throw new Error("Return already recorded for this lease");
+		}
+		if (claim.expiredAt) {
+			throw new Error("Cannot confirm return for an expired lease");
+		}
+		if (claim.missingAt) {
+			throw new Error("Cannot confirm return for a missing item");
+		}
 
 		const item = await ctx.db.get(args.itemId);
 		if (!item) throw new Error("Item not found");
@@ -705,8 +1107,50 @@ export const markReturned = mutation({
 			throw new Error("Return already recorded for this lease");
 		}
 
-		if (!existing.some((e) => e.type === "lease_picked_up")) {
+		const hasPickup =
+			claim.pickedUpAt !== undefined ||
+			existing.some((e) => e.type === "lease_picked_up");
+		if (!hasPickup) {
 			throw new Error("Cannot mark returned before pickup is recorded");
+		}
+		if (existing.some((e) => e.type === "lease_missing")) {
+			throw new Error("Cannot confirm return for a missing item");
+		}
+		if (existing.some((e) => e.type === "lease_rejected")) {
+			throw new Error("Cannot confirm return for a rejected lease");
+		}
+
+		const latestProposal = existing.find(
+			(e) => e.type === "lease_return_proposed",
+		);
+		if (
+			!latestProposal ||
+			typeof latestProposal.windowStartAt !== "number" ||
+			typeof latestProposal.windowEndAt !== "number"
+		) {
+			throw new Error(
+				"Return time must be proposed before it can be confirmed",
+			);
+		}
+		if (createdAt > latestProposal.windowEndAt) {
+			throw new Error("Return proposal has expired");
+		}
+		if (createdAt < latestProposal.windowStartAt) {
+			throw new Error(
+				"Return can only be confirmed during the proposed window",
+			);
+		}
+
+		const latestApproval = existing.find(
+			(e) => e.type === "lease_return_approved",
+		);
+		if (
+			!latestApproval ||
+			latestApproval.proposalId !== latestProposal.proposalId
+		) {
+			throw new Error(
+				"Return time must be approved before it can be confirmed",
+			);
 		}
 
 		await ctx.db.insert("lease_activity", {
@@ -717,7 +1161,12 @@ export const markReturned = mutation({
 			createdAt,
 			note: args.note,
 			photoStorageIds: args.photoStorageIds,
+			proposalId: latestProposal.proposalId,
+			windowStartAt: latestProposal.windowStartAt,
+			windowEndAt: latestProposal.windowEndAt,
 		});
+
+		await ctx.db.patch(args.claimId, { returnedAt: createdAt });
 	},
 });
 
@@ -773,6 +1222,9 @@ export const markExpired = mutation({
 		if (claim.status !== "approved") {
 			throw new Error("Only approved claims can be marked as expired");
 		}
+		if (claim.expiredAt) {
+			throw new Error("Expired already recorded for this lease");
+		}
 
 		const item = await ctx.db.get(args.itemId);
 		if (!item) throw new Error("Item not found");
@@ -800,6 +1252,8 @@ export const markExpired = mutation({
 			createdAt: now,
 			note: args.note,
 		});
+
+		await ctx.db.patch(args.claimId, { expiredAt: now });
 	},
 });
 
@@ -818,6 +1272,9 @@ export const markMissing = mutation({
 		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
 		if (claim.status !== "approved") {
 			throw new Error("Only approved claims can be marked as missing");
+		}
+		if (claim.missingAt) {
+			throw new Error("Missing already recorded for this lease");
 		}
 
 		const item = await ctx.db.get(args.itemId);
@@ -849,6 +1306,8 @@ export const markMissing = mutation({
 			createdAt: now,
 			note: args.note,
 		});
+
+		await ctx.db.patch(args.claimId, { missingAt: now });
 	},
 });
 
@@ -900,7 +1359,9 @@ export const getAvailability = query({
 			.filter((q) => q.eq(q.field("status"), "approved"))
 			.collect();
 
-		return claims.map((c) => ({
+		const activeClaims = claims.filter((c) => !c.expiredAt && !c.returnedAt);
+
+		return activeClaims.map((c) => ({
 			startDate: c.startDate,
 			endDate: c.endDate,
 		}));
@@ -931,6 +1392,83 @@ export const getItemActivity = query({
 			.take(50);
 
 		return events;
+	},
+});
+
+export const resolveOverdueProposals = internalMutation({
+	args: {},
+	handler: async (ctx) => {
+		const now = Date.now();
+
+		const overduePickup = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_type_windowEndAt", (q) =>
+				q.eq("type", "lease_pickup_proposed").lt("windowEndAt", now),
+			)
+			.order("asc")
+			.take(100);
+
+		const overdueReturn = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_type_windowEndAt", (q) =>
+				q.eq("type", "lease_return_proposed").lt("windowEndAt", now),
+			)
+			.order("asc")
+			.take(100);
+
+		for (const proposal of [...overduePickup, ...overdueReturn]) {
+			const claim = await ctx.db.get(proposal.claimId);
+			if (!claim) continue;
+			if (claim.status !== "approved") continue;
+
+			const events = await ctx.db
+				.query("lease_activity")
+				.withIndex("by_claim_createdAt", (q) =>
+					q.eq("claimId", proposal.claimId),
+				)
+				.order("desc")
+				.take(50);
+
+			const latestSameType = events.find((e) => e.type === proposal.type);
+			if (!latestSameType || latestSameType._id !== proposal._id) continue;
+
+			if (proposal.type === "lease_pickup_proposed") {
+				if (claim.pickedUpAt || claim.expiredAt) continue;
+				if (events.some((e) => e.type === "lease_picked_up")) continue;
+				if (events.some((e) => e.type === "lease_expired")) continue;
+
+				await ctx.db.insert("lease_activity", {
+					itemId: claim.itemId,
+					claimId: claim._id,
+					type: "lease_expired",
+					actorId: "system",
+					createdAt: now,
+					note: "Auto-expired after unconfirmed pickup window",
+				});
+
+				await ctx.db.patch(claim._id, { expiredAt: now });
+			} else if (proposal.type === "lease_return_proposed") {
+				if (claim.returnedAt || claim.missingAt) continue;
+				if (events.some((e) => e.type === "lease_returned")) continue;
+				if (events.some((e) => e.type === "lease_missing")) continue;
+
+				const hasPickup =
+					claim.pickedUpAt !== undefined ||
+					events.some((e) => e.type === "lease_picked_up");
+				if (!hasPickup) continue;
+
+				await ctx.db.insert("lease_activity", {
+					itemId: claim.itemId,
+					claimId: claim._id,
+					type: "lease_missing",
+					actorId: "system",
+					createdAt: now,
+					note: "Auto-marked missing after unconfirmed return window",
+				});
+
+				await ctx.db.patch(claim._id, { missingAt: now });
+			}
+		}
 	},
 });
 

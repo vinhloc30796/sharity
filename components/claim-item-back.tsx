@@ -23,6 +23,13 @@ export function ClaimItemBack({ item }: ClaimItemBackProps) {
 		showMyRequestModifiers: false,
 	});
 
+	const requestDisabled =
+		!calendar.date?.from ||
+		!calendar.date?.to ||
+		calendar.isSubmitting ||
+		calendar.isAuthLoading ||
+		!calendar.isAuthenticated;
+
 	const onClaim = () => {
 		if (!calendar.date?.from || !calendar.date?.to) return;
 		calendar.requestItem(calendar.date.from, calendar.date.to, () => {
@@ -100,17 +107,7 @@ export function ClaimItemBack({ item }: ClaimItemBackProps) {
 					<Button variant="ghost" size="sm" onClick={flipToFront}>
 						Cancel
 					</Button>
-					<Button
-						size="sm"
-						onClick={onClaim}
-						disabled={
-							!calendar.date?.from ||
-							!calendar.date?.to ||
-							calendar.isSubmitting ||
-							calendar.isAuthLoading ||
-							!calendar.isAuthenticated
-						}
-					>
+					<Button size="sm" onClick={onClaim} disabled={requestDisabled}>
 						{calendar.isSubmitting ? (
 							<Loader2 className="h-4 w-4 animate-spin" />
 						) : (

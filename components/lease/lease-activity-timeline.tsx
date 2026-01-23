@@ -25,6 +25,14 @@ function formatEventTitle(event: LeaseActivityEvent): string {
 			return "Expired";
 		case "lease_missing":
 			return "Missing";
+		case "lease_pickup_proposed":
+			return "Pickup proposed";
+		case "lease_pickup_approved":
+			return "Pickup time approved";
+		case "lease_return_proposed":
+			return "Return proposed";
+		case "lease_return_approved":
+			return "Return time approved";
 		case "lease_picked_up":
 			return "Picked up";
 		case "lease_returned":
@@ -82,6 +90,18 @@ export function LeaseActivityTimeline({
 									{event.note}
 								</div>
 							)}
+
+							{(event.type === "lease_pickup_proposed" ||
+								event.type === "lease_pickup_approved" ||
+								event.type === "lease_return_proposed" ||
+								event.type === "lease_return_approved") &&
+								typeof event.windowStartAt === "number" &&
+								typeof event.windowEndAt === "number" && (
+									<div className="text-xs text-muted-foreground">
+										Window: {format(new Date(event.windowStartAt), "MMM d p")}–
+										{format(new Date(event.windowEndAt), "p")}
+									</div>
+								)}
 
 							{photoUrls.length > 0 && (
 								<div className="mt-2 flex flex-wrap gap-2">

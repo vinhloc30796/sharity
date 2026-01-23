@@ -53,6 +53,10 @@ export default defineSchema({
 			v.literal("lease_rejected"),
 			v.literal("lease_expired"),
 			v.literal("lease_missing"),
+			v.literal("lease_pickup_proposed"),
+			v.literal("lease_pickup_approved"),
+			v.literal("lease_return_proposed"),
+			v.literal("lease_return_approved"),
 			v.literal("lease_picked_up"),
 			v.literal("lease_returned"),
 		),
@@ -60,9 +64,13 @@ export default defineSchema({
 		createdAt: v.number(),
 		note: v.optional(v.string()),
 		photoStorageIds: v.optional(v.array(v.id("_storage"))),
+		proposalId: v.optional(v.string()),
+		windowStartAt: v.optional(v.number()),
+		windowEndAt: v.optional(v.number()),
 	})
 		.index("by_claim_createdAt", ["claimId", "createdAt"])
-		.index("by_item_createdAt", ["itemId", "createdAt"]),
+		.index("by_item_createdAt", ["itemId", "createdAt"])
+		.index("by_type_windowEndAt", ["type", "windowEndAt"]),
 	claims: defineTable({
 		itemId: v.id("items"),
 		claimerId: v.string(),

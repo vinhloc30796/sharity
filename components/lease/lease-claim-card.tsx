@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import {
 	Check,
 	Clock,
@@ -9,12 +9,14 @@ import {
 	Package,
 	PackageCheck,
 } from "lucide-react";
+import { format } from "date-fns";
 import { useMemo, useState } from "react";
 
 import type { LeaseActivityEvent } from "./lease-activity-timeline";
 import { LeaseActivitySection } from "./lease-activity-section";
 import { LeaseActionDialog } from "./lease-action-dialog";
 import { LeaseClaimHeader } from "./lease-claim-header";
+import { LeaseProposeWindowDialog } from "./lease-propose-window-dialog";
 import type {
 	ApproveClaimArgs,
 	CancelClaimArgs,
@@ -26,6 +28,11 @@ import type {
 } from "./lease-claim-types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 
@@ -133,9 +140,16 @@ export function LeaseClaimCard(props: {
 	const isOwner = viewerRole === "owner";
 	const isApproved = claim.status === "approved";
 
+	const proposePickupWindow = useMutation(api.items.proposePickupWindow);
+	const proposeReturnWindow = useMutation(api.items.proposeReturnWindow);
+	const approvePickupWindow = useMutation(api.items.approvePickupWindow);
+	const approveReturnWindow = useMutation(api.items.approveReturnWindow);
+
 	const [isApproving, setIsApproving] = useState(false);
 	const [isRejecting, setIsRejecting] = useState(false);
 	const [isCancelling, setIsCancelling] = useState(false);
+	const [isApprovingPickupTime, setIsApprovingPickupTime] = useState(false);
+	const [isApprovingReturnTime, setIsApprovingReturnTime] = useState(false);
 
 	const eventTimes = useMemo(() => {
 		const byType = new Map<LeaseActivityEvent["type"], number>();
@@ -168,6 +182,86 @@ export function LeaseClaimCard(props: {
 		if (eventTimes.requestedAt) return "requested";
 		return getLeaseState(claim);
 	}, [claim, eventTimes]);
+
+	const pickupProposal = useMemo(() => {
+		const e = leaseEvents?.find((ev) => ev.type === "lease_pickup_proposed");
+		if (
+			!e ||
+			typeof e.windowStartAt !== "number" ||
+			typeof e.windowEndAt !== "number"
+		) {
+			return undefined;
+		}
+		const proposerRole: ViewerRole =
+			e.actorId === claim.claimerId ? "borrower" : "owner";
+		return {
+			actorId: e.actorId,
+			proposerRole,
+			proposalId: e.proposalId,
+			windowStartAt: e.windowStartAt,
+			windowEndAt: e.windowEndAt,
+		};
+	}, [leaseEvents, claim.claimerId]);
+
+	const pickupApproval = useMemo(() => {
+		const e = leaseEvents?.find((ev) => ev.type === "lease_pickup_approved");
+		if (!e) return undefined;
+		if (
+			typeof e.windowStartAt !== "number" ||
+			typeof e.windowEndAt !== "number"
+		) {
+			return undefined;
+		}
+		const approverRole: ViewerRole =
+			e.actorId === claim.claimerId ? "borrower" : "owner";
+		return {
+			actorId: e.actorId,
+			approverRole,
+			proposalId: e.proposalId,
+			windowStartAt: e.windowStartAt,
+			windowEndAt: e.windowEndAt,
+		};
+	}, [leaseEvents, claim.claimerId]);
+
+	const returnProposal = useMemo(() => {
+		const e = leaseEvents?.find((ev) => ev.type === "lease_return_proposed");
+		if (
+			!e ||
+			typeof e.windowStartAt !== "number" ||
+			typeof e.windowEndAt !== "number"
+		) {
+			return undefined;
+		}
+		const proposerRole: ViewerRole =
+			e.actorId === claim.claimerId ? "borrower" : "owner";
+		return {
+			actorId: e.actorId,
+			proposerRole,
+			proposalId: e.proposalId,
+			windowStartAt: e.windowStartAt,
+			windowEndAt: e.windowEndAt,
+		};
+	}, [leaseEvents, claim.claimerId]);
+
+	const returnApproval = useMemo(() => {
+		const e = leaseEvents?.find((ev) => ev.type === "lease_return_approved");
+		if (!e) return undefined;
+		if (
+			typeof e.windowStartAt !== "number" ||
+			typeof e.windowEndAt !== "number"
+		) {
+			return undefined;
+		}
+		const approverRole: ViewerRole =
+			e.actorId === claim.claimerId ? "borrower" : "owner";
+		return {
+			actorId: e.actorId,
+			approverRole,
+			proposalId: e.proposalId,
+			windowStartAt: e.windowStartAt,
+			windowEndAt: e.windowEndAt,
+		};
+	}, [leaseEvents, claim.claimerId]);
 
 	const canRecordPickup =
 		isApproved &&
@@ -206,6 +300,31 @@ export function LeaseClaimCard(props: {
 		!eventTimes.rejectedAt;
 
 	const StateIcon = getStateIcon(derivedState);
+	const now = Date.now();
+	const pickupProposalActive =
+		pickupProposal && now <= pickupProposal.windowEndAt;
+	const returnProposalActive =
+		returnProposal && now <= returnProposal.windowEndAt;
+	const pickupApproved =
+		pickupProposal &&
+		pickupApproval &&
+		pickupApproval.proposalId &&
+		pickupApproval.proposalId === pickupProposal.proposalId;
+	const returnApproved =
+		returnProposal &&
+		returnApproval &&
+		returnApproval.proposalId &&
+		returnApproval.proposalId === returnProposal.proposalId;
+	const pickupConfirmWindowOpen =
+		pickupProposalActive &&
+		pickupProposal &&
+		now >= pickupProposal.windowStartAt &&
+		now <= pickupProposal.windowEndAt;
+	const returnConfirmWindowOpen =
+		returnProposalActive &&
+		returnProposal &&
+		now >= returnProposal.windowStartAt &&
+		now <= returnProposal.windowEndAt;
 
 	return (
 		<Card>
@@ -300,69 +419,283 @@ export function LeaseClaimCard(props: {
 					claim.status === "approved" && (
 						<div className="space-y-2">
 							{canRecordPickup && (
-								<LeaseActionDialog
-									title="Confirm item pickup"
-									description="Record that the item has been picked up. Photos help document the item&apos;s condition."
-									triggerLabel="Confirm pickup"
-									triggerIcon={Package}
-									triggerSize="sm"
-									triggerClassName="w-full h-8"
-									confirmLabel="Confirm pickup"
-									cancelLabel="Cancel"
-									noteConfig={{
-										id: "pickup-note",
-										label: "Notes (optional)",
-										placeholder: "Any notes about the pickup...",
-										rows: 2,
-									}}
-									photoConfig={{
-										label: "Photos (optional)",
-										maxFiles: 5,
-										accept: "image/*",
-									}}
-									generateUploadUrl={generateUploadUrl}
-									onConfirm={async ({ note, photoStorageIds }) =>
-										await markPickedUp({
-											itemId,
-											claimId: claim._id,
-											note,
-											photoStorageIds,
-										})
-									}
-								/>
+								<div className="space-y-2">
+									{pickupProposal ? (
+										<div className="text-xs text-muted-foreground">
+											{pickupApproved
+												? "Pickup proposed & approved: "
+												: "Pickup proposed: "}
+											{format(
+												new Date(pickupProposal.windowStartAt),
+												"MMM d p",
+											)}
+											–{format(new Date(pickupProposal.windowEndAt), "p")}
+											{pickupApproved ? null : ". Pending approval."}
+										</div>
+									) : null}
+
+									<LeaseProposeWindowDialog
+										title="Propose pickup time"
+										triggerLabel={
+											pickupProposal
+												? "Change pickup time"
+												: "Propose pickup time"
+										}
+										triggerIcon={Package}
+										triggerSize="sm"
+										triggerClassName="w-full h-8"
+										confirmLabel="Send proposal"
+										cancelLabel="Cancel"
+										fixedDate={new Date(claim.startDate)}
+										defaultHour={
+											pickupProposal
+												? new Date(pickupProposal.windowStartAt).getHours()
+												: undefined
+										}
+										disabled={
+											isApproving ||
+											isRejecting ||
+											isCancelling ||
+											isApprovingPickupTime ||
+											isApprovingReturnTime
+										}
+										onConfirm={async (windowStartAt) =>
+											await proposePickupWindow({
+												itemId,
+												claimId: claim._id,
+												windowStartAt,
+											})
+										}
+									/>
+
+									{pickupProposal && pickupProposalActive ? (
+										pickupApproved ? (
+											pickupConfirmWindowOpen ? (
+												<LeaseActionDialog
+													title="Confirm item pickup"
+													description="Record that the item has been picked up. Photos help document the item&apos;s condition."
+													triggerLabel="Confirm pickup"
+													triggerIcon={Package}
+													triggerSize="sm"
+													triggerClassName="w-full h-8"
+													confirmLabel="Confirm pickup"
+													cancelLabel="Cancel"
+													noteConfig={{
+														id: "pickup-note",
+														label: "Notes (optional)",
+														placeholder: "Any notes about the pickup...",
+														rows: 2,
+													}}
+													photoConfig={{
+														label: "Photos (optional)",
+														maxFiles: 5,
+														accept: "image/*",
+													}}
+													generateUploadUrl={generateUploadUrl}
+													onConfirm={async ({ note, photoStorageIds }) =>
+														await markPickedUp({
+															itemId,
+															claimId: claim._id,
+															note,
+															photoStorageIds,
+														})
+													}
+												/>
+											) : (
+												<Tooltip>
+													<TooltipTrigger asChild>
+														<span className="w-full">
+															<Button size="sm" className="w-full h-8" disabled>
+																Confirm pickup
+															</Button>
+														</span>
+													</TooltipTrigger>
+													<TooltipContent sideOffset={6}>
+														Confirm is available during{" "}
+														{format(
+															new Date(pickupProposal.windowStartAt),
+															"MMM d p",
+														)}
+														–{format(new Date(pickupProposal.windowEndAt), "p")}
+														.
+													</TooltipContent>
+												</Tooltip>
+											)
+										) : pickupProposal.proposerRole !== viewerRole ? (
+											<Button
+												variant="outline"
+												size="sm"
+												className="w-full h-8"
+												disabled={
+													isApproving ||
+													isRejecting ||
+													isCancelling ||
+													isApprovingPickupTime ||
+													isApprovingReturnTime
+												}
+												onClick={async () => {
+													setIsApprovingPickupTime(true);
+													try {
+														await approvePickupWindow({
+															itemId,
+															claimId: claim._id,
+														});
+													} finally {
+														setIsApprovingPickupTime(false);
+													}
+												}}
+											>
+												{isApprovingPickupTime
+													? "Approving..."
+													: "Approve pickup time"}
+											</Button>
+										) : null
+									) : pickupProposal ? (
+										<div className="text-xs text-muted-foreground">
+											This window has passed. It will auto-expire soon.
+										</div>
+									) : null}
+								</div>
 							)}
 
 							{canRecordReturn && (
-								<LeaseActionDialog
-									title="Confirm item return"
-									description="Record that the item has been returned. Photos help document the item&apos;s condition."
-									triggerLabel="Confirm return"
-									triggerIcon={PackageCheck}
-									triggerSize="sm"
-									triggerClassName="w-full h-8"
-									confirmLabel="Confirm return"
-									cancelLabel="Cancel"
-									noteConfig={{
-										id: "return-note",
-										label: "Notes (optional)",
-										placeholder: "Any notes about the return...",
-										rows: 2,
-									}}
-									photoConfig={{
-										label: "Photos (optional)",
-										maxFiles: 5,
-										accept: "image/*",
-									}}
-									generateUploadUrl={generateUploadUrl}
-									onConfirm={async ({ note, photoStorageIds }) =>
-										await markReturned({
-											itemId,
-											claimId: claim._id,
-											note,
-											photoStorageIds,
-										})
-									}
-								/>
+								<div className="space-y-2">
+									{returnProposal ? (
+										<div className="text-xs text-muted-foreground">
+											{returnApproved
+												? "Return proposed & approved: "
+												: "Return proposed: "}
+											{format(
+												new Date(returnProposal.windowStartAt),
+												"MMM d p",
+											)}
+											–{format(new Date(returnProposal.windowEndAt), "p")}
+											{returnApproved ? null : ". Pending approval."}
+										</div>
+									) : null}
+
+									<LeaseProposeWindowDialog
+										title="Propose return time"
+										triggerLabel={
+											returnProposal
+												? "Change return time"
+												: "Propose return time"
+										}
+										triggerIcon={PackageCheck}
+										triggerSize="sm"
+										triggerClassName="w-full h-8"
+										confirmLabel="Send proposal"
+										cancelLabel="Cancel"
+										fixedDate={new Date(claim.endDate)}
+										defaultHour={
+											returnProposal
+												? new Date(returnProposal.windowStartAt).getHours()
+												: undefined
+										}
+										disabled={
+											isApproving ||
+											isRejecting ||
+											isCancelling ||
+											isApprovingPickupTime ||
+											isApprovingReturnTime
+										}
+										onConfirm={async (windowStartAt) =>
+											await proposeReturnWindow({
+												itemId,
+												claimId: claim._id,
+												windowStartAt,
+											})
+										}
+									/>
+
+									{returnProposal && returnProposalActive ? (
+										returnApproved ? (
+											returnConfirmWindowOpen ? (
+												<LeaseActionDialog
+													title="Confirm item return"
+													description="Record that the item has been returned. Photos help document the item&apos;s condition."
+													triggerLabel="Confirm return"
+													triggerIcon={PackageCheck}
+													triggerSize="sm"
+													triggerClassName="w-full h-8"
+													confirmLabel="Confirm return"
+													cancelLabel="Cancel"
+													noteConfig={{
+														id: "return-note",
+														label: "Notes (optional)",
+														placeholder: "Any notes about the return...",
+														rows: 2,
+													}}
+													photoConfig={{
+														label: "Photos (optional)",
+														maxFiles: 5,
+														accept: "image/*",
+													}}
+													generateUploadUrl={generateUploadUrl}
+													onConfirm={async ({ note, photoStorageIds }) =>
+														await markReturned({
+															itemId,
+															claimId: claim._id,
+															note,
+															photoStorageIds,
+														})
+													}
+												/>
+											) : (
+												<Tooltip>
+													<TooltipTrigger asChild>
+														<span className="w-full">
+															<Button size="sm" className="w-full h-8" disabled>
+																Confirm return
+															</Button>
+														</span>
+													</TooltipTrigger>
+													<TooltipContent sideOffset={6}>
+														Confirm is available during{" "}
+														{format(
+															new Date(returnProposal.windowStartAt),
+															"MMM d p",
+														)}
+														–{format(new Date(returnProposal.windowEndAt), "p")}
+														.
+													</TooltipContent>
+												</Tooltip>
+											)
+										) : returnProposal.proposerRole !== viewerRole ? (
+											<Button
+												variant="outline"
+												size="sm"
+												className="w-full h-8"
+												disabled={
+													isApproving ||
+													isRejecting ||
+													isCancelling ||
+													isApprovingPickupTime ||
+													isApprovingReturnTime
+												}
+												onClick={async () => {
+													setIsApprovingReturnTime(true);
+													try {
+														await approveReturnWindow({
+															itemId,
+															claimId: claim._id,
+														});
+													} finally {
+														setIsApprovingReturnTime(false);
+													}
+												}}
+											>
+												{isApprovingReturnTime
+													? "Approving..."
+													: "Approve return time"}
+											</Button>
+										) : null
+									) : returnProposal ? (
+										<div className="text-xs text-muted-foreground">
+											This window has passed. It will auto-mark missing soon.
+										</div>
+									) : null}
+								</div>
 							)}
 
 							{isOwner && (canMarkExpired || canMarkMissing) && (

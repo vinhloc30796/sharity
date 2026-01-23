@@ -2,7 +2,7 @@
 
 import type { ComponentProps } from "react";
 import { useState } from "react";
-import type { LucideIcon } from "lucide-react";
+import { type LucideIcon, UploadCloudIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -150,7 +150,20 @@ export function LeaseActionDialog(props: LeaseActionDialogProps) {
 								onValueChange={setFiles}
 								multiple
 							>
-								<FileUploadDropzone className="h-32 bg-muted/50 border-dashed transition-colors hover:bg-muted/80" />
+								<FileUploadDropzone className="h-32 bg-gray-50/50 border-dashed transition-colors hover:bg-gray-50/80 hover:border-primary/20">
+									<div className="flex flex-col items-center gap-2 text-muted-foreground text-sm">
+										<UploadCloudIcon className="size-8 text-muted-foreground/50" />
+										<div className="flex flex-col items-center">
+											<span className="font-semibold text-foreground">
+												Click to upload
+											</span>
+											<span>or drag and drop</span>
+											<span className="text-xs text-muted-foreground/75">
+												Up to {props.photoConfig.maxFiles} images
+											</span>
+										</div>
+									</div>
+								</FileUploadDropzone>
 								<FileUploadList>
 									{files.map((file, i) => (
 										<FileUploadItem key={i} value={file}>
