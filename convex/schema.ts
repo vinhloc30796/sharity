@@ -26,6 +26,24 @@ export default defineSchema({
 			}),
 		),
 	}),
+	item_activity: defineTable({
+		itemId: v.id("items"),
+		type: v.union(
+			v.literal("item_created"),
+			v.literal("loan_started"),
+			v.literal("item_picked_up"),
+			v.literal("item_returned"),
+		),
+		actorId: v.string(),
+		createdAt: v.number(),
+		claimId: v.optional(v.id("claims")),
+		note: v.optional(v.string()),
+		startDate: v.optional(v.number()),
+		endDate: v.optional(v.number()),
+		borrowerId: v.optional(v.string()),
+	})
+		.index("by_item", ["itemId"])
+		.index("by_item_createdAt", ["itemId", "createdAt"]),
 	claims: defineTable({
 		itemId: v.id("items"),
 		claimerId: v.string(),

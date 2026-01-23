@@ -1,7 +1,7 @@
-import { query, mutation, internalMutation, action } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
 import { api, internal } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
+import { action, internalMutation, mutation, query } from "./_generated/server";
 
 // Seed function for testing (no auth required)
 export const seed = internalMutation({
@@ -330,13 +330,20 @@ export const create = mutation({
 		}
 		const ownerId = identity.subject;
 
-		await ctx.db.insert("items", {
+		const itemId = await ctx.db.insert("items", {
 			name: args.name,
 			description: args.description,
 			ownerId,
 			imageStorageIds: args.imageStorageIds,
 			category: args.category,
 			location: args.location,
+		});
+
+		await ctx.db.insert("item_activity", {
+			itemId,
+			type: "item_created",
+			actorId: ownerId,
+			createdAt: Date.now(),
 		});
 	},
 });
@@ -518,6 +525,17 @@ export const approveClaim = mutation({
 
 		await ctx.db.patch(args.claimId, { status: "approved" });
 
+		await ctx.db.insert("item_activity", {
+			itemId: args.id,
+			type: "loan_started",
+			actorId: identity.subject,
+			createdAt: Date.now(),
+			claimId: args.claimId,
+			borrowerId: claim.claimerId,
+			startDate: claim.startDate,
+			endDate: claim.endDate,
+		});
+
 		// Notify claimer
 		await ctx.db.insert("notifications", {
 			recipientId: claim.claimerId,
@@ -533,6 +551,96 @@ export const approveClaim = mutation({
 		// Optionally reject others or leave them pending?
 		// Usually once approved, others are implicitly rejected or on hold.
 		// Let's leave them pending but they effectively can't get it unless this one is cancelled.
+	},
+});
+
+export const markPickedUp = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.optional(v.id("claims")),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
+
+		const createdAt = Date.now();
+
+		if (args.claimId) {
+			const claim = await ctx.db.get(args.claimId);
+			if (!claim) throw new Error("Claim not found");
+			if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+			if (claim.status !== "approved") {
+				throw new Error("Only approved claims can be marked as picked up");
+			}
+
+			await ctx.db.insert("item_activity", {
+				itemId: args.itemId,
+				type: "item_picked_up",
+				actorId: identity.subject,
+				createdAt,
+				claimId: args.claimId,
+				borrowerId: claim.claimerId,
+				startDate: claim.startDate,
+				endDate: claim.endDate,
+			});
+			return;
+		}
+
+		await ctx.db.insert("item_activity", {
+			itemId: args.itemId,
+			type: "item_picked_up",
+			actorId: identity.subject,
+			createdAt,
+		});
+	},
+});
+
+export const markReturned = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.optional(v.id("claims")),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
+
+		const createdAt = Date.now();
+
+		if (args.claimId) {
+			const claim = await ctx.db.get(args.claimId);
+			if (!claim) throw new Error("Claim not found");
+			if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+			if (claim.status !== "approved") {
+				throw new Error("Only approved claims can be marked as returned");
+			}
+
+			await ctx.db.insert("item_activity", {
+				itemId: args.itemId,
+				type: "item_returned",
+				actorId: identity.subject,
+				createdAt,
+				claimId: args.claimId,
+				borrowerId: claim.claimerId,
+				startDate: claim.startDate,
+				endDate: claim.endDate,
+			});
+			return;
+		}
+
+		await ctx.db.insert("item_activity", {
+			itemId: args.itemId,
+			type: "item_returned",
+			actorId: identity.subject,
+			createdAt,
+		});
 	},
 });
 
@@ -627,6 +735,19 @@ export const getMyRequests = query({
 			.withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
 			.filter((q) => q.eq(q.field("itemId"), args.itemId))
 			.collect();
+	},
+});
+
+export const getItemActivity = query({
+	args: { itemId: v.id("items") },
+	handler: async (ctx, args) => {
+		const events = await ctx.db
+			.query("item_activity")
+			.withIndex("by_item_createdAt", (q) => q.eq("itemId", args.itemId))
+			.order("desc")
+			.take(50);
+
+		return events;
 	},
 });
 

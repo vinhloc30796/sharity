@@ -1,10 +1,29 @@
 "use client";
 
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { Id, Doc } from "../../../convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
+import { useMutation, useQuery } from "convex/react";
+import { format } from "date-fns";
+import { ArrowLeft, Check, ExternalLink, Loader2, MapPin } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { use, useEffect, useState } from "react";
+import { DateRange } from "react-day-picker";
+import { toast } from "sonner";
+import { ItemActivityTimeline } from "@/components/item-activity-timeline";
+import { CATEGORY_LABELS, ItemForm } from "@/components/item-form";
+import { AvailabilityToggle } from "@/components/notifications/availability-toggle";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
 	Carousel,
 	CarouselContent,
@@ -19,31 +38,9 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-	AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { MapPin, ExternalLink, ArrowLeft, Loader2, Check } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { CATEGORY_LABELS } from "@/components/item-form";
-import { format } from "date-fns";
-import { ItemForm } from "@/components/item-form";
-import { useState, useEffect } from "react";
-import { Calendar } from "@/components/ui/calendar";
-import { DateRange } from "react-day-picker";
-import { toast } from "sonner";
-
-import { AvailabilityToggle } from "@/components/notifications/availability-toggle";
 import { useClaimItem } from "@/hooks/use-claim-item";
-
-import { use } from "react";
+import { api } from "../../../convex/_generated/api";
+import { Doc, Id } from "../../../convex/_generated/dataModel";
 
 export default function ItemDetailPage({
 	params,
@@ -54,12 +51,15 @@ export default function ItemDetailPage({
 	const router = useRouter();
 
 	const item = useQuery(api.items.getById, { id });
+	const activity = useQuery(api.items.getItemActivity, { itemId: id });
 
 	// Mutations for Owner
 	const updateItem = useMutation(api.items.update);
 	const deleteItem = useMutation(api.items.deleteItem);
 	const approveClaim = useMutation(api.items.approveClaim);
 	const rejectClaim = useMutation(api.items.rejectClaim);
+	const markPickedUp = useMutation(api.items.markPickedUp);
+	const markReturned = useMutation(api.items.markReturned);
 
 	// Borrower Logic
 	// Logic moved to BorrowerRequestPanel
@@ -68,6 +68,20 @@ export default function ItemDetailPage({
 	const pendingClaims =
 		item?.requests?.filter((c) => c.status === "pending") || [];
 	const approvedClaim = item?.requests?.find((c) => c.status === "approved");
+
+	const approvedClaimPickedUp = !!(
+		approvedClaim &&
+		activity?.some(
+			(e) => e.type === "item_picked_up" && e.claimId === approvedClaim._id,
+		)
+	);
+
+	const approvedClaimReturned = !!(
+		approvedClaim &&
+		activity?.some(
+			(e) => e.type === "item_returned" && e.claimId === approvedClaim._id,
+		)
+	);
 
 	// UI State
 	const [editingId, setEditingId] = useState<string | null>(null);
@@ -241,6 +255,38 @@ export default function ItemDetailPage({
 												{format(approvedClaim.startDate, "MMM d")} to{" "}
 												{format(approvedClaim.endDate, "MMM d")}
 											</p>
+											<div className="mt-3 flex flex-wrap gap-2">
+												<Button
+													size="sm"
+													variant="outline"
+													disabled={approvedClaimPickedUp}
+													onClick={async () => {
+														await markPickedUp({
+															itemId: item._id,
+															claimId: approvedClaim._id,
+														});
+														toast.success("Marked as picked up");
+													}}
+												>
+													{approvedClaimPickedUp
+														? "Picked up"
+														: "Mark picked up"}
+												</Button>
+												<Button
+													size="sm"
+													variant="outline"
+													disabled={approvedClaimReturned}
+													onClick={async () => {
+														await markReturned({
+															itemId: item._id,
+															claimId: approvedClaim._id,
+														});
+														toast.success("Marked as returned");
+													}}
+												>
+													{approvedClaimReturned ? "Returned" : "Mark returned"}
+												</Button>
+											</div>
 										</div>
 									)}
 
@@ -295,6 +341,11 @@ export default function ItemDetailPage({
 										)
 									)}
 								</div>
+
+								<div className="border-t pt-6">
+									<h3 className="text-xl font-semibold mb-3">Activity</h3>
+									<ItemActivityTimeline events={activity} />
+								</div>
 							</div>
 						) : (
 							/* Borrower View */
@@ -304,6 +355,10 @@ export default function ItemDetailPage({
 										Checks Availability & Request
 									</h3>
 									<BorrowerRequestPanel item={item} />
+								</div>
+								<div className="border-t pt-6">
+									<h3 className="text-xl font-semibold mb-3">Activity</h3>
+									<ItemActivityTimeline events={activity} />
 								</div>
 							</div>
 						)}
