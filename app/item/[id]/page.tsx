@@ -1,15 +1,14 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { format } from "date-fns";
-import { ArrowLeft, Check, ExternalLink, Loader2, MapPin } from "lucide-react";
+import { ArrowLeft, ExternalLink, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
-import { DateRange } from "react-day-picker";
+import { use, useState } from "react";
 import { toast } from "sonner";
 import { ItemActivityTimeline } from "@/components/item-activity-timeline";
+import { BorrowerRequestPanel } from "@/components/lease/borrower-request-panel";
+import { LeaseClaimCard } from "@/components/lease/lease-claim-card";
 import { CATEGORY_LABELS, ItemForm } from "@/components/item-form";
-import { AvailabilityToggle } from "@/components/notifications/availability-toggle";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -23,7 +22,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
 	Carousel,
 	CarouselContent,
@@ -38,9 +36,8 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { useClaimItem } from "@/hooks/use-claim-item";
 import { api } from "../../../convex/_generated/api";
-import { Doc, Id } from "../../../convex/_generated/dataModel";
+import { Id } from "../../../convex/_generated/dataModel";
 
 export default function ItemDetailPage({
 	params,
@@ -60,31 +57,40 @@ export default function ItemDetailPage({
 	const rejectClaim = useMutation(api.items.rejectClaim);
 	const markPickedUp = useMutation(api.items.markPickedUp);
 	const markReturned = useMutation(api.items.markReturned);
+	const markExpired = useMutation(api.items.markExpired);
+	const markMissing = useMutation(api.items.markMissing);
+	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
 
 	// Borrower Logic
 	// Logic moved to BorrowerRequestPanel
 
-	// Owner Logic Variables
-	const pendingClaims =
-		item?.requests?.filter((c) => c.status === "pending") || [];
-	const approvedClaim = item?.requests?.find((c) => c.status === "approved");
-
-	const approvedClaimPickedUp = !!(
-		approvedClaim &&
-		activity?.some(
-			(e) => e.type === "item_picked_up" && e.claimId === approvedClaim._id,
-		)
-	);
-
-	const approvedClaimReturned = !!(
-		approvedClaim &&
-		activity?.some(
-			(e) => e.type === "item_returned" && e.claimId === approvedClaim._id,
-		)
-	);
-
 	// UI State
 	const [editingId, setEditingId] = useState<string | null>(null);
+
+	const approveClaimAction = async (
+		args: Parameters<typeof approveClaim>[0],
+	) => {
+		await approveClaim(args);
+	};
+	const rejectClaimAction = async (args: Parameters<typeof rejectClaim>[0]) => {
+		await rejectClaim(args);
+	};
+	const markPickedUpAction = async (
+		args: Parameters<typeof markPickedUp>[0],
+	) => {
+		await markPickedUp(args);
+	};
+	const markReturnedAction = async (
+		args: Parameters<typeof markReturned>[0],
+	) => {
+		await markReturned(args);
+	};
+	const markExpiredAction = async (args: Parameters<typeof markExpired>[0]) => {
+		await markExpired(args);
+	};
+	const markMissingAction = async (args: Parameters<typeof markMissing>[0]) => {
+		await markMissing(args);
+	};
 
 	if (item === undefined) {
 		return <div className="p-8 text-center">Loading...</div>;
@@ -244,101 +250,28 @@ export default function ItemDetailPage({
 									<h3 className="text-xl font-semibold mb-4">
 										Requests ({item.requests?.length || 0})
 									</h3>
-
-									{approvedClaim && (
-										<div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-											<h4 className="font-medium text-green-900 mb-2 flex items-center gap-2">
-												<Check className="h-4 w-4" /> Currently Approved
-											</h4>
-											<p className="text-sm text-green-800">
-												Lent to <strong>{approvedClaim.claimerId}</strong> from{" "}
-												{format(approvedClaim.startDate, "MMM d")} to{" "}
-												{format(approvedClaim.endDate, "MMM d")}
-											</p>
-											<div className="mt-3 flex flex-wrap gap-2">
-												<Button
-													size="sm"
-													variant="outline"
-													disabled={approvedClaimPickedUp}
-													onClick={async () => {
-														await markPickedUp({
-															itemId: item._id,
-															claimId: approvedClaim._id,
-														});
-														toast.success("Marked as picked up");
-													}}
-												>
-													{approvedClaimPickedUp
-														? "Picked up"
-														: "Mark picked up"}
-												</Button>
-												<Button
-													size="sm"
-													variant="outline"
-													disabled={approvedClaimReturned}
-													onClick={async () => {
-														await markReturned({
-															itemId: item._id,
-															claimId: approvedClaim._id,
-														});
-														toast.success("Marked as returned");
-													}}
-												>
-													{approvedClaimReturned ? "Returned" : "Mark returned"}
-												</Button>
-											</div>
-										</div>
-									)}
-
-									{pendingClaims.length > 0 ? (
-										<div className="space-y-3">
-											{pendingClaims.map((claim) => (
-												<div
+									{item.requests && item.requests.length > 0 ? (
+										<div className="space-y-4">
+											{item.requests.map((claim) => (
+												<LeaseClaimCard
 													key={claim._id}
-													className="flex items-center justify-between p-4 bg-white border rounded-lg shadow-sm"
-												>
-													<div>
-														<p className="font-medium">{claim.claimerId}</p>
-														<p className="text-sm text-gray-500">
-															Wants to borrow:{" "}
-															{format(claim.startDate, "MMM d")} -{" "}
-															{format(claim.endDate, "MMM d")}
-														</p>
-													</div>
-													<div className="flex gap-2">
-														<Button
-															size="sm"
-															variant="outline"
-															className="text-red-600 hover:bg-red-50 hover:text-red-700"
-															onClick={() =>
-																rejectClaim({
-																	claimId: claim._id,
-																	id: item._id,
-																})
-															}
-														>
-															Reject
-														</Button>
-														<Button
-															size="sm"
-															className="bg-green-600 hover:bg-green-700"
-															onClick={() =>
-																approveClaim({
-																	claimId: claim._id,
-																	id: item._id,
-																})
-															}
-														>
-															Approve
-														</Button>
-													</div>
-												</div>
+													itemId={item._id}
+													claim={claim}
+													viewerRole="owner"
+													approveClaim={approveClaimAction}
+													rejectClaim={rejectClaimAction}
+													markPickedUp={markPickedUpAction}
+													markReturned={markReturnedAction}
+													markExpired={markExpiredAction}
+													markMissing={markMissingAction}
+													generateUploadUrl={async () =>
+														await generateUploadUrl()
+													}
+												/>
 											))}
 										</div>
 									) : (
-										!approvedClaim && (
-											<p className="text-gray-500">No pending requests.</p>
-										)
+										<p className="text-gray-500">No requests yet.</p>
 									)}
 								</div>
 
@@ -360,130 +293,31 @@ export default function ItemDetailPage({
 									<h3 className="text-xl font-semibold mb-3">Activity</h3>
 									<ItemActivityTimeline events={activity} />
 								</div>
+								{item.myClaims && item.myClaims.length > 0 && (
+									<div className="border-t pt-6 space-y-4">
+										<h3 className="text-xl font-semibold">Your requests</h3>
+										<div className="space-y-4">
+											{item.myClaims.map((claim) => (
+												<LeaseClaimCard
+													key={claim._id}
+													itemId={item._id}
+													claim={claim}
+													viewerRole="borrower"
+													markPickedUp={markPickedUpAction}
+													markReturned={markReturnedAction}
+													generateUploadUrl={async () =>
+														await generateUploadUrl()
+													}
+												/>
+											))}
+										</div>
+									</div>
+								)}
 							</div>
 						)}
 					</div>
 				</div>
 			</div>
 		</div>
-	);
-}
-
-function BorrowerRequestPanel({ item }: { item: Doc<"items"> }) {
-	const {
-		requestItem,
-		disabledDates,
-		isSubmitting,
-		isAuthenticated,
-		isAuthLoading,
-		myRequests,
-		cancelRequest,
-	} = useClaimItem(item._id);
-
-	const [date, setDate] = useState<DateRange | undefined>();
-	const [numberOfMonths, setNumberOfMonths] = useState(1);
-
-	useEffect(() => {
-		const updateMonths = () => {
-			setNumberOfMonths(window.innerWidth >= 768 ? 2 : 1);
-		};
-		updateMonths();
-		window.addEventListener("resize", updateMonths);
-		return () => window.removeEventListener("resize", updateMonths);
-	}, []);
-
-	const onClaim = () => {
-		if (!date?.from || !date?.to) return;
-		requestItem(date.from, date.to, () => {
-			setDate(undefined);
-		});
-	};
-
-	return (
-		<>
-			<div className="bg-white border rounded-lg p-4 inline-block w-full max-w-md mx-auto md:mx-0">
-				<Calendar
-					mode="range"
-					selected={date}
-					onSelect={setDate}
-					disabled={disabledDates}
-					numberOfMonths={numberOfMonths}
-					className="mx-auto"
-				/>
-			</div>
-
-			<div className="flex flex-col sm:flex-row gap-4 items-center">
-				<Button
-					size="lg"
-					className="w-full sm:w-auto"
-					onClick={onClaim}
-					disabled={
-						!date?.from ||
-						!date?.to ||
-						isSubmitting ||
-						!isAuthenticated ||
-						isAuthLoading
-					}
-				>
-					{isSubmitting ? (
-						<>
-							<Loader2 className="mr-2 h-4 w-4 animate-spin" /> Requesting...
-						</>
-					) : (
-						"Request to Borrow"
-					)}
-				</Button>
-				{!isAuthenticated && (
-					<span className="text-sm text-muted-foreground">
-						Sign in to request
-					</span>
-				)}
-			</div>
-
-			{isAuthenticated && myRequests && myRequests.length > 0 && (
-				<div className="mt-6">
-					<h4 className="font-medium mb-3">Your Pending/Approved Requests</h4>
-					<div className="space-y-3">
-						{myRequests.map((req) => (
-							<div
-								key={req._id}
-								className="flex items-center justify-between p-3 bg-secondary/10 border rounded-lg"
-							>
-								<div>
-									<p className="font-medium">
-										{format(new Date(req.startDate), "MMM d, yyyy")} -{" "}
-										{format(new Date(req.endDate), "MMM d, yyyy")}
-									</p>
-									<p className="text-sm text-muted-foreground capitalize">
-										Status:{" "}
-										<span
-											className={
-												req.status === "approved"
-													? "text-green-600 font-bold"
-													: ""
-											}
-										>
-											{req.status}
-										</span>
-									</p>
-								</div>
-								<Button
-									variant="outline"
-									size="sm"
-									className="text-destructive hover:bg-destructive/10"
-									onClick={() => cancelRequest(req._id)}
-								>
-									Cancel
-								</Button>
-							</div>
-						))}
-					</div>
-				</div>
-			)}
-
-			<div className="mt-4">
-				<AvailabilityToggle id={item._id} />
-			</div>
-		</>
 	);
 }

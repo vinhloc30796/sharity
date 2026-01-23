@@ -44,6 +44,25 @@ export default defineSchema({
 	})
 		.index("by_item", ["itemId"])
 		.index("by_item_createdAt", ["itemId", "createdAt"]),
+	lease_activity: defineTable({
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+		type: v.union(
+			v.literal("lease_requested"),
+			v.literal("lease_approved"),
+			v.literal("lease_rejected"),
+			v.literal("lease_expired"),
+			v.literal("lease_missing"),
+			v.literal("lease_picked_up"),
+			v.literal("lease_returned"),
+		),
+		actorId: v.string(),
+		createdAt: v.number(),
+		note: v.optional(v.string()),
+		photoStorageIds: v.optional(v.array(v.id("_storage"))),
+	})
+		.index("by_claim_createdAt", ["claimId", "createdAt"])
+		.index("by_item_createdAt", ["itemId", "createdAt"]),
 	claims: defineTable({
 		itemId: v.id("items"),
 		claimerId: v.string(),
@@ -54,6 +73,14 @@ export default defineSchema({
 		),
 		startDate: v.number(),
 		endDate: v.number(),
+		// Temporarily optional so existing rows can be migrated safely.
+		requestedAt: v.optional(v.number()),
+		approvedAt: v.optional(v.number()),
+		rejectedAt: v.optional(v.number()),
+		pickedUpAt: v.optional(v.number()),
+		returnedAt: v.optional(v.number()),
+		expiredAt: v.optional(v.number()),
+		missingAt: v.optional(v.number()),
 	})
 		.index("by_item", ["itemId"])
 		.index("by_claimer", ["claimerId"]),

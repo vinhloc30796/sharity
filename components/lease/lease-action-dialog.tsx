@@ -1,0 +1,213 @@
+"use client";
+
+import type { ComponentProps } from "react";
+import { useState } from "react";
+import type { LucideIcon } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+	FileUpload,
+	FileUploadDropzone,
+	FileUploadItem,
+	FileUploadItemDelete,
+	FileUploadItemMetadata,
+	FileUploadItemPreview,
+	FileUploadList,
+} from "@/components/ui/file-upload";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import type { Id } from "@/convex/_generated/dataModel";
+import { uploadFileToConvexStorage } from "@/lib/upload-to-convex-storage";
+
+import type { MutationResult } from "./lease-claim-types";
+
+type ButtonVariant = ComponentProps<typeof Button>["variant"];
+type ButtonSize = ComponentProps<typeof Button>["size"];
+
+type NoteConfig = {
+	id: string;
+	label: string;
+	placeholder: string;
+	rows: number;
+};
+
+type PhotoConfig = {
+	label: string;
+	maxFiles: number;
+	accept: string;
+};
+
+type ActionPayload = {
+	note?: string;
+	photoStorageIds?: Id<"_storage">[];
+};
+
+type BaseDialogProps = {
+	title: string;
+	description?: string;
+	triggerLabel: string;
+	triggerIcon?: LucideIcon;
+	triggerVariant?: ButtonVariant;
+	triggerSize?: ButtonSize;
+	triggerClassName?: string;
+	confirmLabel: string;
+	confirmVariant?: ButtonVariant;
+	cancelLabel: string;
+	noteConfig?: NoteConfig;
+	disabled?: boolean;
+	onConfirm: (payload: ActionPayload) => MutationResult;
+	onBusyChange?: (busy: boolean) => void;
+};
+
+type DialogWithPhotos = BaseDialogProps & {
+	photoConfig: PhotoConfig;
+	generateUploadUrl: () => Promise<string>;
+};
+
+type DialogWithoutPhotos = BaseDialogProps & {
+	photoConfig?: undefined;
+	generateUploadUrl?: undefined;
+};
+
+type LeaseActionDialogProps = DialogWithPhotos | DialogWithoutPhotos;
+
+/**
+ * Shared dialog for lease actions with optional notes and photos.
+ */
+export function LeaseActionDialog(props: LeaseActionDialogProps) {
+	const {
+		title,
+		description,
+		triggerLabel,
+		triggerIcon: TriggerIcon,
+		triggerVariant,
+		triggerSize,
+		triggerClassName,
+		confirmLabel,
+		confirmVariant,
+		cancelLabel,
+		noteConfig,
+		disabled,
+		onConfirm,
+		onBusyChange,
+	} = props;
+	const [open, setOpen] = useState(false);
+	const [note, setNote] = useState("");
+	const [files, setFiles] = useState<File[]>([]);
+	const [isSaving, setIsSaving] = useState(false);
+	const isDisabled = Boolean(disabled);
+	const hasPhotos = props.photoConfig !== undefined;
+
+	return (
+		<Dialog open={open} onOpenChange={setOpen}>
+			<DialogTrigger asChild>
+				<Button
+					size={triggerSize}
+					variant={triggerVariant}
+					className={triggerClassName}
+					disabled={isDisabled}
+				>
+					{TriggerIcon ? <TriggerIcon className="h-3.5 w-3.5 mr-1.5" /> : null}
+					{triggerLabel}
+				</Button>
+			</DialogTrigger>
+			<DialogContent className={hasPhotos ? "max-w-lg" : undefined}>
+				<DialogHeader>
+					<DialogTitle>{title}</DialogTitle>
+					{description ? (
+						<DialogDescription>{description}</DialogDescription>
+					) : null}
+				</DialogHeader>
+				<div className="space-y-4">
+					{noteConfig ? (
+						<div className="flex flex-col gap-2">
+							<Label htmlFor={noteConfig.id}>{noteConfig.label}</Label>
+							<Textarea
+								id={noteConfig.id}
+								placeholder={noteConfig.placeholder}
+								value={note}
+								onChange={(e) => setNote(e.target.value)}
+								rows={noteConfig.rows}
+							/>
+						</div>
+					) : null}
+					{hasPhotos ? (
+						<div className="flex flex-col gap-2">
+							<Label>{props.photoConfig.label}</Label>
+							<FileUpload
+								maxFiles={props.photoConfig.maxFiles}
+								accept={props.photoConfig.accept}
+								value={files}
+								onValueChange={setFiles}
+								multiple
+							>
+								<FileUploadDropzone className="h-32 bg-muted/50 border-dashed transition-colors hover:bg-muted/80" />
+								<FileUploadList>
+									{files.map((file, i) => (
+										<FileUploadItem key={i} value={file}>
+											<FileUploadItemPreview />
+											<FileUploadItemMetadata />
+											<FileUploadItemDelete />
+										</FileUploadItem>
+									))}
+								</FileUploadList>
+							</FileUpload>
+						</div>
+					) : null}
+				</div>
+				<DialogFooter>
+					<Button
+						variant="outline"
+						onClick={() => setOpen(false)}
+						disabled={isSaving}
+					>
+						{cancelLabel}
+					</Button>
+					<Button
+						variant={confirmVariant}
+						disabled={isSaving}
+						onClick={async () => {
+							setIsSaving(true);
+							onBusyChange?.(true);
+							try {
+								let photoStorageIds: Id<"_storage">[] | undefined;
+								if (hasPhotos && files.length > 0) {
+									photoStorageIds = await Promise.all(
+										files.map((file) =>
+											uploadFileToConvexStorage({
+												file,
+												generateUploadUrl: async () =>
+													await props.generateUploadUrl(),
+											}),
+										),
+									);
+								}
+								await onConfirm({
+									note: note || undefined,
+									photoStorageIds,
+								});
+								setFiles([]);
+								setNote("");
+								setOpen(false);
+							} finally {
+								setIsSaving(false);
+								onBusyChange?.(false);
+							}
+						}}
+					>
+						{isSaving ? `${confirmLabel}...` : confirmLabel}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}

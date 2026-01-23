@@ -477,6 +477,14 @@ export const requestItem = mutation({
 			endDate: args.endDate,
 		});
 
+		await ctx.db.insert("lease_activity", {
+			itemId: args.id,
+			claimId,
+			type: "lease_requested",
+			actorId: identity.subject,
+			createdAt: now,
+		});
+
 		// Notify owner
 		await ctx.db.insert("notifications", {
 			recipientId: item.ownerId,
@@ -484,7 +492,7 @@ export const requestItem = mutation({
 			itemId: args.id,
 			requestId: claimId,
 			isRead: false,
-			createdAt: Date.now(),
+			createdAt: now,
 		});
 	},
 });
@@ -523,17 +531,26 @@ export const approveClaim = mutation({
 		if (!claim) throw new Error("Claim not found");
 		if (claim.itemId !== args.id) throw new Error("Mismatch item/claim");
 
+		const now = Date.now();
 		await ctx.db.patch(args.claimId, { status: "approved" });
 
 		await ctx.db.insert("item_activity", {
 			itemId: args.id,
 			type: "loan_started",
 			actorId: identity.subject,
-			createdAt: Date.now(),
+			createdAt: now,
 			claimId: args.claimId,
 			borrowerId: claim.claimerId,
 			startDate: claim.startDate,
 			endDate: claim.endDate,
+		});
+
+		await ctx.db.insert("lease_activity", {
+			itemId: args.id,
+			claimId: args.claimId,
+			type: "lease_approved",
+			actorId: identity.subject,
+			createdAt: now,
 		});
 
 		// Notify claimer
@@ -543,7 +560,7 @@ export const approveClaim = mutation({
 			itemId: args.id,
 			requestId: args.claimId,
 			isRead: false,
-			createdAt: Date.now(),
+			createdAt: now,
 		});
 
 		// We no longer set isAvailable to false globally, as it depends on dates.
@@ -554,47 +571,92 @@ export const approveClaim = mutation({
 	},
 });
 
+export const getLeaseActivity = query({
+	args: { claimId: v.optional(v.id("claims")) },
+	handler: async (ctx, args) => {
+		const claimId = args.claimId;
+		if (!claimId) return [];
+
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const claim = await ctx.db.get(claimId);
+		if (!claim) throw new Error("Claim not found");
+
+		const item = await ctx.db.get(claim.itemId);
+		if (!item) throw new Error("Item not found");
+
+		const userId = identity.subject;
+		if (userId !== item.ownerId && userId !== claim.claimerId) {
+			throw new Error("Unauthorized");
+		}
+
+		const events = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", claimId))
+			.order("desc")
+			.take(50);
+
+		const eventsWithPhotos = await Promise.all(
+			events.map(async (event) => {
+				const ids = event.photoStorageIds ?? [];
+				const urls = await Promise.all(ids.map((id) => ctx.storage.getUrl(id)));
+				const photoUrls = urls.filter(
+					(u): u is string => typeof u === "string",
+				);
+				return { ...event, photoUrls };
+			}),
+		);
+
+		return eventsWithPhotos;
+	},
+});
+
 export const markPickedUp = mutation({
 	args: {
 		itemId: v.id("items"),
-		claimId: v.optional(v.id("claims")),
+		claimId: v.id("claims"),
+		note: v.optional(v.string()),
+		photoStorageIds: v.optional(v.array(v.id("_storage"))),
 	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
 
-		const item = await ctx.db.get(args.itemId);
-		if (!item) throw new Error("Item not found");
-		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
-
 		const createdAt = Date.now();
-
-		if (args.claimId) {
-			const claim = await ctx.db.get(args.claimId);
-			if (!claim) throw new Error("Claim not found");
-			if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
-			if (claim.status !== "approved") {
-				throw new Error("Only approved claims can be marked as picked up");
-			}
-
-			await ctx.db.insert("item_activity", {
-				itemId: args.itemId,
-				type: "item_picked_up",
-				actorId: identity.subject,
-				createdAt,
-				claimId: args.claimId,
-				borrowerId: claim.claimerId,
-				startDate: claim.startDate,
-				endDate: claim.endDate,
-			});
-			return;
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can be marked as picked up");
 		}
 
-		await ctx.db.insert("item_activity", {
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+
+		const userId = identity.subject;
+		if (userId !== item.ownerId && userId !== claim.claimerId) {
+			throw new Error("Unauthorized");
+		}
+
+		const existing = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		if (existing.some((e) => e.type === "lease_picked_up")) {
+			throw new Error("Pickup already recorded for this lease");
+		}
+
+		await ctx.db.insert("lease_activity", {
 			itemId: args.itemId,
-			type: "item_picked_up",
-			actorId: identity.subject,
+			claimId: args.claimId,
+			type: "lease_picked_up",
+			actorId: userId,
 			createdAt,
+			note: args.note,
+			photoStorageIds: args.photoStorageIds,
 		});
 	},
 });
@@ -602,44 +664,52 @@ export const markPickedUp = mutation({
 export const markReturned = mutation({
 	args: {
 		itemId: v.id("items"),
-		claimId: v.optional(v.id("claims")),
+		claimId: v.id("claims"),
+		note: v.optional(v.string()),
+		photoStorageIds: v.optional(v.array(v.id("_storage"))),
 	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
 
-		const item = await ctx.db.get(args.itemId);
-		if (!item) throw new Error("Item not found");
-		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
-
 		const createdAt = Date.now();
-
-		if (args.claimId) {
-			const claim = await ctx.db.get(args.claimId);
-			if (!claim) throw new Error("Claim not found");
-			if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
-			if (claim.status !== "approved") {
-				throw new Error("Only approved claims can be marked as returned");
-			}
-
-			await ctx.db.insert("item_activity", {
-				itemId: args.itemId,
-				type: "item_returned",
-				actorId: identity.subject,
-				createdAt,
-				claimId: args.claimId,
-				borrowerId: claim.claimerId,
-				startDate: claim.startDate,
-				endDate: claim.endDate,
-			});
-			return;
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can be marked as returned");
 		}
 
-		await ctx.db.insert("item_activity", {
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+
+		const userId = identity.subject;
+		if (userId !== item.ownerId && userId !== claim.claimerId) {
+			throw new Error("Unauthorized");
+		}
+
+		const existing = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		if (existing.some((e) => e.type === "lease_returned")) {
+			throw new Error("Return already recorded for this lease");
+		}
+
+		if (!existing.some((e) => e.type === "lease_picked_up")) {
+			throw new Error("Cannot mark returned before pickup is recorded");
+		}
+
+		await ctx.db.insert("lease_activity", {
 			itemId: args.itemId,
-			type: "item_returned",
-			actorId: identity.subject,
+			claimId: args.claimId,
+			type: "lease_returned",
+			actorId: userId,
 			createdAt,
+			note: args.note,
+			photoStorageIds: args.photoStorageIds,
 		});
 	},
 });
@@ -657,7 +727,16 @@ export const rejectClaim = mutation({
 		const claim = await ctx.db.get(args.claimId);
 		if (!claim) throw new Error("Claim not found");
 
+		const now = Date.now();
 		await ctx.db.patch(args.claimId, { status: "rejected" });
+
+		await ctx.db.insert("lease_activity", {
+			itemId: args.id,
+			claimId: args.claimId,
+			type: "lease_rejected",
+			actorId: identity.subject,
+			createdAt: now,
+		});
 
 		// Notify claimer
 		await ctx.db.insert("notifications", {
@@ -666,7 +745,102 @@ export const rejectClaim = mutation({
 			itemId: args.id,
 			requestId: args.claimId,
 			isRead: false,
-			createdAt: Date.now(),
+			createdAt: now,
+		});
+	},
+});
+
+export const markExpired = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+		note: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can be marked as expired");
+		}
+
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
+
+		const existing = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		if (existing.some((e) => e.type === "lease_picked_up")) {
+			throw new Error("Cannot mark expired after pickup is recorded");
+		}
+		if (existing.some((e) => e.type === "lease_expired")) {
+			throw new Error("Expired already recorded for this lease");
+		}
+
+		const now = Date.now();
+		await ctx.db.insert("lease_activity", {
+			itemId: args.itemId,
+			claimId: args.claimId,
+			type: "lease_expired",
+			actorId: identity.subject,
+			createdAt: now,
+			note: args.note,
+		});
+	},
+});
+
+export const markMissing = mutation({
+	args: {
+		itemId: v.id("items"),
+		claimId: v.id("claims"),
+		note: v.optional(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const claim = await ctx.db.get(args.claimId);
+		if (!claim) throw new Error("Claim not found");
+		if (claim.itemId !== args.itemId) throw new Error("Mismatch item/claim");
+		if (claim.status !== "approved") {
+			throw new Error("Only approved claims can be marked as missing");
+		}
+
+		const item = await ctx.db.get(args.itemId);
+		if (!item) throw new Error("Item not found");
+		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
+
+		const existing = await ctx.db
+			.query("lease_activity")
+			.withIndex("by_claim_createdAt", (q) => q.eq("claimId", args.claimId))
+			.order("desc")
+			.take(50);
+
+		if (!existing.some((e) => e.type === "lease_picked_up")) {
+			throw new Error("Cannot mark missing before pickup is recorded");
+		}
+		if (existing.some((e) => e.type === "lease_returned")) {
+			throw new Error("Cannot mark missing after return is recorded");
+		}
+		if (existing.some((e) => e.type === "lease_missing")) {
+			throw new Error("Missing already recorded for this lease");
+		}
+
+		const now = Date.now();
+		await ctx.db.insert("lease_activity", {
+			itemId: args.itemId,
+			claimId: args.claimId,
+			type: "lease_missing",
+			actorId: identity.subject,
+			createdAt: now,
+			note: args.note,
 		});
 	},
 });
@@ -684,6 +858,8 @@ export const cancelClaim = mutation({
 			throw new Error("Unauthorized: You cannot cancel this claim");
 		}
 
+		// Keep behavior: we still delete cancelled claims for now.
+		// Once we add a dedicated lease page, we can switch to a soft-cancel.
 		await ctx.db.delete(claim._id);
 
 		if (claim.status === "approved") {

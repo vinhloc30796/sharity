@@ -54,6 +54,7 @@ export interface Location {
 	address?: string;
 }
 import { toast } from "sonner";
+import { uploadFileToConvexStorage } from "@/lib/upload-to-convex-storage";
 
 interface ItemFormProps {
 	initialValues?: {
@@ -177,21 +178,11 @@ export function ItemForm({
 
 				// If not already uploaded, upload now
 				if (!storageId) {
-					try {
-						const postUrl = await generateUploadUrl();
-						const result = await fetch(postUrl, {
-							method: "POST",
-							headers: { "Content-Type": file.type },
-							body: file,
-						});
-						if (!result.ok) throw new Error("Upload failed");
-						const data = await result.json();
-						storageId = data.storageId;
-						fileStorageIds.current.set(file, storageId!);
-					} catch (err) {
-						console.error(err);
-						throw new Error(`Failed to upload ${file.name}`);
-					}
+					storageId = await uploadFileToConvexStorage({
+						file,
+						generateUploadUrl: async () => await generateUploadUrl(),
+					});
+					fileStorageIds.current.set(file, storageId);
 				}
 
 				if (storageId) {
