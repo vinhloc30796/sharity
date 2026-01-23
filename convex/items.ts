@@ -415,15 +415,15 @@ export const requestItem = mutation({
 
 		// Validate dates
 		const now = Date.now();
+		const todayStart = new Date(now);
+		todayStart.setHours(0, 0, 0, 0);
 		// Allow some buffer or strip time components if strict?
 		// For now simple checks.
 		if (args.endDate < args.startDate) {
 			throw new Error("End date must be after start date");
 		}
-		if (args.startDate < now - 24 * 60 * 60 * 1000) {
-			// Allow "today" even if slightly past now, roughly.
-			// But strictly past dates shouldn't be allowed ideally.
-			// Let's just say startDate must be >= today.
+		if (args.startDate < todayStart.getTime()) {
+			throw new Error("Start date must be today or later");
 		}
 
 		// Check for specific overlaps with APPROVED claims
@@ -442,13 +442,20 @@ export const requestItem = mutation({
 		}
 
 		// Check for self-overlap (User cannot have overlapping requests for the same item)
-		const myRequests = await ctx.db
+		// Only consider active requests (pending/approved). Ignore rejected/cancelled.
+		const myActiveRequests = await ctx.db
 			.query("claims")
 			.withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
 			.filter((q) => q.eq(q.field("itemId"), args.id))
+			.filter((q) =>
+				q.or(
+					q.eq(q.field("status"), "pending"),
+					q.eq(q.field("status"), "approved"),
+				),
+			)
 			.collect();
 
-		const hasSelfOverlap = myRequests.some((req) => {
+		const hasSelfOverlap = myActiveRequests.some((req) => {
 			// Check if new request overlaps with existing request
 			return args.startDate < req.endDate && args.endDate > req.startDate;
 		});

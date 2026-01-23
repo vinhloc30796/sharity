@@ -3,10 +3,14 @@
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, ExternalLink, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { use, useState } from "react";
+import { use, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ItemActivityTimeline } from "@/components/item-activity-timeline";
-import { BorrowerRequestPanel } from "@/components/lease/borrower-request-panel";
+import {
+	BorrowerRequestActions,
+	BorrowerRequestCalendar,
+	BorrowerRequestProvider,
+} from "@/components/lease/borrower-request-panel";
 import { LeaseClaimCard } from "@/components/lease/lease-claim-card";
 import { CATEGORY_LABELS, ItemForm } from "@/components/item-form";
 import {
@@ -36,8 +40,18 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
+import { ItemCalendar } from "@/components/item-calendar";
+import { cn } from "@/lib/utils";
+import { useItemCalendar } from "@/hooks/use-item-calendar";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
+
+type ItemRequest = {
+	_id: Id<"claims">;
+	status: "pending" | "approved" | "rejected";
+	startDate: number;
+	endDate: number;
+};
 
 export default function ItemDetailPage({
 	params,
@@ -66,6 +80,23 @@ export default function ItemDetailPage({
 
 	// UI State
 	const [editingId, setEditingId] = useState<string | null>(null);
+	const claimCardRefs = useRef<Map<Id<"claims">, HTMLDivElement>>(new Map());
+
+	const focusClaimCard = (claimId: Id<"claims">) => {
+		const el = claimCardRefs.current.get(claimId);
+		if (!el) return;
+		el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+		el.focus();
+	};
+
+	const ownerRequests = ((item?.requests ?? []) as ItemRequest[]) ?? [];
+	const ownerCalendarState = useItemCalendar({
+		mode: "owner",
+		itemId: id,
+		requests: ownerRequests,
+		months: 2,
+		onFocusClaim: focusClaimCard,
+	});
 
 	const approveClaimAction = async (
 		args: Parameters<typeof approveClaim>[0],
@@ -100,8 +131,16 @@ export default function ItemDetailPage({
 		return <div className="p-8 text-center">Item not found</div>;
 	}
 
+	const ownerCalendar = item.isOwner ? (
+		<div className="bg-white border rounded-lg p-4 w-full">
+			<div className="flex justify-center w-full max-w-full">
+				<ItemCalendar {...ownerCalendarState.calendarProps} />
+			</div>
+		</div>
+	) : null;
+
 	return (
-		<div className="container mx-auto px-4 py-8 max-w-5xl">
+		<div className="container mx-auto px-3 sm:px-4 lg:px-6 py-8 max-w-7xl">
 			<Button
 				variant="ghost"
 				className="mb-6 gap-2"
@@ -110,76 +149,78 @@ export default function ItemDetailPage({
 				<ArrowLeft className="h-4 w-4" /> Back to Items
 			</Button>
 
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-				{/* Image Section */}
-				<div>
-					{item.imageUrls && item.imageUrls.length > 0 ? (
-						<div className="relative rounded-lg overflow-hidden bg-gray-100 border">
-							<Carousel className="w-full">
-								<CarouselContent>
-									{item.imageUrls.map((url, index) => (
-										<CarouselItem key={index}>
-											<div className="aspect-square relative">
-												<img
-													src={url}
-													alt={`${item.name} - Image ${index + 1}`}
-													className="object-cover w-full h-full"
-												/>
-											</div>
-										</CarouselItem>
-									))}
-								</CarouselContent>
-								{item.imageUrls.length > 1 && (
-									<>
-										<CarouselPrevious className="left-2" />
-										<CarouselNext className="right-2" />
-									</>
-								)}
-							</Carousel>
-						</div>
-					) : (
-						<div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-							No Images
-						</div>
-					)}
-				</div>
+			{item.isOwner ? (
+				<div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-8">
+					{/* Image + Calendar Section */}
+					<div className="space-y-4">
+						{item.imageUrls && item.imageUrls.length > 0 ? (
+							<div className="relative rounded-lg overflow-hidden bg-gray-100 border">
+								<Carousel className="w-full">
+									<CarouselContent>
+										{item.imageUrls.map((url, index) => (
+											<CarouselItem key={index}>
+												<div className="aspect-square relative">
+													<img
+														src={url}
+														alt={`${item.name} - Image ${index + 1}`}
+														className="object-cover w-full h-full"
+													/>
+												</div>
+											</CarouselItem>
+										))}
+									</CarouselContent>
+									{item.imageUrls.length > 1 && (
+										<>
+											<CarouselPrevious className="left-2" />
+											<CarouselNext className="right-2" />
+										</>
+									)}
+								</Carousel>
+							</div>
+						) : (
+							<div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+								No Images
+							</div>
+						)}
 
-				{/* Details Section */}
-				<div className="space-y-6">
-					<div>
-						<div className="flex justify-between items-start">
-							<h1 className="text-3xl font-bold mb-2">{item.name}</h1>
-							{item.isOwner && <Badge variant="outline">You own this</Badge>}
-						</div>
-
-						<div className="flex flex-wrap gap-2 mb-4">
-							{item.category && (
-								<Badge variant="secondary">
-									{CATEGORY_LABELS[item.category]}
-								</Badge>
-							)}
-							{item.location && (
-								<a
-									href={`https://maps.google.com/?q=${item.location.lat},${item.location.lng}`}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-								>
-									<MapPin className="h-4 w-4" />
-									{item.location.address ||
-										`${item.location.lat.toFixed(2)}, ${item.location.lng.toFixed(2)}`}
-									<ExternalLink className="h-3 w-3" />
-								</a>
-							)}
-						</div>
-						<p className="text-lg text-gray-700 leading-relaxed">
-							{item.description}
-						</p>
+						{ownerCalendar}
 					</div>
 
-					<div className="border-t pt-6">
-						{item.isOwner ? (
-							/* Owner View */
+					{/* Details Section */}
+					<div className="space-y-6">
+						<div>
+							<div className="flex justify-between items-start">
+								<h1 className="text-3xl font-bold mb-2">{item.name}</h1>
+								{item.isOwner && <Badge variant="outline">You own this</Badge>}
+							</div>
+
+							<div className="flex flex-wrap gap-2 mb-4">
+								{item.category && (
+									<Badge variant="secondary">
+										{CATEGORY_LABELS[item.category]}
+									</Badge>
+								)}
+								{item.location && (
+									<a
+										href={`https://maps.google.com/?q=${item.location.lat},${item.location.lng}`}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+									>
+										<MapPin className="h-4 w-4" />
+										{item.location.address ||
+											`${item.location.lat.toFixed(2)}, ${item.location.lng.toFixed(2)}`}
+										<ExternalLink className="h-3 w-3" />
+									</a>
+								)}
+							</div>
+							<p className="text-lg text-gray-700 leading-relaxed">
+								{item.description}
+							</p>
+						</div>
+
+						<div className="border-t pt-6">
+							{/* Owner View */}
 							<div className="space-y-6">
 								<div className="flex gap-4">
 									<Dialog
@@ -253,21 +294,34 @@ export default function ItemDetailPage({
 									{item.requests && item.requests.length > 0 ? (
 										<div className="space-y-4">
 											{item.requests.map((claim) => (
-												<LeaseClaimCard
+												<div
 													key={claim._id}
-													itemId={item._id}
-													claim={claim}
-													viewerRole="owner"
-													approveClaim={approveClaimAction}
-													rejectClaim={rejectClaimAction}
-													markPickedUp={markPickedUpAction}
-													markReturned={markReturnedAction}
-													markExpired={markExpiredAction}
-													markMissing={markMissingAction}
-													generateUploadUrl={async () =>
-														await generateUploadUrl()
-													}
-												/>
+													tabIndex={-1}
+													ref={(el) => {
+														if (el) claimCardRefs.current.set(claim._id, el);
+														else claimCardRefs.current.delete(claim._id);
+													}}
+													className={cn(
+														"outline-none scroll-mt-24",
+														ownerCalendarState.hoveredClaimId === claim._id &&
+															"ring-2 ring-primary rounded-lg",
+													)}
+												>
+													<LeaseClaimCard
+														itemId={item._id}
+														claim={claim}
+														viewerRole="owner"
+														approveClaim={approveClaimAction}
+														rejectClaim={rejectClaimAction}
+														markPickedUp={markPickedUpAction}
+														markReturned={markReturnedAction}
+														markExpired={markExpiredAction}
+														markMissing={markMissingAction}
+														generateUploadUrl={async () =>
+															await generateUploadUrl()
+														}
+													/>
+												</div>
 											))}
 										</div>
 									) : (
@@ -280,44 +334,102 @@ export default function ItemDetailPage({
 									<ItemActivityTimeline events={activity} />
 								</div>
 							</div>
-						) : (
-							/* Borrower View */
-							<div className="space-y-6">
-								<div className="flex flex-col gap-4">
-									<h3 className="text-xl font-semibold">
-										Checks Availability & Request
-									</h3>
-									<BorrowerRequestPanel item={item} />
-								</div>
-								<div className="border-t pt-6">
-									<h3 className="text-xl font-semibold mb-3">Activity</h3>
-									<ItemActivityTimeline events={activity} />
-								</div>
-								{item.myClaims && item.myClaims.length > 0 && (
-									<div className="border-t pt-6 space-y-4">
-										<h3 className="text-xl font-semibold">Your requests</h3>
-										<div className="space-y-4">
-											{item.myClaims.map((claim) => (
-												<LeaseClaimCard
-													key={claim._id}
-													itemId={item._id}
-													claim={claim}
-													viewerRole="borrower"
-													markPickedUp={markPickedUpAction}
-													markReturned={markReturnedAction}
-													generateUploadUrl={async () =>
-														await generateUploadUrl()
-													}
-												/>
-											))}
-										</div>
-									</div>
-								)}
-							</div>
-						)}
+						</div>
 					</div>
 				</div>
-			</div>
+			) : (
+				<BorrowerRequestProvider item={item}>
+					<div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-8">
+						{/* Image + Calendar Section */}
+						<div className="space-y-4">
+							{item.imageUrls && item.imageUrls.length > 0 ? (
+								<div className="relative rounded-lg overflow-hidden bg-gray-100 border">
+									<Carousel className="w-full">
+										<CarouselContent>
+											{item.imageUrls.map((url, index) => (
+												<CarouselItem key={index}>
+													<div className="aspect-square relative">
+														<img
+															src={url}
+															alt={`${item.name} - Image ${index + 1}`}
+															className="object-cover w-full h-full"
+														/>
+													</div>
+												</CarouselItem>
+											))}
+										</CarouselContent>
+										{item.imageUrls.length > 1 && (
+											<>
+												<CarouselPrevious className="left-2" />
+												<CarouselNext className="right-2" />
+											</>
+										)}
+									</Carousel>
+								</div>
+							) : (
+								<div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+									No Images
+								</div>
+							)}
+
+							<div className="bg-white border rounded-lg p-4 w-full">
+								<div className="flex justify-center w-full max-w-full">
+									<BorrowerRequestCalendar className="mx-auto" />
+								</div>
+							</div>
+						</div>
+
+						{/* Details Section */}
+						<div className="space-y-6">
+							<div>
+								<div className="flex justify-between items-start">
+									<h1 className="text-3xl font-bold mb-2">{item.name}</h1>
+								</div>
+
+								<div className="flex flex-wrap gap-2 mb-4">
+									{item.category && (
+										<Badge variant="secondary">
+											{CATEGORY_LABELS[item.category]}
+										</Badge>
+									)}
+									{item.location && (
+										<a
+											href={`https://maps.google.com/?q=${item.location.lat},${item.location.lng}`}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+										>
+											<MapPin className="h-4 w-4" />
+											{item.location.address ||
+												`${item.location.lat.toFixed(2)}, ${item.location.lng.toFixed(2)}`}
+											<ExternalLink className="h-3 w-3" />
+										</a>
+									)}
+								</div>
+								<p className="text-lg text-gray-700 leading-relaxed">
+									{item.description}
+								</p>
+							</div>
+
+							<div className="border-t pt-6">
+								{/* Borrower View */}
+								<div className="space-y-6">
+									<div className="flex flex-col gap-4">
+										<h3 className="text-xl font-semibold">
+											Checks Availability & Request
+										</h3>
+										<BorrowerRequestActions />
+									</div>
+									<div className="border-t pt-6">
+										<h3 className="text-xl font-semibold mb-3">Activity</h3>
+										<ItemActivityTimeline events={activity} />
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</BorrowerRequestProvider>
+			)}
 		</div>
 	);
 }

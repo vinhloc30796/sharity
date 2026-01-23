@@ -29,6 +29,13 @@ export function useClaimItem(itemId: Id<"items">) {
 			return;
 		}
 
+		const todayStart = new Date();
+		todayStart.setHours(0, 0, 0, 0);
+		if (startDate.getTime() < todayStart.getTime()) {
+			toast.error("Start date must be today or later");
+			return;
+		}
+
 		setIsSubmitting(true);
 		try {
 			await requestItem({
@@ -76,7 +83,6 @@ export function useClaimItem(itemId: Id<"items">) {
 
 	// Calculate disabled dates (approved requests from ANYONE)
 	const disabledDates = [
-		{ before: new Date() },
 		...(availability?.map((range) => ({
 			from: new Date(range.startDate),
 			to: new Date(range.endDate),

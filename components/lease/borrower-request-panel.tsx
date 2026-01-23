@@ -1,67 +1,115 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { DateRange } from "react-day-picker";
-import { format } from "date-fns";
+import * as React from "react";
+import { useMutation } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { AvailabilityToggle } from "@/components/notifications/availability-toggle";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { useClaimItem } from "@/hooks/use-claim-item";
+import { ItemCalendar } from "@/components/item-calendar";
+import {
+	useItemCalendar,
+	type BorrowerCalendarState,
+} from "@/hooks/use-item-calendar";
 import type { Doc } from "@/convex/_generated/dataModel";
+import { api } from "@/convex/_generated/api";
+import { LeaseClaimCard } from "./lease-claim-card";
+import { cn } from "@/lib/utils";
 
-// Handles borrower availability selection and request actions for a single item.
-export function BorrowerRequestPanel({ item }: { item: Doc<"items"> }) {
+type BorrowerRequestContextValue = {
+	item: Doc<"items">;
+	calendar: BorrowerCalendarState;
+	isSubmitting: boolean;
+	isAuthenticated: boolean;
+	isAuthLoading: boolean;
+	myRequests: Doc<"claims">[] | undefined;
+	cancelRequest: (claimId: Doc<"claims">["_id"]) => Promise<void>;
+	onClaim: () => void;
+};
+
+const BorrowerRequestContext =
+	React.createContext<BorrowerRequestContextValue | null>(null);
+
+function useBorrowerRequestContext(): BorrowerRequestContextValue {
+	const ctx = React.useContext(BorrowerRequestContext);
+	if (!ctx) {
+		throw new Error(
+			"BorrowerRequestContext is missing. Wrap with BorrowerRequestProvider.",
+		);
+	}
+	return ctx;
+}
+
+export function BorrowerRequestProvider(props: {
+	item: Doc<"items">;
+	children: React.ReactNode;
+}) {
+	const { item, children } = props;
+
+	const calendar = useItemCalendar({
+		mode: "borrower",
+		itemId: item._id,
+		months: 2,
+		showMyRequestModifiers: true,
+	});
+
+	const onClaim = () => {
+		if (!calendar.date?.from || !calendar.date?.to) return;
+		calendar.requestItem(calendar.date.from, calendar.date.to, () => {
+			calendar.setDate(undefined);
+		});
+	};
+
+	return (
+		<BorrowerRequestContext.Provider
+			value={{
+				item,
+				calendar,
+				isSubmitting: calendar.isSubmitting,
+				isAuthenticated: calendar.isAuthenticated,
+				isAuthLoading: calendar.isAuthLoading,
+				myRequests: calendar.myRequests,
+				cancelRequest: calendar.cancelRequest,
+				onClaim,
+			}}
+		>
+			{children}
+		</BorrowerRequestContext.Provider>
+	);
+}
+
+export function BorrowerRequestCalendar(props: { className?: string }) {
+	const { className } = props;
+	const { calendar } = useBorrowerRequestContext();
+
+	return <ItemCalendar {...calendar.calendarProps} className={className} />;
+}
+
+export function BorrowerRequestActions() {
 	const {
-		requestItem,
-		disabledDates,
+		item,
 		isSubmitting,
 		isAuthenticated,
 		isAuthLoading,
 		myRequests,
 		cancelRequest,
-	} = useClaimItem(item._id);
+		onClaim,
+		calendar,
+	} = useBorrowerRequestContext();
 
-	const [date, setDate] = useState<DateRange | undefined>();
-	const [numberOfMonths, setNumberOfMonths] = useState(1);
-
-	useEffect(() => {
-		const updateMonths = () => {
-			setNumberOfMonths(window.innerWidth >= 768 ? 2 : 1);
-		};
-		updateMonths();
-		window.addEventListener("resize", updateMonths);
-		return () => window.removeEventListener("resize", updateMonths);
-	}, []);
-
-	const onClaim = () => {
-		if (!date?.from || !date?.to) return;
-		requestItem(date.from, date.to, () => {
-			setDate(undefined);
-		});
-	};
+	const markPickedUp = useMutation(api.items.markPickedUp);
+	const markReturned = useMutation(api.items.markReturned);
+	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
 
 	return (
 		<>
-			<div className="bg-white border rounded-lg p-4 inline-block w-full max-w-md mx-auto md:mx-0">
-				<Calendar
-					mode="range"
-					selected={date}
-					onSelect={setDate}
-					disabled={disabledDates}
-					numberOfMonths={numberOfMonths}
-					className="mx-auto"
-				/>
-			</div>
-
 			<div className="flex flex-col sm:flex-row gap-4 items-center">
 				<Button
 					size="lg"
 					className="w-full sm:w-auto"
 					onClick={onClaim}
 					disabled={
-						!date?.from ||
-						!date?.to ||
+						!calendar.date?.from ||
+						!calendar.date?.to ||
 						isSubmitting ||
 						!isAuthenticated ||
 						isAuthLoading
@@ -85,38 +133,26 @@ export function BorrowerRequestPanel({ item }: { item: Doc<"items"> }) {
 			{isAuthenticated && myRequests && myRequests.length > 0 && (
 				<div className="mt-6">
 					<h4 className="font-medium mb-3">Your Pending/Approved Requests</h4>
-					<div className="space-y-3">
-						{myRequests.map((req) => (
+					<div className="space-y-4">
+						{myRequests.map((claim) => (
 							<div
-								key={req._id}
-								className="flex items-center justify-between p-3 bg-secondary/10 border rounded-lg"
+								key={claim._id}
+								className={cn(
+									calendar.hoveredClaimId === claim._id &&
+										"ring-2 ring-primary rounded-lg",
+								)}
 							>
-								<div>
-									<p className="font-medium">
-										{format(new Date(req.startDate), "MMM d, yyyy")} -{" "}
-										{format(new Date(req.endDate), "MMM d, yyyy")}
-									</p>
-									<p className="text-sm text-muted-foreground capitalize">
-										Status:{" "}
-										<span
-											className={
-												req.status === "approved"
-													? "text-green-600 font-bold"
-													: ""
-											}
-										>
-											{req.status}
-										</span>
-									</p>
-								</div>
-								<Button
-									variant="outline"
-									size="sm"
-									className="text-destructive hover:bg-destructive/10"
-									onClick={() => cancelRequest(req._id)}
-								>
-									Cancel
-								</Button>
+								<LeaseClaimCard
+									itemId={item._id}
+									claim={claim}
+									viewerRole="borrower"
+									cancelClaim={async ({ claimId }) =>
+										await cancelRequest(claimId)
+									}
+									markPickedUp={markPickedUp}
+									markReturned={markReturned}
+									generateUploadUrl={async () => await generateUploadUrl()}
+								/>
 							</div>
 						))}
 					</div>
@@ -127,5 +163,17 @@ export function BorrowerRequestPanel({ item }: { item: Doc<"items"> }) {
 				<AvailabilityToggle id={item._id} />
 			</div>
 		</>
+	);
+}
+
+// Handles borrower availability selection and request actions for a single item.
+export function BorrowerRequestPanel({ item }: { item: Doc<"items"> }) {
+	return (
+		<BorrowerRequestProvider item={item}>
+			<div className="bg-white border rounded-lg p-4 inline-block w-full max-w-md mx-auto md:mx-0">
+				<BorrowerRequestCalendar className="mx-auto" />
+			</div>
+			<BorrowerRequestActions />
+		</BorrowerRequestProvider>
 	);
 }

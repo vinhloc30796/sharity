@@ -17,6 +17,7 @@ import { LeaseActionDialog } from "./lease-action-dialog";
 import { LeaseClaimHeader } from "./lease-claim-header";
 import type {
 	ApproveClaimArgs,
+	CancelClaimArgs,
 	MarkLeaseStatusArgs,
 	MutationResult,
 	RecordLeaseArgs,
@@ -105,6 +106,7 @@ export function LeaseClaimCard(props: {
 	viewerRole: ViewerRole;
 	approveClaim?: (args: ApproveClaimArgs) => MutationResult;
 	rejectClaim?: (args: RejectClaimArgs) => MutationResult;
+	cancelClaim?: (args: CancelClaimArgs) => MutationResult;
 	markPickedUp: (args: RecordLeaseArgs) => MutationResult;
 	markReturned: (args: RecordLeaseArgs) => MutationResult;
 	markExpired?: (args: MarkLeaseStatusArgs) => MutationResult;
@@ -117,6 +119,7 @@ export function LeaseClaimCard(props: {
 		viewerRole,
 		approveClaim,
 		rejectClaim,
+		cancelClaim,
 		markPickedUp,
 		markReturned,
 		markExpired,
@@ -132,6 +135,7 @@ export function LeaseClaimCard(props: {
 
 	const [isApproving, setIsApproving] = useState(false);
 	const [isRejecting, setIsRejecting] = useState(false);
+	const [isCancelling, setIsCancelling] = useState(false);
 
 	const eventTimes = useMemo(() => {
 		const byType = new Map<LeaseActivityEvent["type"], number>();
@@ -177,6 +181,16 @@ export function LeaseClaimCard(props: {
 		!eventTimes.missingAt &&
 		!eventTimes.rejectedAt;
 
+	const canBorrowerCancel =
+		!isOwner &&
+		!!cancelClaim &&
+		(claim.status === "pending" || claim.status === "approved") &&
+		!eventTimes.pickedUpAt &&
+		!eventTimes.returnedAt &&
+		!eventTimes.expiredAt &&
+		!eventTimes.missingAt &&
+		!eventTimes.rejectedAt;
+
 	const canMarkExpired =
 		isOwner &&
 		isApproved &&
@@ -206,12 +220,34 @@ export function LeaseClaimCard(props: {
 			</CardHeader>
 
 			<CardContent>
+				{canBorrowerCancel && (
+					<div className="pb-3">
+						<Button
+							variant="outline"
+							size="sm"
+							className="w-full h-8 text-destructive hover:text-destructive"
+							disabled={isApproving || isRejecting || isCancelling}
+							onClick={async () => {
+								if (!cancelClaim) return;
+								setIsCancelling(true);
+								try {
+									await cancelClaim({ claimId: claim._id });
+								} finally {
+									setIsCancelling(false);
+								}
+							}}
+						>
+							{isCancelling ? "Cancelling..." : "Cancel request"}
+						</Button>
+					</div>
+				)}
+
 				{isOwner && claim.status === "pending" && (
 					<div className="flex gap-2">
 						<Button
 							size="sm"
 							className="flex-1 h-8"
-							disabled={isApproving || isRejecting}
+							disabled={isApproving || isRejecting || isCancelling}
 							onClick={async () => {
 								if (!approveClaim) return;
 								setIsApproving(true);
