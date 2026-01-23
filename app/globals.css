@@ -140,12 +140,57 @@
 	max-height: none !important;
 }
 
+/* Leaflet z-index - keep low to not interfere with modals */
 .leaflet-pane {
-	z-index: 400;
+	z-index: 40 !important;
+}
+
+.leaflet-tile-pane {
+	z-index: 20 !important;
+}
+
+.leaflet-overlay-pane {
+	z-index: 40 !important;
+}
+
+.leaflet-shadow-pane {
+	z-index: 50 !important;
+}
+
+.leaflet-marker-pane {
+	z-index: 60 !important;
+}
+
+.leaflet-tooltip-pane {
+	z-index: 65 !important;
+}
+
+.leaflet-popup-pane {
+	z-index: 70 !important;
 }
 
 .leaflet-control {
-	z-index: 800;
+	z-index: 80 !important;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+	z-index: 100 !important;
+}
+
+/* Map container should not create stacking context issues */
+.leaflet-container {
+	z-index: 0 !important;
+	isolation: isolate;
+}
+
+/* Ensure dialogs/modals appear above Leaflet map */
+[data-radix-dialog-overlay] {
+	z-index: 9998 !important;
+}
+
+[data-radix-dialog-content] {
+	z-index: 9999 !important;
 }
 
 @layer base {

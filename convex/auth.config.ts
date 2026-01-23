@@ -1,6 +1,7 @@
-// Local development: hardcoded Clerk issuer URL
-// For production: restore process.env.CLERK_ISSUER_URL
-const CLERK_ISSUER_URL = "https://trusted-shiner-99.clerk.accounts.dev";
+// Clerk issuer URL from environment variable
+// Set via: npx convex env set CLERK_ISSUER_URL "https://xxx.clerk.accounts.dev"
+// For local dev: reads from .env.local
+const CLERK_ISSUER_URL = process.env.CLERK_ISSUER_URL!;
 
 export default {
 	providers: [
