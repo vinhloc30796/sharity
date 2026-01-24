@@ -175,11 +175,6 @@ export function MyItemCard({
 				isOwner ? (
 					<div className="flex justify-end gap-2 w-full">
 						{hasActionableBack ? <FlipToBackButton label="Review" /> : null}
-						<Link href={`/item/${item._id}`}>
-							<Button variant="secondary" size="sm">
-								Manage
-							</Button>
-						</Link>
 						<Dialog
 							open={editingId === item._id}
 							onOpenChange={(open) => setEditingId(open ? item._id : null)}
