@@ -6,6 +6,17 @@ import { action, internalMutation, mutation, query } from "./_generated/server";
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 
+function otherPartyId(args: {
+	itemOwnerId: string;
+	claimerId: string;
+	actorId: string;
+}): string {
+	const { itemOwnerId, claimerId, actorId } = args;
+	if (actorId === itemOwnerId) return claimerId;
+	if (actorId === claimerId) return itemOwnerId;
+	throw new Error("Unauthorized");
+}
+
 function hasDateOverlap(
 	a: { startDate: number; endDate: number },
 	b: { startDate: number; endDate: number },
@@ -818,6 +829,21 @@ export const proposePickupWindow = mutation({
 			windowStartAt: args.windowStartAt,
 			windowEndAt,
 		});
+
+		await ctx.db.insert("notifications", {
+			recipientId: otherPartyId({
+				itemOwnerId: item.ownerId,
+				claimerId: claim.claimerId,
+				actorId: userId,
+			}),
+			type: "pickup_proposed",
+			itemId: args.itemId,
+			requestId: args.claimId,
+			windowStartAt: args.windowStartAt,
+			windowEndAt,
+			isRead: false,
+			createdAt: now,
+		});
 	},
 });
 
@@ -896,6 +922,21 @@ export const proposeReturnWindow = mutation({
 			windowStartAt: args.windowStartAt,
 			windowEndAt,
 		});
+
+		await ctx.db.insert("notifications", {
+			recipientId: otherPartyId({
+				itemOwnerId: item.ownerId,
+				claimerId: claim.claimerId,
+				actorId: userId,
+			}),
+			type: "return_proposed",
+			itemId: args.itemId,
+			requestId: args.claimId,
+			windowStartAt: args.windowStartAt,
+			windowEndAt,
+			isRead: false,
+			createdAt: now,
+		});
 	},
 });
 
@@ -970,6 +1011,17 @@ export const approvePickupWindow = mutation({
 			proposalId: latestProposal.proposalId,
 			windowStartAt: latestProposal.windowStartAt,
 			windowEndAt: latestProposal.windowEndAt,
+		});
+
+		await ctx.db.insert("notifications", {
+			recipientId: latestProposal.actorId,
+			type: "pickup_approved",
+			itemId: args.itemId,
+			requestId: args.claimId,
+			windowStartAt: latestProposal.windowStartAt,
+			windowEndAt: latestProposal.windowEndAt,
+			isRead: false,
+			createdAt: now,
 		});
 	},
 });
@@ -1054,6 +1106,17 @@ export const approveReturnWindow = mutation({
 			proposalId: latestProposal.proposalId,
 			windowStartAt: latestProposal.windowStartAt,
 			windowEndAt: latestProposal.windowEndAt,
+		});
+
+		await ctx.db.insert("notifications", {
+			recipientId: latestProposal.actorId,
+			type: "return_approved",
+			itemId: args.itemId,
+			requestId: args.claimId,
+			windowStartAt: latestProposal.windowStartAt,
+			windowEndAt: latestProposal.windowEndAt,
+			isRead: false,
+			createdAt: now,
 		});
 	},
 });
@@ -1154,6 +1217,19 @@ export const markPickedUp = mutation({
 		});
 
 		await ctx.db.patch(args.claimId, { pickedUpAt: createdAt });
+
+		await ctx.db.insert("notifications", {
+			recipientId: otherPartyId({
+				itemOwnerId: item.ownerId,
+				claimerId: claim.claimerId,
+				actorId: userId,
+			}),
+			type: "pickup_confirmed",
+			itemId: args.itemId,
+			requestId: args.claimId,
+			isRead: false,
+			createdAt,
+		});
 	},
 });
 
@@ -1263,6 +1339,19 @@ export const markReturned = mutation({
 		});
 
 		await ctx.db.patch(args.claimId, { returnedAt: createdAt });
+
+		await ctx.db.insert("notifications", {
+			recipientId: otherPartyId({
+				itemOwnerId: item.ownerId,
+				claimerId: claim.claimerId,
+				actorId: userId,
+			}),
+			type: "return_confirmed",
+			itemId: args.itemId,
+			requestId: args.claimId,
+			isRead: false,
+			createdAt,
+		});
 	},
 });
 
@@ -1350,6 +1439,18 @@ export const markExpired = mutation({
 		});
 
 		await ctx.db.patch(args.claimId, { expiredAt: now });
+
+		const recipientIds = [item.ownerId, claim.claimerId];
+		for (const recipientId of recipientIds) {
+			await ctx.db.insert("notifications", {
+				recipientId,
+				type: "pickup_expired",
+				itemId: args.itemId,
+				requestId: args.claimId,
+				isRead: false,
+				createdAt: now,
+			});
+		}
 	},
 });
 
@@ -1404,6 +1505,18 @@ export const markMissing = mutation({
 		});
 
 		await ctx.db.patch(args.claimId, { missingAt: now });
+
+		const recipientIds = [item.ownerId, claim.claimerId];
+		for (const recipientId of recipientIds) {
+			await ctx.db.insert("notifications", {
+				recipientId,
+				type: "return_missing",
+				itemId: args.itemId,
+				requestId: args.claimId,
+				isRead: false,
+				createdAt: now,
+			});
+		}
 	},
 });
 
@@ -1557,6 +1670,20 @@ export const resolveOverdueProposals = internalMutation({
 				});
 
 				await ctx.db.patch(claim._id, { expiredAt: now });
+
+				const item = await ctx.db.get(claim.itemId);
+				if (!item) continue;
+				const recipientIds = [item.ownerId, claim.claimerId];
+				for (const recipientId of recipientIds) {
+					await ctx.db.insert("notifications", {
+						recipientId,
+						type: "pickup_expired",
+						itemId: claim.itemId,
+						requestId: claim._id,
+						isRead: false,
+						createdAt: now,
+					});
+				}
 			} else if (proposal.type === "lease_return_proposed") {
 				if (claim.returnedAt || claim.missingAt) continue;
 				if (events.some((e) => e.type === "lease_returned")) continue;
@@ -1577,6 +1704,20 @@ export const resolveOverdueProposals = internalMutation({
 				});
 
 				await ctx.db.patch(claim._id, { missingAt: now });
+
+				const item = await ctx.db.get(claim.itemId);
+				if (!item) continue;
+				const recipientIds = [item.ownerId, claim.claimerId];
+				for (const recipientId of recipientIds) {
+					await ctx.db.insert("notifications", {
+						recipientId,
+						type: "return_missing",
+						itemId: claim.itemId,
+						requestId: claim._id,
+						isRead: false,
+						createdAt: now,
+					});
+				}
 			}
 		}
 	},
