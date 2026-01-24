@@ -38,7 +38,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ### 🔍 Finding & Requesting Items
 - [x] Browse items for discovery
-- [ ] Search for items:
+- [~] Search for items:
     - [x] By location
     - [ ] By keyword [~]
     - [ ] By availability time
