@@ -28,15 +28,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
 	metadataBase: new URL("https://sharity-dalat.vercel.app"),
 	title: {
-		default: "Sharity",
-		template: "%s | Sharity",
+		default: "Sharity — Share, borrow, and lend items in Da Lat, Vietnam",
+		template: "%s — Sharity, the sharing economy in Da Lat, Vietnam",
 	},
-	description: "Borrow and lend useful items in Da Lat.",
+	description:
+		"Sharity is a community sharing platform in Da Lat, Vietnam. Lend rarely used items, borrow what you need for a few days, and manage requests and availability in one place.",
 	openGraph: {
 		type: "website",
 		siteName: "Sharity",
-		title: "Sharity",
-		description: "Borrow and lend useful items in Da Lat.",
+		title: "Sharity — Share, borrow, and lend items in Da Lat, Vietnam",
+		description:
+			"Sharity is a community sharing platform in Da Lat, Vietnam. Lend rarely used items, borrow what you need for a few days, and manage requests and availability in one place.",
 		url: "/",
 		locale: "en_US",
 		images: [
@@ -50,8 +52,9 @@ export const metadata: Metadata = {
 	},
 	twitter: {
 		card: "summary_large_image",
-		title: "Sharity",
-		description: "Borrow and lend useful items in Da Lat.",
+		title: "Sharity — Share, borrow, and lend items in Da Lat, Vietnam",
+		description:
+			"Sharity is a community sharing platform in Da Lat, Vietnam. Lend rarely used items, borrow what you need for a few days, and manage requests and availability in one place.",
 		images: ["/twitter-image"],
 	},
 };

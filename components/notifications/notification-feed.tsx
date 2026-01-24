@@ -5,13 +5,20 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { Check } from "lucide-react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export function NotificationFeed() {
 	const notifications = useQuery(api.notifications.get);
 	const markAsRead = useMutation(api.notifications.markAsRead);
 	const markAllAsRead = useMutation(api.notifications.markAllAsRead);
+	const approvePickupWindow = useMutation(api.items.approvePickupWindow);
+	const approveReturnWindow = useMutation(api.items.approveReturnWindow);
+	const markPickedUp = useMutation(api.items.markPickedUp);
+	const markReturned = useMutation(api.items.markReturned);
+	const router = useRouter();
 
 	if (notifications === undefined) {
 		return <div className="p-4 text-center">Loading notifications...</div>;
@@ -27,7 +34,22 @@ export function NotificationFeed() {
 		await markAsRead({ notificationId: id });
 	};
 
+	const navigateToItem = (itemId: Id<"items">) => {
+		router.push(`/item/${itemId}`);
+	};
+
+	const getNotificationActionContext = (n: (typeof notifications)[number]) => {
+		const itemId = n.itemId as Id<"items">;
+		const claimId = n.requestId as Id<"claims"> | undefined;
+		const windowStartAt = n.windowStartAt as number | undefined;
+		const windowEndAt = n.windowEndAt as number | undefined;
+		return { itemId, claimId, windowStartAt, windowEndAt };
+	};
+
 	const renderedNotifications = notifications.map((n) => {
+		const { itemId, claimId, windowStartAt, windowEndAt } =
+			getNotificationActionContext(n);
+
 		let message = "";
 		switch (n.type) {
 			case "new_request":
@@ -42,9 +64,189 @@ export function NotificationFeed() {
 			case "item_available":
 				message = `"${n.item?.name}" is now available!`;
 				break;
+			case "pickup_proposed":
+				message = `Pickup requested for "${n.item?.name}"`;
+				if (windowStartAt && windowEndAt) {
+					message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
+						new Date(windowEndAt),
+						"p",
+					)}`;
+				}
+				break;
+			case "pickup_approved":
+				message = `Pickup approved for "${n.item?.name}"`;
+				if (windowStartAt && windowEndAt) {
+					message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
+						new Date(windowEndAt),
+						"p",
+					)}`;
+				}
+				break;
+			case "pickup_confirmed":
+				message = `Pickup confirmed for "${n.item?.name}"`;
+				break;
+			case "pickup_expired":
+				message = `Pickup expired for "${n.item?.name}"`;
+				break;
+			case "return_proposed":
+				message = `Return requested for "${n.item?.name}"`;
+				if (windowStartAt && windowEndAt) {
+					message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
+						new Date(windowEndAt),
+						"p",
+					)}`;
+				}
+				break;
+			case "return_approved":
+				message = `Return approved for "${n.item?.name}"`;
+				if (windowStartAt && windowEndAt) {
+					message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
+						new Date(windowEndAt),
+						"p",
+					)}`;
+				}
+				break;
+			case "return_confirmed":
+				message = `Return confirmed for "${n.item?.name}"`;
+				break;
+			case "return_missing":
+				message = `Return missing for "${n.item?.name}"`;
+				break;
 			default:
 				message = "New notification";
 		}
+
+		const renderAction = () => {
+			const commonDisabled = !claimId;
+
+			if (n.type === "pickup_proposed") {
+				return (
+					<Button
+						size="sm"
+						className="h-7"
+						disabled={commonDisabled}
+						onClick={async (e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							if (!claimId) return;
+							try {
+								await approvePickupWindow({ itemId, claimId });
+								toast.success("Pickup time approved");
+								await handleMarkRead(n._id);
+							} catch (error: unknown) {
+								const message =
+									error instanceof Error ? error.message : String(error);
+								toast.error(message);
+							}
+						}}
+					>
+						Approve
+					</Button>
+				);
+			}
+
+			if (n.type === "return_proposed") {
+				return (
+					<Button
+						size="sm"
+						className="h-7"
+						disabled={commonDisabled}
+						onClick={async (e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							if (!claimId) return;
+							try {
+								await approveReturnWindow({ itemId, claimId });
+								toast.success("Return time approved");
+								await handleMarkRead(n._id);
+							} catch (error: unknown) {
+								const message =
+									error instanceof Error ? error.message : String(error);
+								toast.error(message);
+							}
+						}}
+					>
+						Approve
+					</Button>
+				);
+			}
+
+			if (n.type === "pickup_approved") {
+				return (
+					<Button
+						size="sm"
+						className="h-7"
+						disabled={commonDisabled}
+						onClick={async (e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							if (!claimId) return;
+							try {
+								await markPickedUp({ itemId, claimId });
+								toast.success("Pickup confirmed");
+								await handleMarkRead(n._id);
+							} catch (error: unknown) {
+								const message =
+									error instanceof Error ? error.message : String(error);
+								toast.error(message);
+							}
+						}}
+					>
+						Confirm
+					</Button>
+				);
+			}
+
+			if (n.type === "return_approved") {
+				return (
+					<Button
+						size="sm"
+						className="h-7"
+						disabled={commonDisabled}
+						onClick={async (e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							if (!claimId) return;
+							try {
+								await markReturned({ itemId, claimId });
+								toast.success("Return confirmed");
+								await handleMarkRead(n._id);
+							} catch (error: unknown) {
+								const message =
+									error instanceof Error ? error.message : String(error);
+								toast.error(message);
+							}
+						}}
+					>
+						Confirm
+					</Button>
+				);
+			}
+
+			if (
+				n.type === "pickup_confirmed" ||
+				n.type === "pickup_expired" ||
+				n.type === "return_confirmed" ||
+				n.type === "return_missing"
+			) {
+				return (
+					<Button
+						size="sm"
+						variant="outline"
+						className="h-7"
+						onClick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							navigateToItem(itemId);
+						}}
+					>
+						View
+					</Button>
+				);
+			}
+
+			return null;
+		};
 
 		return (
 			<Card
@@ -64,20 +266,23 @@ export function NotificationFeed() {
 						{formatDistanceToNow(n.createdAt, { addSuffix: true })}
 					</p>
 				</div>
-				{!n.isRead && (
-					<Button
-						variant="ghost"
-						size="icon"
-						className="h-6 w-6 shrink-0"
-						onClick={(e) => {
-							e.stopPropagation();
-							handleMarkRead(n._id);
-						}}
-					>
-						<span className="sr-only">Mark as read</span>
-						<div className="h-2 w-2 rounded-full bg-blue-500" />
-					</Button>
-				)}
+				<div className="flex items-center gap-2 shrink-0">
+					{renderAction()}
+					{!n.isRead && (
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-6 w-6 shrink-0"
+							onClick={(e) => {
+								e.stopPropagation();
+								handleMarkRead(n._id);
+							}}
+						>
+							<span className="sr-only">Mark as read</span>
+							<div className="h-2 w-2 rounded-full bg-blue-500" />
+						</Button>
+					)}
+				</div>
 			</Card>
 		);
 	});

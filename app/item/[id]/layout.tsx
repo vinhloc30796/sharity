@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 
 const ogTitle =
-	"Wishlist — Request and vote on needed items in Da Lat, Vietnam";
+	"Item — View availability and request to borrow in Da Lat, Vietnam";
 const description =
-	"Request items you can't find in Da Lat, Vietnam and vote on what others need. Help the community prioritize popular requests and find items worth sharing next.";
+	"See item details, photos, and pickup location in Da Lat, Vietnam. Check availability, choose dates, send a borrow request, and track approvals all in one place.";
 
 export const metadata: Metadata = {
-	title: "Wishlist",
+	title: "Item",
 	description,
 	openGraph: {
 		title: ogTitle,
 		description,
-		url: "/wishlist",
+		url: "/item",
 		images: [
 			{
 				url: "/opengraph-image",
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 	},
 };
 
-export default function WishlistLayout({
+export default function ItemLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;

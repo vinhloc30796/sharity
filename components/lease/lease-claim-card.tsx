@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import type { LeaseActivityEvent } from "./lease-activity-timeline";
 import { LeaseActivitySection } from "./lease-activity-section";
@@ -326,6 +327,9 @@ export function LeaseClaimCard(props: {
 		now >= returnProposal.windowStartAt &&
 		now <= returnProposal.windowEndAt;
 
+	const toErrorMessage = (error: unknown): string =>
+		error instanceof Error ? error.message : String(error);
+
 	return (
 		<Card>
 			<CardHeader>
@@ -459,13 +463,21 @@ export function LeaseClaimCard(props: {
 											isApprovingPickupTime ||
 											isApprovingReturnTime
 										}
-										onConfirm={async (windowStartAt) =>
-											await proposePickupWindow({
-												itemId,
-												claimId: claim._id,
-												windowStartAt,
-											})
-										}
+										onConfirm={async (windowStartAt) => {
+											try {
+												await proposePickupWindow({
+													itemId,
+													claimId: claim._id,
+													windowStartAt,
+												});
+												toast.success(
+													"Pickup request sent. Now please wait for approval from your counterpart. Nothing to do for now",
+												);
+											} catch (error: unknown) {
+												toast.error(toErrorMessage(error));
+												throw error;
+											}
+										}}
 									/>
 
 									{pickupProposal && pickupProposalActive ? (
@@ -492,14 +504,20 @@ export function LeaseClaimCard(props: {
 														accept: "image/*",
 													}}
 													generateUploadUrl={generateUploadUrl}
-													onConfirm={async ({ note, photoStorageIds }) =>
-														await markPickedUp({
-															itemId,
-															claimId: claim._id,
-															note,
-															photoStorageIds,
-														})
-													}
+													onConfirm={async ({ note, photoStorageIds }) => {
+														try {
+															await markPickedUp({
+																itemId,
+																claimId: claim._id,
+																note,
+																photoStorageIds,
+															});
+															toast.success("Pickup confirmed");
+														} catch (error: unknown) {
+															toast.error(toErrorMessage(error));
+															throw error;
+														}
+													}}
 												/>
 											) : (
 												<Tooltip>
@@ -540,6 +558,11 @@ export function LeaseClaimCard(props: {
 															itemId,
 															claimId: claim._id,
 														});
+														toast.success(
+															"Pickup time approved. Waiting for confirmation from your counterpart.",
+														);
+													} catch (error: unknown) {
+														toast.error(toErrorMessage(error));
 													} finally {
 														setIsApprovingPickupTime(false);
 													}
@@ -599,13 +622,21 @@ export function LeaseClaimCard(props: {
 											isApprovingPickupTime ||
 											isApprovingReturnTime
 										}
-										onConfirm={async (windowStartAt) =>
-											await proposeReturnWindow({
-												itemId,
-												claimId: claim._id,
-												windowStartAt,
-											})
-										}
+										onConfirm={async (windowStartAt) => {
+											try {
+												await proposeReturnWindow({
+													itemId,
+													claimId: claim._id,
+													windowStartAt,
+												});
+												toast.success(
+													"Return request sent. Now please wait for approval from your counterpart. Nothing to do for now",
+												);
+											} catch (error: unknown) {
+												toast.error(toErrorMessage(error));
+												throw error;
+											}
+										}}
 									/>
 
 									{returnProposal && returnProposalActive ? (
@@ -632,14 +663,20 @@ export function LeaseClaimCard(props: {
 														accept: "image/*",
 													}}
 													generateUploadUrl={generateUploadUrl}
-													onConfirm={async ({ note, photoStorageIds }) =>
-														await markReturned({
-															itemId,
-															claimId: claim._id,
-															note,
-															photoStorageIds,
-														})
-													}
+													onConfirm={async ({ note, photoStorageIds }) => {
+														try {
+															await markReturned({
+																itemId,
+																claimId: claim._id,
+																note,
+																photoStorageIds,
+															});
+															toast.success("Return confirmed");
+														} catch (error: unknown) {
+															toast.error(toErrorMessage(error));
+															throw error;
+														}
+													}}
 												/>
 											) : (
 												<Tooltip>
@@ -680,6 +717,11 @@ export function LeaseClaimCard(props: {
 															itemId,
 															claimId: claim._id,
 														});
+														toast.success(
+															"Return time approved. Waiting for confirmation from your counterpart.",
+														);
+													} catch (error: unknown) {
+														toast.error(toErrorMessage(error));
 													} finally {
 														setIsApprovingReturnTime(false);
 													}
