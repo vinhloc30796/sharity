@@ -28,14 +28,25 @@ import {
 import { ItemForm } from "./item-form";
 import { useState } from "react";
 import { Doc, Id } from "../convex/_generated/dataModel";
-import { ItemCard } from "./item-card";
+import { ItemCard, useItemCard } from "./item-card";
 import { Check, X } from "lucide-react";
+import { ClaimItemBack } from "./claim-item-back";
 
 // Badge not available, using span
 
 function formatActor(actorId: string): string {
 	if (actorId.length <= 16) return actorId;
 	return `${actorId.slice(0, 8)}…${actorId.slice(-6)}`;
+}
+
+function FlipToBackButton(props: { label: string }) {
+	const { label } = props;
+	const { flipToBack } = useItemCard();
+	return (
+		<Button variant="outline" size="sm" onClick={flipToBack}>
+			{label}
+		</Button>
+	);
 }
 
 function primaryStatusForOwnerClaims(
@@ -145,6 +156,9 @@ export function MyItemCard({
 		pendingClaims.length > 0
 			? [...pendingClaims].sort((a, b) => a.startDate - b.startDate)[0]
 			: undefined;
+	const hasActionableBack = Boolean(
+		isOwner && (nextPendingClaim || activeApprovedClaim),
+	);
 
 	return (
 		<ItemCard
@@ -152,9 +166,15 @@ export function MyItemCard({
 			rightHeader={<></>} // Suppress default header
 			density="compact"
 			descriptionLines={2}
+			backContent={
+				hasActionableBack ? (
+					<ClaimItemBack item={item} viewerRole="owner" />
+				) : undefined
+			}
 			footer={
 				isOwner ? (
 					<div className="flex justify-end gap-2 w-full">
+						{hasActionableBack ? <FlipToBackButton label="Review" /> : null}
 						<Link href={`/item/${item._id}`}>
 							<Button variant="secondary" size="sm">
 								Manage

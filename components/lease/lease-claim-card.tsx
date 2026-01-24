@@ -112,6 +112,7 @@ export function LeaseClaimCard(props: {
 	itemId: Id<"items">;
 	claim: Doc<"claims">;
 	viewerRole: ViewerRole;
+	layout?: "card" | "embedded";
 	approveClaim?: (args: ApproveClaimArgs) => MutationResult;
 	rejectClaim?: (args: RejectClaimArgs) => MutationResult;
 	cancelClaim?: (args: CancelClaimArgs) => MutationResult;
@@ -125,6 +126,7 @@ export function LeaseClaimCard(props: {
 		itemId,
 		claim,
 		viewerRole,
+		layout = "card",
 		approveClaim,
 		rejectClaim,
 		cancelClaim,
@@ -330,8 +332,8 @@ export function LeaseClaimCard(props: {
 	const toErrorMessage = (error: unknown): string =>
 		error instanceof Error ? error.message : String(error);
 
-	return (
-		<Card>
+	const inner = (
+		<>
 			<CardHeader>
 				<LeaseClaimHeader
 					claim={claim}
@@ -804,6 +806,8 @@ export function LeaseClaimCard(props: {
 
 				<LeaseActivitySection events={leaseEvents} />
 			</CardContent>
-		</Card>
+		</>
 	);
+
+	return layout === "embedded" ? inner : <Card>{inner}</Card>;
 }
