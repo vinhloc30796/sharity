@@ -34,5 +34,5 @@ yarn-debug.log*
 yarn-error.log*
 
 # Claude Code specific files (not useful for Cursor users)
-.claude/handoff/
-.claude/settings.local.json
+# CLAUDE.md is kept - it's standard project docs readable by any IDE
+.claude/
