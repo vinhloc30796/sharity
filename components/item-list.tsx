@@ -47,10 +47,13 @@ export function ItemList({
 	);
 	const [viewMode, setViewMode] = useState<ViewMode>("list");
 
-	const urlQuery = searchParams.get("q") ?? "";
+	// Sync URL query param to search state (only on URL change)
+	const urlQuery = searchParams?.get("q") ?? "";
 	useEffect(() => {
-		if (urlQuery !== search) setSearch(urlQuery);
-	}, [urlQuery, search]);
+		if (urlQuery) {
+			setSearch(urlQuery);
+		}
+	}, [urlQuery]);
 
 	const filteredItems = items?.filter((item) => {
 		const itemText = `${item.name} ${item.description ?? ""}`.toLowerCase();
