@@ -113,6 +113,11 @@ export default function UserProfilePage() {
 								</div>
 							</div>
 						</div>
+						{profile.bio && (
+							<p className="text-sm text-muted-foreground mt-4 whitespace-pre-wrap">
+								{profile.bio}
+							</p>
+						)}
 					</CardContent>
 				</Card>
 

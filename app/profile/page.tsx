@@ -92,6 +92,7 @@ export default function ProfilePage() {
 									name: profile?.name,
 									avatarUrl: profile?.avatarUrl,
 									address: profile?.address,
+									bio: profile?.bio,
 									contacts: profile?.contacts,
 								}}
 								onSuccess={() => setIsEditOpen(false)}
