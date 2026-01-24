@@ -125,9 +125,7 @@ export function ItemCard({
 									<div
 										className={cn(
 											"w-full relative rounded-md overflow-hidden bg-gray-100 group",
-											density === "compact"
-												? "aspect-4/3 mb-3"
-												: "aspect-video mb-4",
+											density === "compact" ? "aspect-4/3" : "aspect-video",
 										)}
 									>
 										<Carousel className="w-full h-full">
@@ -198,7 +196,7 @@ export function ItemCard({
 									<p
 										className={cn(
 											"text-gray-600",
-											density === "compact" ? "mb-3 text-sm" : "mb-4",
+											density === "compact" && "text-sm",
 											descriptionLines === 1 && "line-clamp-1",
 											descriptionLines === 2 && "line-clamp-2",
 											descriptionLines === 3 && "line-clamp-3",

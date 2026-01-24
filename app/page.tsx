@@ -67,7 +67,7 @@ export default function Home() {
 							<TabsContent value="share" className="mt-4">
 								<AddItemForm />
 							</TabsContent>
-							<TabsContent value="request" className="mt-4">
+							<TabsContent value="request" className="mt-4 space-y-4">
 								<WishlistDraftCard
 									autoFocus={desktopRequestFocusToken > 0}
 									focusToken={desktopRequestFocusToken}

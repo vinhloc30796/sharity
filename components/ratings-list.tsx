@@ -1,12 +1,14 @@
 "use client";
 
 import { useQuery } from "convex/react";
+import { formatDistanceToNow } from "date-fns";
+
 import { api } from "@/convex/_generated/api";
 import { StarRating } from "@/components/star-rating";
+import { UserLink } from "@/components/user-link";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatDistanceToNow } from "date-fns";
 
 interface RatingsListProps {
 	userId: string;
@@ -62,6 +64,7 @@ export function RatingsList({ userId }: RatingsListProps) {
 
 interface Rating {
 	_id: string;
+	fromUserId: string;
 	stars: number;
 	comment?: string;
 	role: "lender" | "borrower";
@@ -94,11 +97,12 @@ function RatingCard({ rating }: { rating: Rating }) {
 				<div className="flex items-start justify-between gap-2">
 					<div className="flex flex-col gap-2">
 						<div className="flex items-center gap-2">
-							<StarRating value={rating.stars} readonly size="sm" />
+							<UserLink userId={rating.fromUserId} size="sm" />
 							<Badge variant="outline" className="text-xs">
 								{rating.role === "lender" ? "As Lender" : "As Borrower"}
 							</Badge>
 						</div>
+						<StarRating value={rating.stars} readonly size="sm" />
 						{rating.comment && (
 							<p className="text-sm text-gray-700">{rating.comment}</p>
 						)}

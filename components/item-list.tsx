@@ -12,6 +12,7 @@ import { useSearchParams } from "next/navigation";
 import { Doc } from "../convex/_generated/dataModel";
 
 import { ReactNode } from "react";
+import { UserLink } from "@/components/user-link";
 import { ItemCard } from "./item-card";
 import { CategoryFilter } from "./category-filter";
 import type { ItemCategory } from "./item-form";
@@ -136,9 +137,7 @@ export function ItemList({
 								backContent={actionBack && actionBack(item)}
 								footer={
 									<div className="flex justify-between items-center w-full">
-										<p className="text-xs text-gray-400">
-											Owner: {item.ownerId ?? "Unknown"}
-										</p>
+										<UserLink userId={item.ownerId} size="sm" />
 										{action && action(item)}
 									</div>
 								}

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Doc } from "../convex/_generated/dataModel";
 import { CATEGORY_LABELS, type ItemCategory } from "./item-form";
@@ -148,7 +149,12 @@ export function ItemsMap({ items, onItemClick }: ItemsMapProps) {
 										className="w-full h-20 object-cover rounded mb-2"
 									/>
 								)}
-								<h3 className="font-semibold text-sm">{item.name}</h3>
+								<Link
+									href={`/item/${item._id}`}
+									className="font-semibold text-sm hover:underline"
+								>
+									{item.name}
+								</Link>
 								{item.category && (
 									<p className="text-xs text-muted-foreground">
 										{CATEGORY_LABELS[item.category]}

@@ -69,6 +69,39 @@ export const getMyProfile = query({
 });
 
 /**
+ * Get basic user info (name + avatar) for display in UI
+ * Lightweight query for UserLink component
+ */
+export const getBasicInfo = query({
+	args: { userId: v.string() },
+	handler: async (ctx, args) => {
+		const profile = await ctx.db
+			.query("users")
+			.withIndex("by_clerk_id", (q) => q.eq("clerkId", args.userId))
+			.first();
+
+		if (!profile) {
+			return {
+				userId: args.userId,
+				name: null,
+				avatarUrl: null,
+			};
+		}
+
+		let avatarUrl: string | null = null;
+		if (profile.avatarStorageId) {
+			avatarUrl = await ctx.storage.getUrl(profile.avatarStorageId);
+		}
+
+		return {
+			userId: args.userId,
+			name: profile.name || null,
+			avatarUrl,
+		};
+	},
+});
+
+/**
  * Get user profile by Clerk ID (for viewing other users)
  */
 export const getProfile = query({
