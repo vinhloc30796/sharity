@@ -19,8 +19,9 @@ import { cn } from "@/lib/utils";
 import { WishlistEmptyCard } from "@/components/wishlist/wishlist-empty-card";
 
 // Dynamic import to avoid SSR hydration issues with Leaflet
-const ItemsMap = dynamic(
-	() => import("./items-map").then((mod) => mod.ItemsMap),
+// Use privacy map to show circles instead of exact markers for public views
+const ItemsMapPrivacy = dynamic(
+	() => import("./items-map-privacy").then((mod) => mod.ItemsMapPrivacy),
 	{
 		ssr: false,
 		loading: () => (
@@ -111,7 +112,7 @@ export function ItemList({
 						<p>Loading...</p>
 					) : (
 						<>
-							<ItemsMap items={filteredItems || []} />
+							<ItemsMapPrivacy items={filteredItems || []} />
 							{filteredItems?.filter((i) => i.location).length === 0 && (
 								<p className="text-sm text-muted-foreground text-center">
 									No items with location in current filter

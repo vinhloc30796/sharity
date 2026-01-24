@@ -22,6 +22,7 @@ export interface LocationPickerValue {
 	lat: number;
 	lng: number;
 	address?: string;
+	ward?: string; // Public display name (district/ward)
 }
 
 interface LocationPickerDialogProps {
@@ -31,11 +32,37 @@ interface LocationPickerDialogProps {
 	onSelect: (location: LocationPickerValue) => void;
 }
 
+interface GeocodeResult {
+	address: string;
+	ward: string;
+}
+
+// Extract ward/district from Nominatim address response
+function extractWard(addressData: Record<string, string> | undefined): string {
+	if (!addressData) return "Unknown area";
+
+	// Try different fields that represent ward/district in Nominatim
+	// Priority: suburb > quarter > neighbourhood > city_district > town > city
+	const ward =
+		addressData.suburb ||
+		addressData.quarter ||
+		addressData.neighbourhood ||
+		addressData.city_district ||
+		addressData.town ||
+		addressData.city ||
+		addressData.county;
+
+	return ward || "Unknown area";
+}
+
 // Reverse geocode using Nominatim API
-async function reverseGeocode(lat: number, lng: number): Promise<string> {
+async function reverseGeocode(
+	lat: number,
+	lng: number,
+): Promise<GeocodeResult> {
 	try {
 		const response = await fetch(
-			`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+			`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
 			{
 				headers: {
 					"User-Agent": "Sharity App",
@@ -44,14 +71,19 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 		);
 		if (!response.ok) throw new Error("Geocoding failed");
 		const data = await response.json();
-		// Return area-level for privacy (first 3 parts of address)
-		return (
+
+		// Full address for owner's private use
+		const address =
 			data.display_name?.split(",").slice(0, 3).join(",").trim() ||
-			"Unknown location"
-		);
+			"Unknown location";
+
+		// Ward/district for public display
+		const ward = extractWard(data.address);
+
+		return { address, ward };
 	} catch (error) {
 		console.error("Reverse geocoding error:", error);
-		return "Unknown location";
+		return { address: "Unknown location", ward: "Unknown area" };
 	}
 }
 
@@ -96,6 +128,7 @@ export function LocationPickerDialog({
 		lng: number;
 	} | null>(value ? { lat: value.lat, lng: value.lng } : null);
 	const [address, setAddress] = useState<string>(value?.address || "");
+	const [ward, setWard] = useState<string>(value?.ward || "");
 	const [isGeocoding, setIsGeocoding] = useState(false);
 	const [isGettingLocation, setIsGettingLocation] = useState(false);
 
@@ -122,6 +155,7 @@ export function LocationPickerDialog({
 		if (open) {
 			setSelectedLocation(value ? { lat: value.lat, lng: value.lng } : null);
 			setAddress(value?.address || "");
+			setWard(value?.ward || "");
 		}
 	}, [open, value]);
 
@@ -132,8 +166,9 @@ export function LocationPickerDialog({
 
 		// Reverse geocode
 		setIsGeocoding(true);
-		const newAddress = await reverseGeocode(roundedLat, roundedLng);
-		setAddress(newAddress);
+		const result = await reverseGeocode(roundedLat, roundedLng);
+		setAddress(result.address);
+		setWard(result.ward);
 		setIsGeocoding(false);
 	}, []);
 
@@ -165,6 +200,7 @@ export function LocationPickerDialog({
 				lat: selectedLocation.lat,
 				lng: selectedLocation.lng,
 				address: address || undefined,
+				ward: ward || undefined,
 			});
 			onOpenChange(false);
 		}
@@ -277,7 +313,14 @@ export function LocationPickerDialog({
 										Loading address...
 									</span>
 								) : (
-									<span className="text-sm break-words">{address}</span>
+									<>
+										<span className="text-sm break-words">{address}</span>
+										{ward && (
+											<span className="text-xs text-muted-foreground">
+												Area: {ward}
+											</span>
+										)}
+									</>
 								)}
 								<span className="text-xs text-muted-foreground">
 									{selectedLocation.lat.toFixed(4)},{" "}

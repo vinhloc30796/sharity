@@ -423,6 +423,7 @@ const locationValidator = v.optional(
 		lat: v.number(),
 		lng: v.number(),
 		address: v.optional(v.string()),
+		ward: v.optional(v.string()),
 	}),
 );
 

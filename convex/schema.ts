@@ -23,6 +23,7 @@ export default defineSchema({
 				lat: v.number(),
 				lng: v.number(),
 				address: v.optional(v.string()),
+				ward: v.optional(v.string()), // Public display name (district/ward)
 			}),
 		),
 	}),
@@ -141,6 +142,7 @@ export default defineSchema({
 		name: v.optional(v.string()),
 		avatarStorageId: v.optional(v.id("_storage")),
 		address: v.optional(v.string()),
+		ward: v.optional(v.string()), // Public area/ward (privacy-safe)
 		contacts: v.optional(
 			v.object({
 				telegram: v.optional(v.string()),

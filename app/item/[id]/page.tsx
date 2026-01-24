@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, ExternalLink, MapPin } from "lucide-react";
+import { ArrowLeft, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { use, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -186,17 +186,13 @@ export default function ItemDetailPage({
 					<Badge variant="secondary">{CATEGORY_LABELS[item.category]}</Badge>
 				)}
 				{item.location && (
-					<a
-						href={`https://maps.google.com/?q=${item.location.lat},${item.location.lng}`}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-					>
+					<span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
 						<MapPin className="h-4 w-4" />
-						{item.location.address ||
-							`${item.location.lat.toFixed(2)}, ${item.location.lng.toFixed(2)}`}
-						<ExternalLink className="h-3 w-3" />
-					</a>
+						{item.isOwner
+							? item.location.address ||
+								`${item.location.lat.toFixed(4)}, ${item.location.lng.toFixed(4)}`
+							: item.location.ward || "Location available"}
+					</span>
 				)}
 			</div>
 			<p className="text-lg text-gray-700 leading-relaxed">
