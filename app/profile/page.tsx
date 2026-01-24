@@ -5,7 +5,13 @@ import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from "@/components/ui/dialog";
 import { ProfileForm } from "@/components/profile-form";
 import { RatingSummary } from "@/components/rating-summary";
 import { RatingsList } from "@/components/ratings-list";
@@ -33,7 +39,9 @@ export default function ProfilePage() {
 	if (!user) {
 		return (
 			<main className="min-h-screen flex flex-col items-center justify-center gap-4">
-				<p className="text-muted-foreground">Please sign in to view your profile.</p>
+				<p className="text-muted-foreground">
+					Please sign in to view your profile.
+				</p>
 				<Link href="/">
 					<Button variant="outline">
 						<ArrowLeft className="h-4 w-4 mr-2" />
@@ -52,7 +60,8 @@ export default function ProfilePage() {
 		);
 	}
 
-	const displayName = profile?.name || user.firstName || user.username || "User";
+	const displayName =
+		profile?.name || user.firstName || user.username || "User";
 	const avatarUrl = profile?.avatarUrl || user.imageUrl;
 	const clerkId = user.id;
 
@@ -60,7 +69,10 @@ export default function ProfilePage() {
 		<main className="min-h-screen bg-gray-50/50">
 			<div className="max-w-2xl mx-auto p-4 md:p-8 space-y-6">
 				<div className="flex items-center justify-between">
-					<Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
+					<Link
+						href="/"
+						className="text-muted-foreground hover:text-foreground transition-colors"
+					>
 						<ArrowLeft className="h-5 w-5" />
 					</Link>
 					<h1 className="text-xl font-semibold">My Profile</h1>
@@ -80,6 +92,7 @@ export default function ProfilePage() {
 									name: profile?.name,
 									avatarUrl: profile?.avatarUrl,
 									address: profile?.address,
+									bio: profile?.bio,
 									contacts: profile?.contacts,
 								}}
 								onSuccess={() => setIsEditOpen(false)}
@@ -106,7 +119,9 @@ export default function ProfilePage() {
 								)}
 							</div>
 							<div className="flex-1 min-w-0">
-								<h2 className="text-xl font-semibold truncate">{displayName}</h2>
+								<h2 className="text-xl font-semibold truncate">
+									{displayName}
+								</h2>
 								{profile?.address && (
 									<p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
 										<MapPin className="h-3 w-3" />

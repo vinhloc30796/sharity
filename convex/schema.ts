@@ -141,6 +141,7 @@ export default defineSchema({
 		name: v.optional(v.string()),
 		avatarStorageId: v.optional(v.id("_storage")),
 		address: v.optional(v.string()),
+		bio: v.optional(v.string()), // About Me field (max 500 chars)
 		contacts: v.optional(
 			v.object({
 				telegram: v.optional(v.string()),

@@ -7,6 +7,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { Loader2, MessageCircle, Phone, Facebook } from "lucide-react";
 import { toast } from "sonner";
@@ -17,6 +18,7 @@ interface ProfileFormProps {
 		avatarUrl?: string | null;
 		avatarStorageId?: Id<"_storage">;
 		address?: string | null;
+		bio?: string | null;
 		contacts?: {
 			telegram?: string;
 			whatsapp?: string;
@@ -30,13 +32,20 @@ interface ProfileFormProps {
 export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 	const [name, setName] = useState(initialValues?.name || "");
 	const [address, setAddress] = useState(initialValues?.address || "");
-	const [telegram, setTelegram] = useState(initialValues?.contacts?.telegram || "");
-	const [whatsapp, setWhatsapp] = useState(initialValues?.contacts?.whatsapp || "");
-	const [facebook, setFacebook] = useState(initialValues?.contacts?.facebook || "");
-	const [phone, setPhone] = useState(initialValues?.contacts?.phone || "");
-	const [avatarStorageId, setAvatarStorageId] = useState<Id<"_storage"> | undefined>(
-		initialValues?.avatarStorageId,
+	const [bio, setBio] = useState(initialValues?.bio || "");
+	const [telegram, setTelegram] = useState(
+		initialValues?.contacts?.telegram || "",
 	);
+	const [whatsapp, setWhatsapp] = useState(
+		initialValues?.contacts?.whatsapp || "",
+	);
+	const [facebook, setFacebook] = useState(
+		initialValues?.contacts?.facebook || "",
+	);
+	const [phone, setPhone] = useState(initialValues?.contacts?.phone || "");
+	const [avatarStorageId, setAvatarStorageId] = useState<
+		Id<"_storage"> | undefined
+	>(initialValues?.avatarStorageId);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const updateProfile = useMutation(api.users.updateProfile);
@@ -59,6 +68,7 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 			await updateProfile({
 				name: name.trim() || undefined,
 				address: address.trim() || undefined,
+				bio: bio.trim() || undefined,
 				contacts: hasContacts ? contacts : undefined,
 				avatarStorageId,
 			});
@@ -105,6 +115,24 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 					value={address}
 					onChange={(e) => setAddress(e.target.value)}
 					disabled={isSubmitting}
+				/>
+			</div>
+
+			<div className="flex flex-col gap-2">
+				<div className="flex items-center justify-between">
+					<Label htmlFor="bio">About Me</Label>
+					<span className="text-xs text-muted-foreground">
+						{bio.length}/500
+					</span>
+				</div>
+				<Textarea
+					id="bio"
+					placeholder="Tell others a bit about yourself..."
+					value={bio}
+					onChange={(e) => setBio(e.target.value.slice(0, 500))}
+					disabled={isSubmitting}
+					rows={3}
+					className="resize-none"
 				/>
 			</div>
 
