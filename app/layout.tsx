@@ -15,7 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { ProfileProvider } from "@/components/profile-provider";
-import { ProfileEditModal } from "@/components/profile-edit-modal";
+import { Settings } from "lucide-react";
+import Link from "next/link";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -55,7 +56,12 @@ export default function RootLayout({
 									</SignUpButton>
 								</SignedOut>
 								<SignedIn>
-									<ProfileEditModal />
+									<Link href="/profile">
+										<Button variant="ghost" size="sm">
+											<Settings className="h-4 w-4 mr-1" />
+											Profile
+										</Button>
+									</Link>
 									<NotificationBell />
 									<UserButton />
 								</SignedIn>
