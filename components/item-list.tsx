@@ -2,7 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { List, Map } from "lucide-react";
@@ -16,6 +16,7 @@ import { ItemCard } from "./item-card";
 import { CategoryFilter } from "./category-filter";
 import type { ItemCategory } from "./item-form";
 import { cn } from "@/lib/utils";
+import { WishlistEmptyCard } from "@/components/wishlist/wishlist-empty-card";
 
 // Dynamic import to avoid SSR hydration issues with Leaflet
 const ItemsMap = dynamic(
@@ -35,29 +36,34 @@ type ViewMode = "list" | "map";
 export function ItemList({
 	action,
 	actionBack,
+	onEmptyMakeRequest,
 }: {
 	action?: (item: Doc<"items"> & { isRequested?: boolean }) => ReactNode;
 	actionBack?: (item: Doc<"items"> & { isRequested?: boolean }) => ReactNode;
+	onEmptyMakeRequest?: () => void;
 }) {
 	const items = useQuery(api.items.get);
 	const searchParams = useSearchParams();
-	const [search, setSearch] = useState("");
+	const urlQuery = searchParams.get("q") ?? "";
+	const [search, setSearch] = useState(() => urlQuery);
 	const [selectedCategories, setSelectedCategories] = useState<ItemCategory[]>(
 		[],
 	);
 	const [viewMode, setViewMode] = useState<ViewMode>("list");
 
-	const urlQuery = searchParams.get("q") ?? "";
-	useEffect(() => {
-		if (urlQuery !== search) setSearch(urlQuery);
-	}, [urlQuery, search]);
-
 	const filteredItems = items?.filter((item) => {
+		const needle = search.trim().toLowerCase();
 		const itemText = `${item.name} ${item.description ?? ""}`.toLowerCase();
-		const matchesSearch = itemText.includes(search.toLowerCase());
+
+		// (1) keyword AND category (when both are set)
+		const matchesSearch = needle.length === 0 || itemText.includes(needle);
+
+		// (2) categories are OR'd together
 		const matchesCategory =
 			selectedCategories.length === 0 ||
-			(item.category && selectedCategories.includes(item.category));
+			(item.category !== undefined &&
+				selectedCategories.includes(item.category));
+
 		return matchesSearch && matchesCategory;
 	});
 
@@ -119,9 +125,9 @@ export function ItemList({
 					{items === undefined ? (
 						<p>Loading...</p>
 					) : items.length === 0 ? (
-						<p>No items yet. Be the first to share something!</p>
+						<WishlistEmptyCard onMakeRequest={onEmptyMakeRequest} />
 					) : filteredItems?.length === 0 ? (
-						<p>No items found matching &quot;{search}&quot;</p>
+						<WishlistEmptyCard onMakeRequest={onEmptyMakeRequest} />
 					) : (
 						filteredItems?.map((item) => (
 							<ItemCard
