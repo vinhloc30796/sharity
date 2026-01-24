@@ -48,6 +48,7 @@ export const list = query({
 					matchCount,
 					isLiked,
 					images,
+					isOwner: userId === wishlistItem.userId,
 				};
 			}),
 		);
@@ -91,5 +92,26 @@ export const toggleVote = mutation({
 			: [...item.votes, userId];
 
 		await ctx.db.patch(args.id, { votes: newVotes });
+	},
+});
+
+export const update = mutation({
+	args: {
+		id: v.id("wishlist"),
+		text: v.string(),
+		imageStorageIds: v.optional(v.array(v.id("_storage"))),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const item = await ctx.db.get(args.id);
+		if (!item) throw new Error("Item not found");
+		if (item.userId !== identity.subject) throw new Error("Not authorized");
+
+		await ctx.db.patch(args.id, {
+			text: args.text,
+			imageStorageIds: args.imageStorageIds,
+		});
 	},
 });
