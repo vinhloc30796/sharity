@@ -177,6 +177,165 @@ const items = useQuery(api.items.get);
 const createItem = useMutation(api.items.create);
 ```
 
+## Code Style (Vinhloc's Patterns)
+
+### Форматирование
+- **Formatter:** Biome (`pnpm format`)
+- **Кавычки:** Двойные `"string"`
+- **Точки с запятой:** Да, всегда
+- **Отступы:** Tabs
+- **Типы:** Строгий TypeScript, никаких `any`
+
+### Naming Conventions
+
+```typescript
+// Файлы
+ComponentName.tsx       // PascalCase для компонентов
+kebab-case.tsx          // kebab-case для утилит
+components/lease/       // kebab-case для папок
+
+// Переменные и функции
+const isFlipped = true;           // is* для boolean
+const canRate = checkPermission(); // can* для проверок
+const pickedUpAt = Date.now();    // *At для timestamps
+
+// Типы
+interface ItemCardProps { }       // *Props для props
+type LeaseActivityEvent = { }     // PascalCase для типов
+
+// Константы
+const ONE_HOUR_MS = 3600000;      // UPPER_SNAKE_CASE
+```
+
+### Convex Functions Pattern
+
+```typescript
+export const functionName = mutation({
+  args: { id: v.id("items") },
+  handler: async (ctx, args) => {
+    // 1. Auth check
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    // 2. Fetch data
+    const item = await ctx.db.get(args.id);
+    if (!item) throw new Error("Item not found");
+
+    // 3. Authorization
+    if (item.ownerId !== identity.subject) {
+      throw new Error("Unauthorized");
+    }
+
+    // 4. Business logic + activity trail
+    await ctx.db.insert("item_activity", {
+      itemId: args.id,
+      type: "item_updated",
+      actorId: identity.subject,
+      createdAt: Date.now(),
+    });
+
+    // 5. Return result
+    return { success: true };
+  },
+});
+```
+
+### React Component Pattern
+
+```typescript
+"use client";
+
+import { useMutation, useQuery } from "convex/react";
+import { useState, useCallback, useMemo } from "react";
+
+interface ComponentProps {
+  item: Doc<"items">;
+}
+
+export function ComponentName({ item }: ComponentProps) {
+  // 1. Hooks at top
+  const [isLoading, setIsLoading] = useState(false);
+  const data = useQuery(api.items.get);
+  const mutate = useMutation(api.items.update);
+
+  // 2. Derived state with useMemo
+  const canEdit = useMemo(() => /* ... */, [deps]);
+
+  // 3. Handlers with useCallback
+  const handleClick = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await mutate({ id: item._id });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [mutate, item._id]);
+
+  // 4. Early returns for guards
+  if (!data) return <Loading />;
+
+  // 5. JSX
+  return <div>...</div>;
+}
+```
+
+### Activity Trail Pattern
+
+Каждая мутация создаёт запись в activity таблице — это source of truth:
+
+```typescript
+// В mutation
+await ctx.db.insert("lease_activity", {
+  itemId: args.itemId,
+  claimId: claim._id,
+  type: "lease_approved",
+  actorId: identity.subject,
+  createdAt: Date.now(),
+});
+
+// В компоненте — derive state from events
+const status = useMemo(() => {
+  const lastEvent = leaseEvents[leaseEvents.length - 1];
+  return lastEvent?.type ?? "pending";
+}, [leaseEvents]);
+```
+
+### Import Order
+
+```typescript
+// 1. External dependencies
+import { useMutation, useQuery } from "convex/react";
+import { format } from "date-fns";
+import { Check, X } from "lucide-react";
+
+// 2. Types
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+
+// 3. UI components
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+
+// 4. Custom components
+import { ItemCard } from "@/components/item-card";
+
+// 5. Utilities
+import { cn } from "@/lib/utils";
+```
+
+### Commit Messages
+
+```
+type(scope): description
+
+feat(items): add calendar system
+fix(auth): restore env var for Convex
+chore(deps): update pnpm lockfile
+style(items): relayout the item detail page
+docs(todos): check off location
+```
+
+---
+
 ## MVP Features
 
 - [x] Список вещей с изображениями
@@ -286,4 +445,58 @@ function InvalidateSize() {
 
 ---
 
-*Последнее обновление: 2026-01-21*
+## Документация проекта
+
+### Obsidian (офлайн)
+
+Документация синхронизируется в Obsidian vault для офлайн-доступа:
+
+```
+/Users/dmitrysurkov/Library/Mobile Documents/iCloud~md~obsidian/Documents/Main/02-Projects/Sharity/
+├── README.md           # Обзор проекта
+├── Notion/             # Страницы из Notion
+├── Design/             # Figma дизайн
+└── Architecture/       # Miro схемы
+```
+
+### Внешние источники
+
+| Source | URL |
+|--------|-----|
+| Notion | https://www.notion.so/Sharity-Dalat-Build-Week-2e60a5be7bbe80e68b23f1f5f158aaee |
+| Miro | https://miro.com/app/board/uXjVGPKWI70=/ |
+| Figma | https://figma.com/design/S74LV4AyyLLK7L2G5Y211m/Sharity?node-id=2004-4099 |
+
+### Синхронизация
+
+```bash
+# Синхронизировать всё
+python scripts/sync_docs.py --all
+
+# Только один источник
+python scripts/sync_docs.py --notion
+python scripts/sync_docs.py --miro
+python scripts/sync_docs.py --figma
+
+# Статус кэша
+python scripts/sync_docs.py --status
+
+# Принудительное обновление
+python scripts/sync_docs.py --all --force
+```
+
+### API Setup
+
+Для полной синхронизации создать `.env` файл:
+
+```env
+NOTION_TOKEN=secret_xxx...
+MIRO_ACCESS_TOKEN=xxx...
+FIGMA_ACCESS_TOKEN=figd_xxx...
+```
+
+**ВАЖНО**: `.env` не коммитится (в `.gitignore`)
+
+---
+
+*Последнее обновление: 2026-01-23*

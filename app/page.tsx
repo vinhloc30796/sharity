@@ -26,7 +26,7 @@ export default function Home() {
 
 				{/* Desktop Layout: Split View */}
 				<div className="hidden md:grid md:grid-cols-[350px_1fr] lg:grid-cols-[400px_1fr] gap-8 items-start justify-center">
-					<div className="sticky top-8">
+					<div className="sticky top-8 max-h-[calc(100vh-4rem)] overflow-y-auto">
 						<AddItemForm />
 						<SignedIn>
 							<div className="mt-8">

@@ -12,6 +12,9 @@ import type * as crons from "../crons.js";
 import type * as items from "../items.js";
 import type * as migrations from "../migrations.js";
 import type * as notifications from "../notifications.js";
+import type * as ratings from "../ratings.js";
+import type * as seed from "../seed.js";
+import type * as users from "../users.js";
 import type * as wishlist from "../wishlist.js";
 
 import type {
@@ -25,6 +28,9 @@ declare const fullApi: ApiFromModules<{
   items: typeof items;
   migrations: typeof migrations;
   notifications: typeof notifications;
+  ratings: typeof ratings;
+  seed: typeof seed;
+  users: typeof users;
   wishlist: typeof wishlist;
 }>;
 

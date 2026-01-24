@@ -14,6 +14,8 @@ import { ConvexClientProvider } from "./ConvexClientProvider";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { ProfileProvider } from "@/components/profile-provider";
+import { ProfileEditModal } from "@/components/profile-edit-modal";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -42,22 +44,25 @@ export default function RootLayout({
 					className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 				>
 					<ConvexClientProvider>
-						<header className="flex justify-end p-4 gap-4">
-							<SignedOut>
-								<SignInButton mode="modal">
-									<Button variant="ghost">Sign In</Button>
-								</SignInButton>
-								<SignUpButton mode="modal">
-									<Button>Sign Up</Button>
-								</SignUpButton>
-							</SignedOut>
-							<SignedIn>
-								<NotificationBell />
-								<UserButton />
-							</SignedIn>
-						</header>
-						{children}
-						<Toaster />
+						<ProfileProvider>
+							<header className="flex justify-end p-4 gap-4">
+								<SignedOut>
+									<SignInButton mode="modal">
+										<Button variant="ghost">Sign In</Button>
+									</SignInButton>
+									<SignUpButton mode="modal">
+										<Button>Sign Up</Button>
+									</SignUpButton>
+								</SignedOut>
+								<SignedIn>
+									<ProfileEditModal />
+									<NotificationBell />
+									<UserButton />
+								</SignedIn>
+							</header>
+							{children}
+							<Toaster />
+						</ProfileProvider>
 					</ConvexClientProvider>
 				</body>
 			</html>

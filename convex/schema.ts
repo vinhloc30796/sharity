@@ -124,4 +124,37 @@ export default defineSchema({
 		votes: v.array(v.string()), // Array of userIds who voted
 		createdAt: v.number(),
 	}).index("by_createdAt", ["createdAt"]),
+
+	// User profiles (extends Clerk user data)
+	users: defineTable({
+		clerkId: v.string(), // Clerk user ID (identity.subject)
+		name: v.optional(v.string()),
+		avatarStorageId: v.optional(v.id("_storage")),
+		address: v.optional(v.string()),
+		contacts: v.optional(
+			v.object({
+				telegram: v.optional(v.string()),
+				whatsapp: v.optional(v.string()),
+				facebook: v.optional(v.string()),
+				phone: v.optional(v.string()),
+			}),
+		),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	}).index("by_clerk_id", ["clerkId"]),
+
+	// Ratings for lenders and borrowers
+	ratings: defineTable({
+		claimId: v.id("claims"), // Link to the lending transaction
+		fromUserId: v.string(), // Who gave the rating
+		toUserId: v.string(), // Who received the rating
+		role: v.union(v.literal("lender"), v.literal("borrower")), // Role of the person being rated
+		stars: v.number(), // 1-5 stars
+		comment: v.optional(v.string()),
+		photoStorageIds: v.optional(v.array(v.id("_storage"))),
+		createdAt: v.number(),
+	})
+		.index("by_to_user", ["toUserId"])
+		.index("by_from_user", ["fromUserId"])
+		.index("by_claim", ["claimId"]),
 });
