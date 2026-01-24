@@ -8,16 +8,8 @@ import { CATEGORY_LABELS, type ItemCategory } from "./item-form";
 const DEFAULT_CENTER: [number, number] = [11.9404, 108.4583];
 const DEFAULT_ZOOM = 13;
 
-// Privacy settings
-const CIRCLE_RADIUS_METERS = 500; // ~500m radius circle
-const COORDINATE_OFFSET_DEGREES = 0.002; // ~200m random offset
-
-// Add random offset to coordinates for privacy
-function addPrivacyOffset(lat: number, lng: number): [number, number] {
-	const latOffset = (Math.random() - 0.5) * 2 * COORDINATE_OFFSET_DEGREES;
-	const lngOffset = (Math.random() - 0.5) * 2 * COORDINATE_OFFSET_DEGREES;
-	return [lat + latOffset, lng + lngOffset];
-}
+// Privacy settings (Airbnb-style: ~450-550m circle around actual location)
+const CIRCLE_RADIUS_METERS = 450; // ~450m radius circle (Airbnb average)
 
 // Component to fix Leaflet tile loading issue
 function InvalidateSize() {
@@ -103,17 +95,9 @@ export function ItemsMapPrivacy({ items, onItemClick }: ItemsMapPrivacyProps) {
 		);
 	}, []);
 
-	// Pre-compute offset positions (stable per item)
-	const itemsWithOffsets = useMemo(() => {
-		return items
-			.filter((item) => item.location)
-			.map((item) => ({
-				...item,
-				offsetPosition: addPrivacyOffset(
-					item.location!.lat,
-					item.location!.lng,
-				),
-			}));
+	// Filter items with location (Airbnb-style: circle around actual position)
+	const itemsWithLocation = useMemo(() => {
+		return items.filter((item) => item.location);
 	}, [items]);
 
 	if (!MapComponents) {
@@ -138,7 +122,7 @@ export function ItemsMapPrivacy({ items, onItemClick }: ItemsMapPrivacyProps) {
 					attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 					url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 				/>
-				{itemsWithOffsets.map((item) => {
+				{itemsWithLocation.map((item) => {
 					const color =
 						CATEGORY_COLORS[item.category || "default"] ||
 						CATEGORY_COLORS.default;
@@ -146,7 +130,7 @@ export function ItemsMapPrivacy({ items, onItemClick }: ItemsMapPrivacyProps) {
 					return (
 						<Circle
 							key={item._id}
-							center={item.offsetPosition}
+							center={[item.location!.lat, item.location!.lng]}
 							radius={CIRCLE_RADIUS_METERS}
 							pathOptions={{
 								color: color,
