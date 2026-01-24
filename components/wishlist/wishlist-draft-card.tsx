@@ -12,11 +12,22 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	FileUpload,
+	FileUploadDropzone,
+	FileUploadItem,
+	FileUploadItemDelete,
+	FileUploadItemMetadata,
+	FileUploadItemPreview,
+	FileUploadList,
+} from "@/components/ui/file-upload";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import { uploadFileToConvexStorage } from "@/lib/upload-to-convex-storage";
 import { useMutation, useQuery } from "convex/react";
-import { CheckCircle2, Plus } from "lucide-react";
+import { CheckCircle2, Plus, UploadCloudIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -35,10 +46,16 @@ export function WishlistDraftCard({
 	const inputRef = useRef<HTMLInputElement | null>(null);
 
 	const [text, setText] = useState("");
+	const [files, setFiles] = useState<File[]>([]);
 	const [showMatchAlert, setShowMatchAlert] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
+	const fileStorageIds = useRef<globalThis.Map<File, Id<"_storage">>>(
+		new globalThis.Map(),
+	);
+
 	const createWishlist = useMutation(api.wishlist.create);
+	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
 	const items = useQuery(api.items.get);
 
 	useEffect(() => {
@@ -84,8 +101,29 @@ export function WishlistDraftCard({
 		if (!trimmed) return;
 		setIsSubmitting(true);
 		try {
-			await createWishlist({ text: trimmed });
+			// Upload files
+			const newIds: Id<"_storage">[] = [];
+			for (const file of files) {
+				let storageId = fileStorageIds.current.get(file);
+				if (!storageId) {
+					storageId = await uploadFileToConvexStorage({
+						file,
+						generateUploadUrl: async () => await generateUploadUrl(),
+					});
+					fileStorageIds.current.set(file, storageId);
+				}
+				if (storageId) {
+					newIds.push(storageId);
+				}
+			}
+
+			await createWishlist({
+				text: trimmed,
+				imageStorageIds: newIds.length > 0 ? newIds : undefined,
+			});
 			setText("");
+			setFiles([]);
+			fileStorageIds.current.clear();
 			setShowMatchAlert(false);
 			toast.success("Request added to wishlist!");
 		} catch (error) {
@@ -128,6 +166,41 @@ export function WishlistDraftCard({
 								onChange={(e) => setText(e.target.value)}
 								disabled={isSubmitting}
 							/>
+						</div>
+
+						<div className="space-y-2">
+							<Label>Photos (optional)</Label>
+							<FileUpload
+								maxFiles={5}
+								accept="image/*"
+								value={files}
+								onValueChange={setFiles}
+								multiple
+							>
+								<FileUploadDropzone className="h-32 bg-gray-50/50 border-dashed transition-colors hover:bg-gray-50/80 hover:border-primary/20">
+									<div className="flex flex-col items-center gap-2 text-muted-foreground text-sm">
+										<UploadCloudIcon className="size-8 text-muted-foreground/50" />
+										<div className="flex flex-col items-center">
+											<span className="font-semibold text-foreground">
+												Click to upload
+											</span>
+											<span>or drag and drop</span>
+											<span className="text-xs text-muted-foreground/75">
+												Up to 5 images
+											</span>
+										</div>
+									</div>
+								</FileUploadDropzone>
+								<FileUploadList>
+									{files.map((file, i) => (
+										<FileUploadItem key={i} value={file}>
+											<FileUploadItemPreview />
+											<FileUploadItemMetadata />
+											<FileUploadItemDelete />
+										</FileUploadItem>
+									))}
+								</FileUploadList>
+							</FileUpload>
 						</div>
 
 						{matchCount > 0 ? (

@@ -18,29 +18,49 @@ export const list = query({
 		// or backend-guided search. For MVP < 1000 items, in-memory check is fine.
 		const items = await ctx.db.query("items").collect();
 
-		return wishlistItems.map((wishlistItem) => {
-			const matchCount = items.filter((item) => {
-				const itemText = (
-					item.name +
-					" " +
-					(item.description || "")
-				).toLowerCase();
-				return itemText.includes(wishlistItem.text.toLowerCase());
-			}).length;
+		// Resolve images for all wishlist items
+		const results = await Promise.all(
+			wishlistItems.map(async (wishlistItem) => {
+				const matchCount = items.filter((item) => {
+					const itemText = (
+						item.name +
+						" " +
+						(item.description || "")
+					).toLowerCase();
+					return itemText.includes(wishlistItem.text.toLowerCase());
+				}).length;
 
-			const isLiked = userId ? wishlistItem.votes.includes(userId) : false;
+				const isLiked = userId ? wishlistItem.votes.includes(userId) : false;
 
-			return {
-				...wishlistItem,
-				matchCount,
-				isLiked,
-			};
-		});
+				// Resolve image URLs
+				const images: { id: string; url: string }[] = [];
+				if (wishlistItem.imageStorageIds) {
+					for (const storageId of wishlistItem.imageStorageIds) {
+						const url = await ctx.storage.getUrl(storageId);
+						if (url) {
+							images.push({ id: storageId, url });
+						}
+					}
+				}
+
+				return {
+					...wishlistItem,
+					matchCount,
+					isLiked,
+					images,
+				};
+			}),
+		);
+
+		return results;
 	},
 });
 
 export const create = mutation({
-	args: { text: v.string() },
+	args: {
+		text: v.string(),
+		imageStorageIds: v.optional(v.array(v.id("_storage"))),
+	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
@@ -50,6 +70,7 @@ export const create = mutation({
 			userId: identity.subject,
 			votes: [],
 			createdAt: Date.now(),
+			imageStorageIds: args.imageStorageIds,
 		});
 	},
 });
