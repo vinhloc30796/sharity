@@ -52,7 +52,7 @@ interface ItemsMapProps {
 	items: (Doc<"items"> & {
 		imageUrls?: string[];
 		category?: ItemCategory;
-		location?: { lat: number; lng: number; address?: string };
+		location?: { lat: number; lng: number; address?: string; ward?: string };
 	})[];
 	onItemClick?: (id: string) => void;
 }
@@ -132,9 +132,9 @@ export function ItemsMap({ items, onItemClick }: ItemsMapProps) {
 										{CATEGORY_LABELS[item.category]}
 									</p>
 								)}
-								{item.location?.address && (
+								{item.location?.ward && (
 									<p className="text-xs text-muted-foreground mt-1">
-										{item.location.address}
+										Area: {item.location.ward}
 									</p>
 								)}
 							</div>

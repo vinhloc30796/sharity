@@ -16,7 +16,7 @@ import {
 import { Doc } from "../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
 import { CATEGORY_LABELS, type ItemCategory } from "./item-form";
-import { MapPin, ExternalLink } from "lucide-react";
+import { MapPin } from "lucide-react";
 import {
 	ReactNode,
 	createContext,
@@ -51,7 +51,7 @@ interface ItemCardProps {
 	item: Doc<"items"> & {
 		imageUrls?: string[];
 		category?: ItemCategory;
-		location?: { lat: number; lng: number; address?: string };
+		location?: { lat: number; lng: number; address?: string; ward?: string };
 	};
 	footer?: ReactNode;
 	children?: ReactNode;
@@ -187,17 +187,10 @@ export function ItemCard({
 											</Badge>
 										)}
 										{item.location && (
-											<a
-												href={`https://maps.google.com/?q=${item.location.lat},${item.location.lng}`}
-												target="_blank"
-												rel="noopener noreferrer"
-												className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-											>
+											<span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
 												<MapPin className="h-3 w-3" />
-												{item.location.address ||
-													`${item.location.lat.toFixed(2)}, ${item.location.lng.toFixed(2)}`}
-												<ExternalLink className="h-3 w-3" />
-											</a>
+												{item.location.ward || "Location available"}
+											</span>
 										)}
 									</div>
 								)}

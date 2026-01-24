@@ -52,6 +52,7 @@ export interface Location {
 	lat: number;
 	lng: number;
 	address?: string;
+	ward?: string;
 }
 import { toast } from "sonner";
 import { uploadFileToConvexStorage } from "@/lib/upload-to-convex-storage";
@@ -158,6 +159,7 @@ export function ItemForm({
 			lat: loc.lat,
 			lng: loc.lng,
 			address: loc.address,
+			ward: loc.ward,
 		});
 		setAddress(loc.address || "");
 		toast.success("Location selected");
