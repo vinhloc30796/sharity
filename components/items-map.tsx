@@ -9,6 +9,26 @@ import { createMarkerIcon } from "./item-marker";
 const DEFAULT_CENTER: [number, number] = [11.9404, 108.4583];
 const DEFAULT_ZOOM = 13;
 
+// Privacy: small stable offset (~50-100m) based on item ID
+const PRIVACY_OFFSET = 0.0008; // ~80m
+
+function hashString(str: string): number {
+	let hash = 0;
+	for (let i = 0; i < str.length; i++) {
+		hash = ((hash << 5) - hash) + str.charCodeAt(i);
+		hash = hash & hash;
+	}
+	return hash;
+}
+
+function getPrivacyOffset(itemId: string): [number, number] {
+	const hash1 = hashString(itemId + "_lat");
+	const hash2 = hashString(itemId + "_lng");
+	const latOffset = ((hash1 % 1000) / 500 - 1) * PRIVACY_OFFSET;
+	const lngOffset = ((hash2 % 1000) / 500 - 1) * PRIVACY_OFFSET;
+	return [latOffset, lngOffset];
+}
+
 // Component to fix Leaflet tile loading issue
 function InvalidateSize() {
 	const [useMapHook, setUseMapHook] = useState<
@@ -105,10 +125,12 @@ export function ItemsMap({ items, onItemClick }: ItemsMapProps) {
 					attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 					url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 				/>
-				{itemsWithLocation.map((item) => (
+				{itemsWithLocation.map((item) => {
+					const [latOffset, lngOffset] = getPrivacyOffset(item._id);
+					return (
 					<Marker
 						key={item._id}
-						position={[item.location!.lat, item.location!.lng]}
+						position={[item.location!.lat + latOffset, item.location!.lng + lngOffset]}
 						icon={createMarkerIcon({
 							category: item.category,
 							L: MapComponents.L,
@@ -140,7 +162,8 @@ export function ItemsMap({ items, onItemClick }: ItemsMapProps) {
 							</div>
 						</Popup>
 					</Marker>
-				))}
+				);
+				})}
 			</MapContainer>
 		</div>
 	);
