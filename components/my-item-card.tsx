@@ -29,7 +29,7 @@ import { ItemForm } from "./item-form";
 import { useState } from "react";
 import { Doc, Id } from "../convex/_generated/dataModel";
 import { ItemCard, useItemCard } from "./item-card";
-import { Check, X } from "lucide-react";
+import { Check, X, Pencil, Trash2 } from "lucide-react";
 import { ClaimItemBack } from "./claim-item-back";
 
 // Badge not available, using span
@@ -180,8 +180,13 @@ export function MyItemCard({
 							onOpenChange={(open) => setEditingId(open ? item._id : null)}
 						>
 							<DialogTrigger asChild>
-								<Button variant="outline" size="sm">
-									Edit
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-8 w-8 text-muted-foreground hover:text-foreground"
+								>
+									<Pencil className="h-4 w-4" />
+									<span className="sr-only">Edit</span>
 								</Button>
 							</DialogTrigger>
 							<DialogContent>
@@ -212,8 +217,13 @@ export function MyItemCard({
 
 						<AlertDialog>
 							<AlertDialogTrigger asChild>
-								<Button variant="destructive" size="sm">
-									Delete
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+								>
+									<Trash2 className="h-4 w-4" />
+									<span className="sr-only">Delete</span>
 								</Button>
 							</AlertDialogTrigger>
 							<AlertDialogContent>
