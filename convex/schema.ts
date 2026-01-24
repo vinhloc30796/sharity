@@ -133,6 +133,7 @@ export default defineSchema({
 		userId: v.string(),
 		votes: v.array(v.string()), // Array of userIds who voted
 		createdAt: v.number(),
+		imageStorageIds: v.optional(v.array(v.id("_storage"))),
 	}).index("by_createdAt", ["createdAt"]),
 
 	// User profiles (extends Clerk user data)
