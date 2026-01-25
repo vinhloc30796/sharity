@@ -15,7 +15,16 @@ type BorrowerCalendarProps = Omit<
 	selected: DateRange | undefined;
 	onSelect: (range: DateRange | undefined) => void;
 };
-type OwnerCalendarProps = Omit<CalendarProps, "mode"> & { mode: "single" };
+type OwnerCalendarProps = Omit<
+	CalendarProps,
+	"mode" | "selected" | "onSelect" | "required"
+> & {
+	mode: "single";
+	// Owner calendar is view-only: we don't maintain a selected day.
+	// Explicitly opt out of "required single" DayPicker props.
+	required: false;
+	selected: undefined;
+};
 
 type BorrowerMonths = 1 | 2 | "responsive";
 
@@ -239,6 +248,8 @@ export function useItemCalendar<TRequest extends OwnerRequestBase>(
 
 	const ownerCalendarProps: OwnerCalendarProps = {
 		mode: "single",
+		required: false,
+		selected: undefined,
 		numberOfMonths: isOwnerMode ? config.months : 2,
 		disabled: disabledDates,
 		onDayMouseEnter: (day) => {
