@@ -6,7 +6,12 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { RatingForm } from "@/components/rating-form";
 import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
@@ -39,7 +44,8 @@ export function PendingRatings() {
 				</CardHeader>
 				<CardContent>
 					<p className="text-sm text-muted-foreground mb-3">
-						You have {pendingRatings.length} transaction{pendingRatings.length !== 1 ? "s" : ""} to rate.
+						You have {pendingRatings.length} transaction
+						{pendingRatings.length !== 1 ? "s" : ""} to rate.
 					</p>
 					<div className="flex flex-col gap-2">
 						{pendingRatings.map((pending) => (
@@ -56,13 +62,16 @@ export function PendingRatings() {
 										/>
 									)}
 									<div className="min-w-0">
-										<p className="text-sm font-medium truncate">{pending.itemName}</p>
+										<p className="text-sm font-medium truncate">
+											{pending.itemName}
+										</p>
 										<div className="flex items-center gap-2">
 											<Badge variant="outline" className="text-xs">
 												Rate {pending.targetRole}
 											</Badge>
 											<span className="text-xs text-muted-foreground">
-												{format(new Date(pending.startDate), "MMM d")} - {format(new Date(pending.endDate), "MMM d")}
+												{format(new Date(pending.startDate), "MMM d")} -{" "}
+												{format(new Date(pending.endDate), "MMM d")}
 											</span>
 										</div>
 									</div>
@@ -86,7 +95,10 @@ export function PendingRatings() {
 				</CardContent>
 			</Card>
 
-			<Dialog open={selectedClaim !== null} onOpenChange={() => setSelectedClaim(null)}>
+			<Dialog
+				open={selectedClaim !== null}
+				onOpenChange={() => setSelectedClaim(null)}
+			>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Leave a Rating</DialogTitle>

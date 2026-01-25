@@ -5,10 +5,12 @@ import type { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import { useMutation, useQuery } from "convex/react";
 import { CalendarDays, Plus, Trash2 } from "lucide-react";
+import type { ComponentProps } from "react";
 
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
 	Dialog,
 	DialogContent,
@@ -24,12 +26,29 @@ function formatRange(startDate: number, endDate: number): string {
 	return `${format(new Date(startDate), "MMM d, yyyy")} – ${format(new Date(endDate), "MMM d, yyyy")}`;
 }
 
-export function OwnerUnavailabilityButton() {
+interface OwnerUnavailabilityButtonProps {
+	className?: string;
+	variant?: ComponentProps<typeof Button>["variant"];
+	size?: ComponentProps<typeof Button>["size"];
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+}
+
+export function OwnerUnavailabilityButton(
+	props: OwnerUnavailabilityButtonProps,
+) {
+	const className = props.className;
+	const variant = props.variant ?? "outline";
+	const size = props.size ?? "sm";
+
 	const ranges = useQuery(api.items.getOwnerUnavailability);
 	const addRange = useMutation(api.items.addOwnerUnavailabilityRange);
 	const deleteRange = useMutation(api.items.deleteOwnerUnavailabilityRange);
 
-	const [open, setOpen] = React.useState(false);
+	const [internalOpen, setInternalOpen] = React.useState(false);
+	const open = props.open ?? internalOpen;
+	const setOpen = props.onOpenChange ?? setInternalOpen;
+
 	const [date, setDate] = React.useState<DateRange | undefined>(undefined);
 	const [note, setNote] = React.useState("");
 	const [isSaving, setIsSaving] = React.useState(false);
@@ -64,7 +83,11 @@ export function OwnerUnavailabilityButton() {
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
-				<Button variant="outline" size="sm" className="gap-2">
+				<Button
+					variant={variant}
+					size={size}
+					className={cn("gap-2", className)}
+				>
 					<CalendarDays className="h-4 w-4" />
 					Vacation
 				</Button>

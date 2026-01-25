@@ -21,7 +21,9 @@ export default function UserProfilePage() {
 
 	const { user: currentUser } = useUser();
 	const profile = useQuery(api.users.getProfile, { userId });
-	const profileWithContacts = useQuery(api.users.getProfileWithContacts, { userId });
+	const profileWithContacts = useQuery(api.users.getProfileWithContacts, {
+		userId,
+	});
 
 	// If this is the current user, redirect to their own profile page
 	if (currentUser?.id === userId) {
@@ -63,7 +65,10 @@ export default function UserProfilePage() {
 		<main className="min-h-screen bg-gray-50/50">
 			<div className="max-w-2xl mx-auto p-4 md:p-8 space-y-6">
 				<div className="flex items-center gap-4">
-					<Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
+					<Link
+						href="/"
+						className="text-muted-foreground hover:text-foreground transition-colors"
+					>
 						<ArrowLeft className="h-5 w-5" />
 					</Link>
 					<h1 className="text-xl font-semibold">User Profile</h1>
@@ -99,7 +104,8 @@ export default function UserProfilePage() {
 								{profile.createdAt && (
 									<p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
 										<Calendar className="h-3 w-3" />
-										Member since {format(new Date(profile.createdAt), "MMMM yyyy")}
+										Member since{" "}
+										{format(new Date(profile.createdAt), "MMMM yyyy")}
 									</p>
 								)}
 								<div className="mt-2">

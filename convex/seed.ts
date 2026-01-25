@@ -94,15 +94,30 @@ export const diagnoseUsers = query({
 					name: i.name,
 					ownerId: i.ownerId,
 					isRealUser: i.ownerId === USER_A || i.ownerId === USER_B,
-					owner: i.ownerId === USER_A ? "User A" : i.ownerId === USER_B ? "User B" : "DUMMY",
+					owner:
+						i.ownerId === USER_A
+							? "User A"
+							: i.ownerId === USER_B
+								? "User B"
+								: "DUMMY",
 				})),
 				claims: claims.map((c) => {
 					const item = items.find((i) => i._id === c.itemId);
 					return {
 						itemName: item?.name ?? "Unknown",
-						itemOwner: item?.ownerId === USER_A ? "User A" : item?.ownerId === USER_B ? "User B" : "DUMMY",
+						itemOwner:
+							item?.ownerId === USER_A
+								? "User A"
+								: item?.ownerId === USER_B
+									? "User B"
+									: "DUMMY",
 						claimerId: c.claimerId,
-						claimer: c.claimerId === USER_A ? "User A" : c.claimerId === USER_B ? "User B" : "DUMMY",
+						claimer:
+							c.claimerId === USER_A
+								? "User A"
+								: c.claimerId === USER_B
+									? "User B"
+									: "DUMMY",
 						status: c.status,
 					};
 				}),
@@ -201,9 +216,9 @@ export const nuclearReset = mutation({
 
 		// Da Lat locations:
 		// User A area: near Xuan Huong Lake (center of Da Lat)
-		const USER_A_BASE = { lat: 11.9404, lng: 108.4380 };
+		const USER_A_BASE = { lat: 11.9404, lng: 108.438 };
 		// User B area: near Da Lat Market (slightly east)
-		const USER_B_BASE = { lat: 11.9420, lng: 108.4550 };
+		const USER_B_BASE = { lat: 11.942, lng: 108.455 };
 
 		// Small random offset to avoid exact same location
 		const offset = () => (Math.random() - 0.5) * 0.003; // ~150m radius
@@ -214,25 +229,41 @@ export const nuclearReset = mutation({
 				name: "Playing Cards",
 				description: "Classic deck of cards, great for game nights",
 				category: "other" as const,
-				location: { lat: USER_A_BASE.lat + offset(), lng: USER_A_BASE.lng + offset(), address: "Near Xuan Huong Lake, Da Lat" },
+				location: {
+					lat: USER_A_BASE.lat + offset(),
+					lng: USER_A_BASE.lng + offset(),
+					address: "Near Xuan Huong Lake, Da Lat",
+				},
 			},
 			{
 				name: "Camping Tent",
 				description: "2-person lightweight tent, waterproof",
 				category: "sports" as const,
-				location: { lat: USER_A_BASE.lat + offset(), lng: USER_A_BASE.lng + offset(), address: "Near Xuan Huong Lake, Da Lat" },
+				location: {
+					lat: USER_A_BASE.lat + offset(),
+					lng: USER_A_BASE.lng + offset(),
+					address: "Near Xuan Huong Lake, Da Lat",
+				},
 			},
 			{
 				name: "Electric Drill",
 				description: "Bosch cordless drill with battery pack",
 				category: "other" as const,
-				location: { lat: USER_A_BASE.lat + offset(), lng: USER_A_BASE.lng + offset(), address: "Near Xuan Huong Lake, Da Lat" },
+				location: {
+					lat: USER_A_BASE.lat + offset(),
+					lng: USER_A_BASE.lng + offset(),
+					address: "Near Xuan Huong Lake, Da Lat",
+				},
 			},
 			{
 				name: "Instant Pot",
 				description: "6-quart pressure cooker, barely used",
 				category: "kitchen" as const,
-				location: { lat: USER_A_BASE.lat + offset(), lng: USER_A_BASE.lng + offset(), address: "Near Xuan Huong Lake, Da Lat" },
+				location: {
+					lat: USER_A_BASE.lat + offset(),
+					lng: USER_A_BASE.lng + offset(),
+					address: "Near Xuan Huong Lake, Da Lat",
+				},
 			},
 		];
 
@@ -242,25 +273,41 @@ export const nuclearReset = mutation({
 				name: "Mosquito Killer",
 				description: "Electric mosquito trap, UV light",
 				category: "electronics" as const,
-				location: { lat: USER_B_BASE.lat + offset(), lng: USER_B_BASE.lng + offset(), address: "Near Da Lat Market" },
+				location: {
+					lat: USER_B_BASE.lat + offset(),
+					lng: USER_B_BASE.lng + offset(),
+					address: "Near Da Lat Market",
+				},
 			},
 			{
 				name: "Mountain Bike",
 				description: "Trek Marlin 5, good condition",
 				category: "sports" as const,
-				location: { lat: USER_B_BASE.lat + offset(), lng: USER_B_BASE.lng + offset(), address: "Near Da Lat Market" },
+				location: {
+					lat: USER_B_BASE.lat + offset(),
+					lng: USER_B_BASE.lng + offset(),
+					address: "Near Da Lat Market",
+				},
 			},
 			{
 				name: "DSLR Camera",
 				description: "Canon EOS 80D with 18-135mm lens",
 				category: "electronics" as const,
-				location: { lat: USER_B_BASE.lat + offset(), lng: USER_B_BASE.lng + offset(), address: "Near Da Lat Market" },
+				location: {
+					lat: USER_B_BASE.lat + offset(),
+					lng: USER_B_BASE.lng + offset(),
+					address: "Near Da Lat Market",
+				},
 			},
 			{
 				name: "Stand Mixer",
 				description: "KitchenAid 5-quart with attachments",
 				category: "kitchen" as const,
-				location: { lat: USER_B_BASE.lat + offset(), lng: USER_B_BASE.lng + offset(), address: "Near Da Lat Market" },
+				location: {
+					lat: USER_B_BASE.lat + offset(),
+					lng: USER_B_BASE.lng + offset(),
+					address: "Near Da Lat Market",
+				},
 			},
 		];
 
@@ -531,7 +578,8 @@ export const setupRatingTestData = mutation({
 
 		if (ownerIds.length < 2) {
 			return {
-				error: "Need at least 2 users with items. Log in with both Google accounts and create an item from each.",
+				error:
+					"Need at least 2 users with items. Log in with both Google accounts and create an item from each.",
 				users: ownerIds,
 			};
 		}
@@ -885,12 +933,16 @@ export const cleanDummyData = mutation({
 
 		// 1. Get items owned by real users (to keep)
 		const allItems = await ctx.db.query("items").collect();
-		const realUserItems = allItems.filter((i) => REAL_USERS.includes(i.ownerId));
+		const realUserItems = allItems.filter((i) =>
+			REAL_USERS.includes(i.ownerId),
+		);
 		const realUserItemIds = new Set(realUserItems.map((i) => i._id));
 		results.keptItems = realUserItems.length;
 
 		// 2. Delete items NOT owned by real users
-		const itemsToDelete = allItems.filter((i) => !REAL_USERS.includes(i.ownerId));
+		const itemsToDelete = allItems.filter(
+			(i) => !REAL_USERS.includes(i.ownerId),
+		);
 		for (const item of itemsToDelete) {
 			await ctx.db.delete(item._id);
 			results.deletedItems++;
@@ -998,20 +1050,60 @@ export const seedItemsForRealUsers = mutation({
 
 		// Items for User A
 		const userAItems = [
-			{ name: "Camping Tent (2-person)", description: "Lightweight tent, great for weekend trips", category: "sports" as const },
-			{ name: "Electric Drill", description: "Bosch cordless drill with battery pack", category: "other" as const },
-			{ name: "Yoga Mat", description: "Extra thick, non-slip surface", category: "sports" as const },
-			{ name: "Instant Pot", description: "6-quart pressure cooker, barely used", category: "kitchen" as const },
-			{ name: "Board Game Collection", description: "Catan, Ticket to Ride, Pandemic", category: "other" as const },
+			{
+				name: "Camping Tent (2-person)",
+				description: "Lightweight tent, great for weekend trips",
+				category: "sports" as const,
+			},
+			{
+				name: "Electric Drill",
+				description: "Bosch cordless drill with battery pack",
+				category: "other" as const,
+			},
+			{
+				name: "Yoga Mat",
+				description: "Extra thick, non-slip surface",
+				category: "sports" as const,
+			},
+			{
+				name: "Instant Pot",
+				description: "6-quart pressure cooker, barely used",
+				category: "kitchen" as const,
+			},
+			{
+				name: "Board Game Collection",
+				description: "Catan, Ticket to Ride, Pandemic",
+				category: "other" as const,
+			},
 		];
 
 		// Items for User B
 		const userBItems = [
-			{ name: "Mountain Bike", description: "Trek Marlin 5, good condition", category: "sports" as const },
-			{ name: "DSLR Camera", description: "Canon EOS 80D with 18-135mm lens", category: "electronics" as const },
-			{ name: "Portable Projector", description: "Anker Nebula, 720p, great for movie nights", category: "electronics" as const },
-			{ name: "Stand Mixer", description: "KitchenAid 5-quart, with attachments", category: "kitchen" as const },
-			{ name: "Folding Table", description: "6ft folding table for events", category: "furniture" as const },
+			{
+				name: "Mountain Bike",
+				description: "Trek Marlin 5, good condition",
+				category: "sports" as const,
+			},
+			{
+				name: "DSLR Camera",
+				description: "Canon EOS 80D with 18-135mm lens",
+				category: "electronics" as const,
+			},
+			{
+				name: "Portable Projector",
+				description: "Anker Nebula, 720p, great for movie nights",
+				category: "electronics" as const,
+			},
+			{
+				name: "Stand Mixer",
+				description: "KitchenAid 5-quart, with attachments",
+				category: "kitchen" as const,
+			},
+			{
+				name: "Folding Table",
+				description: "6ft folding table for events",
+				category: "furniture" as const,
+			},
 		];
 
 		const createdItems: string[] = [];
@@ -1205,7 +1297,7 @@ export const fullResetAndSeed = mutation({
 		// Get items owned by real users
 		const allItems = await ctx.db.query("items").collect();
 		const realUserItemIds = new Set(
-			allItems.filter((i) => REAL_USERS.includes(i.ownerId)).map((i) => i._id)
+			allItems.filter((i) => REAL_USERS.includes(i.ownerId)).map((i) => i._id),
 		);
 
 		// Delete non-real-user items
@@ -1219,7 +1311,10 @@ export const fullResetAndSeed = mutation({
 		// Delete orphaned claims
 		const allClaims = await ctx.db.query("claims").collect();
 		for (const claim of allClaims) {
-			if (!realUserItemIds.has(claim.itemId) || !REAL_USERS.includes(claim.claimerId)) {
+			if (
+				!realUserItemIds.has(claim.itemId) ||
+				!REAL_USERS.includes(claim.claimerId)
+			) {
 				await ctx.db.delete(claim._id);
 				cleanResults.deletedClaims++;
 			}
@@ -1245,7 +1340,10 @@ export const fullResetAndSeed = mutation({
 		// Delete orphaned notifications
 		const notifications = await ctx.db.query("notifications").collect();
 		for (const n of notifications) {
-			if (!REAL_USERS.includes(n.recipientId) || !realUserItemIds.has(n.itemId)) {
+			if (
+				!REAL_USERS.includes(n.recipientId) ||
+				!realUserItemIds.has(n.itemId)
+			) {
 				await ctx.db.delete(n._id);
 				cleanResults.deletedNotifications++;
 			}
@@ -1254,7 +1352,10 @@ export const fullResetAndSeed = mutation({
 		// Delete orphaned ratings
 		const ratings = await ctx.db.query("ratings").collect();
 		for (const r of ratings) {
-			if (!REAL_USERS.includes(r.fromUserId) || !REAL_USERS.includes(r.toUserId)) {
+			if (
+				!REAL_USERS.includes(r.fromUserId) ||
+				!REAL_USERS.includes(r.toUserId)
+			) {
 				await ctx.db.delete(r._id);
 				cleanResults.deletedRatings++;
 			}
@@ -1262,20 +1363,55 @@ export const fullResetAndSeed = mutation({
 
 		// ===== STEP 2: Add new items =====
 		const userANewItems = [
-			{ name: "Camping Tent (2-person)", description: "Lightweight tent, great for weekend trips", category: "sports" as const },
-			{ name: "Electric Drill", description: "Bosch cordless drill with battery pack", category: "other" as const },
-			{ name: "Yoga Mat", description: "Extra thick, non-slip surface", category: "sports" as const },
-			{ name: "Instant Pot", description: "6-quart pressure cooker, barely used", category: "kitchen" as const },
+			{
+				name: "Camping Tent (2-person)",
+				description: "Lightweight tent, great for weekend trips",
+				category: "sports" as const,
+			},
+			{
+				name: "Electric Drill",
+				description: "Bosch cordless drill with battery pack",
+				category: "other" as const,
+			},
+			{
+				name: "Yoga Mat",
+				description: "Extra thick, non-slip surface",
+				category: "sports" as const,
+			},
+			{
+				name: "Instant Pot",
+				description: "6-quart pressure cooker, barely used",
+				category: "kitchen" as const,
+			},
 		];
 
 		const userBNewItems = [
-			{ name: "Mountain Bike", description: "Trek Marlin 5, good condition", category: "sports" as const },
-			{ name: "DSLR Camera", description: "Canon EOS 80D with 18-135mm lens", category: "electronics" as const },
-			{ name: "Portable Projector", description: "Anker Nebula, 720p, great for movie nights", category: "electronics" as const },
-			{ name: "Stand Mixer", description: "KitchenAid 5-quart, with attachments", category: "kitchen" as const },
+			{
+				name: "Mountain Bike",
+				description: "Trek Marlin 5, good condition",
+				category: "sports" as const,
+			},
+			{
+				name: "DSLR Camera",
+				description: "Canon EOS 80D with 18-135mm lens",
+				category: "electronics" as const,
+			},
+			{
+				name: "Portable Projector",
+				description: "Anker Nebula, 720p, great for movie nights",
+				category: "electronics" as const,
+			},
+			{
+				name: "Stand Mixer",
+				description: "KitchenAid 5-quart, with attachments",
+				category: "kitchen" as const,
+			},
 		];
 
-		const createdItemIds: { userA: string[]; userB: string[] } = { userA: [], userB: [] };
+		const createdItemIds: { userA: string[]; userB: string[] } = {
+			userA: [],
+			userB: [],
+		};
 
 		for (const item of userANewItems) {
 			const itemId = await ctx.db.insert("items", {
@@ -1311,8 +1447,12 @@ export const fullResetAndSeed = mutation({
 
 		// ===== STEP 3: Create claims for rating testing =====
 		const allItemsAfterSeed = await ctx.db.query("items").collect();
-		const userAItemsForClaims = allItemsAfterSeed.filter((i) => i.ownerId === REAL_USER_A);
-		const userBItemsForClaims = allItemsAfterSeed.filter((i) => i.ownerId === REAL_USER_B);
+		const userAItemsForClaims = allItemsAfterSeed.filter(
+			(i) => i.ownerId === REAL_USER_A,
+		);
+		const userBItemsForClaims = allItemsAfterSeed.filter(
+			(i) => i.ownerId === REAL_USER_B,
+		);
 
 		const claimsCreated: string[] = [];
 

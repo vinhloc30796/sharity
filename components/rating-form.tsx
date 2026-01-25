@@ -41,7 +41,9 @@ export function RatingForm({
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const createRating = useMutation(api.ratings.createRating);
-	const generateUploadUrl = useMutation(api.ratings.generateRatingPhotoUploadUrl);
+	const generateUploadUrl = useMutation(
+		api.ratings.generateRatingPhotoUploadUrl,
+	);
 
 	const fileStorageIds = useRef<Map<File, Id<"_storage">>>(new Map());
 
@@ -85,7 +87,8 @@ export function RatingForm({
 				claimId,
 				stars,
 				comment: comment.trim() || undefined,
-				photoStorageIds: photoStorageIds.length > 0 ? photoStorageIds : undefined,
+				photoStorageIds:
+					photoStorageIds.length > 0 ? photoStorageIds : undefined,
 			});
 
 			toast.success("Rating submitted successfully");
@@ -150,7 +153,12 @@ export function RatingForm({
 
 			<div className="flex gap-2 justify-end">
 				{onCancel && (
-					<Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+					<Button
+						type="button"
+						variant="outline"
+						onClick={onCancel}
+						disabled={isSubmitting}
+					>
 						Cancel
 					</Button>
 				)}

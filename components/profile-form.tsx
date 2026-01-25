@@ -30,13 +30,19 @@ interface ProfileFormProps {
 export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 	const [name, setName] = useState(initialValues?.name || "");
 	const [address, setAddress] = useState(initialValues?.address || "");
-	const [telegram, setTelegram] = useState(initialValues?.contacts?.telegram || "");
-	const [whatsapp, setWhatsapp] = useState(initialValues?.contacts?.whatsapp || "");
-	const [facebook, setFacebook] = useState(initialValues?.contacts?.facebook || "");
-	const [phone, setPhone] = useState(initialValues?.contacts?.phone || "");
-	const [avatarStorageId, setAvatarStorageId] = useState<Id<"_storage"> | undefined>(
-		initialValues?.avatarStorageId,
+	const [telegram, setTelegram] = useState(
+		initialValues?.contacts?.telegram || "",
 	);
+	const [whatsapp, setWhatsapp] = useState(
+		initialValues?.contacts?.whatsapp || "",
+	);
+	const [facebook, setFacebook] = useState(
+		initialValues?.contacts?.facebook || "",
+	);
+	const [phone, setPhone] = useState(initialValues?.contacts?.phone || "");
+	const [avatarStorageId, setAvatarStorageId] = useState<
+		Id<"_storage"> | undefined
+	>(initialValues?.avatarStorageId);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const updateProfile = useMutation(api.users.updateProfile);

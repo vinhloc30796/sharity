@@ -12,10 +12,7 @@ interface ProfileProviderProps {
 
 export function ProfileProvider({ children }: ProfileProviderProps) {
 	const { isSignedIn, isLoaded } = useAuth();
-	const profile = useQuery(
-		api.users.getMyProfile,
-		isSignedIn ? {} : "skip",
-	);
+	const profile = useQuery(api.users.getMyProfile, isSignedIn ? {} : "skip");
 	const [showSetupModal, setShowSetupModal] = useState(false);
 	const [hasShownModal, setHasShownModal] = useState(false);
 

@@ -2,11 +2,8 @@
 
 import { AddItemForm } from "@/components/add-item-form";
 import { ItemList } from "@/components/item-list";
-import { MyItemsList } from "@/components/my-items-list";
-import { OwnerUnavailabilityButton } from "@/components/owner-unavailability-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WishlistDraftCard } from "@/components/wishlist/wishlist-draft-card";
-import { SignedIn } from "@clerk/nextjs";
 
 import { ClaimButton } from "@/components/claim-button";
 import { ClaimItemBack } from "@/components/claim-item-back";
@@ -63,15 +60,6 @@ export default function Home() {
 								/>
 							</TabsContent>
 						</Tabs>
-						<SignedIn>
-							<div className="mt-8">
-								<div className="flex items-center justify-between mb-4">
-									<h2 className="text-lg font-semibold">My Items</h2>
-									<OwnerUnavailabilityButton />
-								</div>
-								<MyItemsList />
-							</div>
-						</SignedIn>
 					</div>
 					<div className="w-full">
 						<Suspense
@@ -128,15 +116,6 @@ export default function Home() {
 						<TabsContent value="manage" className="mt-0 space-y-4">
 							<h2 className="text-lg font-semibold px-1">Share & Manage</h2>
 							<AddItemForm />
-							<SignedIn>
-								<div className="mt-8">
-									<div className="flex items-center justify-between mb-4">
-										<h2 className="text-lg font-semibold">My Items</h2>
-										<OwnerUnavailabilityButton />
-									</div>
-									<MyItemsList />
-								</div>
-							</SignedIn>
 						</TabsContent>
 
 						<div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 p-2 z-50">

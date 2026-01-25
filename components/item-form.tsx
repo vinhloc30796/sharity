@@ -2,6 +2,7 @@
 
 import { useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
+import Link from "next/link";
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,14 @@ import {
 	FileUploadItemMetadata,
 	FileUploadItemDelete,
 } from "@/components/ui/file-upload";
-import { UploadCloudIcon, X, MapPin, Loader2, Map } from "lucide-react";
+import {
+	UploadCloudIcon,
+	X,
+	MapPin,
+	Loader2,
+	Map,
+	ListChecks,
+} from "lucide-react";
 import {
 	LocationPickerDialog,
 	type LocationPickerValue,
@@ -393,9 +401,26 @@ export function ItemForm({
 				)}
 			</div>
 
-			<Button type="submit" disabled={isSubmitting}>
-				{isSubmitting ? "Uploading & Saving..." : submitLabel}
-			</Button>
+			<div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+				<Button
+					type="submit"
+					disabled={isSubmitting}
+					className="w-full sm:w-auto"
+				>
+					{isSubmitting ? "Uploading & Saving..." : submitLabel}
+				</Button>
+				<Button
+					asChild
+					type="button"
+					variant="secondary"
+					className="w-full sm:w-auto"
+				>
+					<Link href="/my-items">
+						<ListChecks className="h-4 w-4" />
+						My Items
+					</Link>
+				</Button>
+			</div>
 		</form>
 	);
 }

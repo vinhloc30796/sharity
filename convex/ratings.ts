@@ -50,7 +50,10 @@ export const canRate = query({
 			.first();
 
 		if (existingRating) {
-			return { canRate: false, reason: "You have already rated this transaction" };
+			return {
+				canRate: false,
+				reason: "You have already rated this transaction",
+			};
 		}
 
 		// Lender rates the borrower, borrower rates the lender

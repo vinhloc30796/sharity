@@ -104,7 +104,9 @@ export function ProfileSetupModal({
 								Name <span className="text-red-500">*</span>
 							</Label>
 							{isNameFromClerk && (
-								<span className="text-xs text-muted-foreground">(from Clerk)</span>
+								<span className="text-xs text-muted-foreground">
+									(from Clerk)
+								</span>
 							)}
 						</div>
 						<div className="flex gap-2">

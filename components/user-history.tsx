@@ -16,7 +16,9 @@ export function UserHistory({ userId }: UserHistoryProps) {
 	const history = useQuery(api.users.getUserHistory, { userId });
 
 	if (history === undefined) {
-		return <div className="text-sm text-muted-foreground">Loading history...</div>;
+		return (
+			<div className="text-sm text-muted-foreground">Loading history...</div>
+		);
 	}
 
 	const { lending, borrowing, stats } = history;
@@ -55,7 +57,9 @@ export function UserHistory({ userId }: UserHistoryProps) {
 			<Tabs defaultValue="lending" className="w-full">
 				<TabsList className="w-full grid grid-cols-2">
 					<TabsTrigger value="lending">Lending ({lending.length})</TabsTrigger>
-					<TabsTrigger value="borrowing">Borrowing ({borrowing.length})</TabsTrigger>
+					<TabsTrigger value="borrowing">
+						Borrowing ({borrowing.length})
+					</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value="lending" className="mt-4">

@@ -31,11 +31,16 @@ export function ContactInfo({
 	// If we have full contacts and should show values
 	if (showValues && contacts) {
 		const hasAnyContact =
-			contacts.telegram || contacts.whatsapp || contacts.facebook || contacts.phone;
+			contacts.telegram ||
+			contacts.whatsapp ||
+			contacts.facebook ||
+			contacts.phone;
 
 		if (!hasAnyContact) {
 			return (
-				<div className="text-sm text-muted-foreground">No contact info provided.</div>
+				<div className="text-sm text-muted-foreground">
+					No contact info provided.
+				</div>
 			);
 		}
 
@@ -87,13 +92,17 @@ export function ContactInfo({
 
 		if (available.length === 0) {
 			return (
-				<div className="text-sm text-muted-foreground">No contact methods set up.</div>
+				<div className="text-sm text-muted-foreground">
+					No contact methods set up.
+				</div>
 			);
 		}
 
 		return (
 			<div className="flex flex-col gap-2">
-				<p className="text-sm text-muted-foreground">Available contact methods:</p>
+				<p className="text-sm text-muted-foreground">
+					Available contact methods:
+				</p>
 				<div className="flex flex-wrap gap-2">
 					{availableContacts.telegram && (
 						<ContactBadge
@@ -166,7 +175,13 @@ function ContactRow({
 	return content;
 }
 
-function ContactBadge({ icon, label }: { icon: React.ReactNode; label: string }) {
+function ContactBadge({
+	icon,
+	label,
+}: {
+	icon: React.ReactNode;
+	label: string;
+}) {
 	return (
 		<div className="flex items-center gap-1.5 px-2 py-1 bg-gray-100 rounded-full text-xs">
 			{icon}

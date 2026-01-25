@@ -14,11 +14,19 @@ interface RatingsListProps {
 
 export function RatingsList({ userId }: RatingsListProps) {
 	const allRatings = useQuery(api.ratings.getRatingsForUser, { userId });
-	const lenderRatings = useQuery(api.ratings.getRatingsForUser, { userId, role: "lender" });
-	const borrowerRatings = useQuery(api.ratings.getRatingsForUser, { userId, role: "borrower" });
+	const lenderRatings = useQuery(api.ratings.getRatingsForUser, {
+		userId,
+		role: "lender",
+	});
+	const borrowerRatings = useQuery(api.ratings.getRatingsForUser, {
+		userId,
+		role: "borrower",
+	});
 
 	if (allRatings === undefined) {
-		return <div className="text-sm text-muted-foreground">Loading ratings...</div>;
+		return (
+			<div className="text-sm text-muted-foreground">Loading ratings...</div>
+		);
 	}
 
 	if (allRatings.length === 0) {
@@ -28,9 +36,7 @@ export function RatingsList({ userId }: RatingsListProps) {
 	return (
 		<Tabs defaultValue="all" className="w-full">
 			<TabsList className="w-full grid grid-cols-3">
-				<TabsTrigger value="all">
-					All ({allRatings?.length ?? 0})
-				</TabsTrigger>
+				<TabsTrigger value="all">All ({allRatings?.length ?? 0})</TabsTrigger>
 				<TabsTrigger value="lender">
 					As Lender ({lenderRatings?.length ?? 0})
 				</TabsTrigger>
@@ -65,7 +71,11 @@ interface Rating {
 
 function RatingsGrid({ ratings }: { ratings: Rating[] }) {
 	if (ratings.length === 0) {
-		return <div className="text-sm text-muted-foreground">No ratings in this category.</div>;
+		return (
+			<div className="text-sm text-muted-foreground">
+				No ratings in this category.
+			</div>
+		);
 	}
 
 	return (
@@ -106,7 +116,9 @@ function RatingCard({ rating }: { rating: Rating }) {
 						)}
 					</div>
 					<span className="text-xs text-muted-foreground whitespace-nowrap">
-						{formatDistanceToNow(new Date(rating.createdAt), { addSuffix: true })}
+						{formatDistanceToNow(new Date(rating.createdAt), {
+							addSuffix: true,
+						})}
 					</span>
 				</div>
 			</CardContent>
