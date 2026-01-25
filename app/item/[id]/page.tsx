@@ -275,6 +275,8 @@ export default function ItemDetailPage({
 									category: item.category,
 									location: item.location,
 									giveaway: Boolean(item.giveaway),
+									minLeaseDays: item.minLeaseDays,
+									maxLeaseDays: item.maxLeaseDays,
 								}}
 								enableModeSwitch
 								onSubmit={async (values) => {
@@ -294,6 +296,8 @@ export default function ItemDetailPage({
 										imageStorageIds: values.imageStorageIds,
 										category: values.category,
 										location: values.location,
+										minLeaseDays: values.minLeaseDays,
+										maxLeaseDays: values.maxLeaseDays,
 									});
 									setIsEditing(false);
 									toast.success("Item updated");
@@ -390,6 +394,21 @@ export default function ItemDetailPage({
 	const borrowerRightColumn = (
 		<div className="space-y-6">
 			<h2 className="text-2xl font-semibold">Checks Availability & Request</h2>
+			{!item.giveaway && (item.minLeaseDays || item.maxLeaseDays) ? (
+				<div className="text-sm text-muted-foreground">
+					Lease length:{" "}
+					{typeof item.minLeaseDays === "number"
+						? `min ${item.minLeaseDays} day(s)`
+						: null}
+					{typeof item.minLeaseDays === "number" &&
+					typeof item.maxLeaseDays === "number"
+						? ", "
+						: null}
+					{typeof item.maxLeaseDays === "number"
+						? `max ${item.maxLeaseDays} day(s)`
+						: null}
+				</div>
+			) : null}
 			<BorrowerRequestPanel item={item} fullWidth />
 			<div className="border-t pt-6">
 				<h3 className="text-xl font-semibold mb-3">Activity</h3>

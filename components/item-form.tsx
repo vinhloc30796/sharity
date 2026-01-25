@@ -87,6 +87,8 @@ interface ItemFormProps {
 		category?: ItemCategory;
 		location?: Location;
 		giveaway?: boolean;
+		minLeaseDays?: number;
+		maxLeaseDays?: number;
 	};
 	onSubmit: (values: {
 		name: string;
@@ -95,6 +97,8 @@ interface ItemFormProps {
 		category?: ItemCategory;
 		location?: Location;
 		giveaway?: boolean;
+		minLeaseDays?: number;
+		maxLeaseDays?: number;
 	}) => Promise<void>;
 	submitLabel?: string;
 	enableModeSwitch?: boolean;
@@ -111,6 +115,18 @@ export function ItemForm({
 		initialValues?.description || "",
 	);
 	const [giveaway, setGiveaway] = useState(Boolean(initialValues?.giveaway));
+	const [minLeaseDays, setMinLeaseDays] = useState(() => {
+		if (Boolean(initialValues?.giveaway)) return "";
+		return typeof initialValues?.minLeaseDays === "number"
+			? String(initialValues.minLeaseDays)
+			: "";
+	});
+	const [maxLeaseDays, setMaxLeaseDays] = useState(() => {
+		if (Boolean(initialValues?.giveaway)) return "";
+		return typeof initialValues?.maxLeaseDays === "number"
+			? String(initialValues.maxLeaseDays)
+			: "";
+	});
 	const [pendingGiveaway, setPendingGiveaway] = useState<boolean | null>(null);
 	const [isModeConfirmOpen, setIsModeConfirmOpen] = useState(false);
 	const [category, setCategory] = useState<ItemCategory | undefined>(
@@ -203,6 +219,40 @@ export function ItemForm({
 		setIsSubmitting(true);
 
 		try {
+			const parseOptionalDays = (
+				label: string,
+				raw: string,
+			): number | undefined => {
+				const trimmed = raw.trim();
+				if (trimmed.length === 0) return undefined;
+
+				const n = Number(trimmed);
+				if (!Number.isFinite(n) || !Number.isInteger(n)) {
+					throw new Error(`${label} must be an integer number of days`);
+				}
+				if (n < 1) {
+					throw new Error(`${label} must be at least 1 day`);
+				}
+				return n;
+			};
+
+			const minLeaseDaysValue = giveaway
+				? undefined
+				: parseOptionalDays("Min lease length", minLeaseDays);
+			const maxLeaseDaysValue = giveaway
+				? undefined
+				: parseOptionalDays("Max lease length", maxLeaseDays);
+
+			if (
+				minLeaseDaysValue !== undefined &&
+				maxLeaseDaysValue !== undefined &&
+				minLeaseDaysValue > maxLeaseDaysValue
+			) {
+				throw new Error(
+					"Min lease length must be less than or equal to max lease length",
+				);
+			}
+
 			// 1. Upload new files
 			const newIds: Id<"_storage">[] = [];
 
@@ -241,6 +291,8 @@ export function ItemForm({
 				category,
 				location: finalLocation,
 				giveaway: enableModeSwitch ? giveaway : undefined,
+				minLeaseDays: minLeaseDaysValue,
+				maxLeaseDays: maxLeaseDaysValue,
 			});
 
 			if (!initialValues) {
@@ -252,6 +304,8 @@ export function ItemForm({
 				setCategory(undefined);
 				setLocation(undefined);
 				setAddress("");
+				setMinLeaseDays("");
+				setMaxLeaseDays("");
 			}
 		} catch (error) {
 			console.error("Error submitting form:", error);
@@ -306,6 +360,10 @@ export function ItemForm({
 									onClick={() => {
 										if (pendingGiveaway === null) return;
 										setGiveaway(pendingGiveaway);
+										if (pendingGiveaway) {
+											setMinLeaseDays("");
+											setMaxLeaseDays("");
+										}
 										setPendingGiveaway(null);
 										setIsModeConfirmOpen(false);
 									}}
@@ -340,6 +398,53 @@ export function ItemForm({
 					disabled={isSubmitting}
 				/>
 			</div>
+
+			{giveaway ? (
+				<div className="text-xs text-muted-foreground">
+					Lease length limits are disabled for giveaway items.
+				</div>
+			) : (
+				<div className="flex flex-col gap-2">
+					<Label>Lease length limits (days)</Label>
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+						<div className="flex flex-col gap-2">
+							<Label htmlFor="min-lease-days" className="text-xs">
+								Min days (optional)
+							</Label>
+							<Input
+								id="min-lease-days"
+								type="number"
+								step={1}
+								min={1}
+								placeholder="e.g., 1"
+								value={minLeaseDays}
+								onChange={(e) => setMinLeaseDays(e.target.value)}
+								disabled={isSubmitting}
+								inputMode="numeric"
+							/>
+						</div>
+						<div className="flex flex-col gap-2">
+							<Label htmlFor="max-lease-days" className="text-xs">
+								Max days (optional)
+							</Label>
+							<Input
+								id="max-lease-days"
+								type="number"
+								step={1}
+								min={1}
+								placeholder="e.g., 14"
+								value={maxLeaseDays}
+								onChange={(e) => setMaxLeaseDays(e.target.value)}
+								disabled={isSubmitting}
+								inputMode="numeric"
+							/>
+						</div>
+					</div>
+					<div className="text-xs text-muted-foreground">
+						Same-day requests count as a fraction of a day.
+					</div>
+				</div>
+			)}
 
 			<div className="flex flex-col gap-2">
 				<Label htmlFor="category">Category</Label>

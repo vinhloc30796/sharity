@@ -7,6 +7,8 @@ export default defineSchema({
 		description: v.optional(v.string()),
 		ownerId: v.string(), // For MVP, we'll just store a string ID
 		giveaway: v.optional(v.boolean()),
+		minLeaseDays: v.optional(v.number()),
+		maxLeaseDays: v.optional(v.number()),
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
 		category: v.optional(
 			v.union(

@@ -6,6 +6,45 @@ import { action, internalMutation, mutation, query } from "./_generated/server";
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 
+function assertValidLeaseDaysLimits(args: {
+	giveaway: boolean;
+	minLeaseDays: number | undefined;
+	maxLeaseDays: number | undefined;
+}): void {
+	const { giveaway, minLeaseDays, maxLeaseDays } = args;
+
+	if (giveaway) {
+		if (minLeaseDays !== undefined || maxLeaseDays !== undefined) {
+			throw new Error("Lease limits are not allowed for giveaway items");
+		}
+		return;
+	}
+
+	const assertPositiveInt = (label: string, value: number) => {
+		if (!Number.isInteger(value)) {
+			throw new Error(`${label} must be an integer number of days`);
+		}
+		if (value < 1) {
+			throw new Error(`${label} must be at least 1 day`);
+		}
+	};
+
+	if (minLeaseDays !== undefined)
+		assertPositiveInt("Min lease length", minLeaseDays);
+	if (maxLeaseDays !== undefined)
+		assertPositiveInt("Max lease length", maxLeaseDays);
+
+	if (
+		minLeaseDays !== undefined &&
+		maxLeaseDays !== undefined &&
+		minLeaseDays > maxLeaseDays
+	) {
+		throw new Error(
+			"Min lease length must be less than or equal to max lease length",
+		);
+	}
+}
+
 function otherPartyId(args: {
 	itemOwnerId: string;
 	claimerId: string;
@@ -437,6 +476,8 @@ export const create = mutation({
 		name: v.string(),
 		description: v.optional(v.string()),
 		giveaway: v.optional(v.boolean()),
+		minLeaseDays: v.optional(v.number()),
+		maxLeaseDays: v.optional(v.number()),
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
 		category: categoryValidator,
 		location: locationValidator,
@@ -448,11 +489,19 @@ export const create = mutation({
 		}
 		const ownerId = identity.subject;
 
+		assertValidLeaseDaysLimits({
+			giveaway: Boolean(args.giveaway),
+			minLeaseDays: args.minLeaseDays,
+			maxLeaseDays: args.maxLeaseDays,
+		});
+
 		const itemId = await ctx.db.insert("items", {
 			name: args.name,
 			description: args.description,
 			ownerId,
 			giveaway: args.giveaway,
+			minLeaseDays: args.minLeaseDays,
+			maxLeaseDays: args.maxLeaseDays,
 			imageStorageIds: args.imageStorageIds,
 			category: args.category,
 			location: args.location,
@@ -475,6 +524,8 @@ export const update = mutation({
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
 		category: categoryValidator,
 		location: locationValidator,
+		minLeaseDays: v.optional(v.number()),
+		maxLeaseDays: v.optional(v.number()),
 	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
@@ -491,6 +542,12 @@ export const update = mutation({
 		if (item.ownerId !== identity.subject) {
 			throw new Error("Unauthorized: You do not own this item");
 		}
+
+		assertValidLeaseDaysLimits({
+			giveaway: Boolean(item.giveaway),
+			minLeaseDays: fields.minLeaseDays ?? item.minLeaseDays,
+			maxLeaseDays: fields.maxLeaseDays ?? item.maxLeaseDays,
+		});
 
 		await ctx.db.patch(id, fields);
 	},
@@ -563,6 +620,12 @@ export const switchItemMode = mutation({
 		}
 
 		await ctx.db.patch(args.id, { giveaway: args.giveaway });
+		if (args.giveaway) {
+			await ctx.db.patch(args.id, {
+				minLeaseDays: undefined,
+				maxLeaseDays: undefined,
+			});
+		}
 		return { changed: true, rejectedCount: pendingClaims.length };
 	},
 });
@@ -634,6 +697,18 @@ export const requestItem = mutation({
 		}
 
 		const duration = args.endDate - args.startDate;
+		if (!item.giveaway) {
+			const durationDays = duration / ONE_DAY_MS;
+			const minLeaseDays = item.minLeaseDays;
+			const maxLeaseDays = item.maxLeaseDays;
+
+			if (typeof minLeaseDays === "number" && durationDays < minLeaseDays) {
+				throw new Error(`Lease must be at least ${minLeaseDays} day(s)`);
+			}
+			if (typeof maxLeaseDays === "number" && durationDays > maxLeaseDays) {
+				throw new Error(`Lease must be at most ${maxLeaseDays} day(s)`);
+			}
+		}
 		const isHourAligned =
 			args.startDate % ONE_HOUR_MS === 0 && args.endDate % ONE_HOUR_MS === 0;
 		const isIntraday = duration < ONE_DAY_MS && isHourAligned;
