@@ -18,7 +18,7 @@ export function WishlistEmptyCard({ onMakeRequest }: WishlistEmptyCardProps) {
 			<div className="grid gap-2">
 				<Link href="/wishlist" className="block">
 					<Button variant="outline" className="w-full">
-						Go to Wishlist
+						See full wishlist
 					</Button>
 				</Link>
 				{onMakeRequest ? (

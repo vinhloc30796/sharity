@@ -4,9 +4,19 @@ import { AddItemForm } from "@/components/add-item-form";
 import { ItemList } from "@/components/item-list";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WishlistDraftCard } from "@/components/wishlist/wishlist-draft-card";
+import { WishlistItem } from "@/components/wishlist/wishlist-item";
 
 import { ClaimButton } from "@/components/claim-button";
 import { ClaimItemBack } from "@/components/claim-item-back";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { api } from "@/convex/_generated/api";
+import { useQuery } from "convex/react";
 import { Gift, ListChecks, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -21,6 +31,10 @@ export default function Home() {
 		"browse",
 	);
 	const [mobileWishlistFocusToken, setMobileWishlistFocusToken] = useState(0);
+	const wishlistItems = useQuery(api.wishlist.list);
+	const [wishlistSortBy, setWishlistSortBy] = useState<"recent" | "upvoted">(
+		"recent",
+	);
 
 	return (
 		<main className="min-h-screen flex flex-col items-center bg-gray-50/50">
@@ -58,6 +72,59 @@ export default function Home() {
 									autoFocus={desktopRequestFocusToken > 0}
 									focusToken={desktopRequestFocusToken}
 								/>
+								<div className="mt-4 flex items-center justify-between gap-2">
+									<div className="text-sm font-medium">Top requests</div>
+									<Select
+										value={wishlistSortBy}
+										onValueChange={(v) =>
+											setWishlistSortBy(v as "recent" | "upvoted")
+										}
+									>
+										<SelectTrigger className="h-8 w-[180px]">
+											<SelectValue placeholder="Sort by" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="recent">Most Recent</SelectItem>
+											<SelectItem value="upvoted">Most Upvoted</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								{!wishlistItems ? (
+									<div className="mt-2 text-sm text-muted-foreground">
+										Loading...
+									</div>
+								) : (
+									(() => {
+										const sortedItems = [...wishlistItems].sort((a, b) => {
+											if (wishlistSortBy === "upvoted") {
+												return b.votes.length - a.votes.length;
+											}
+											return b.createdAt - a.createdAt;
+										});
+										const topItems = sortedItems.slice(0, 3);
+
+										if (topItems.length === 0) {
+											return (
+												<div className="mt-2 text-sm text-muted-foreground">
+													No requests yet.
+												</div>
+											);
+										}
+
+										return (
+											<div className="mt-2 grid gap-2">
+												{topItems.map((item) => (
+													<WishlistItem key={item._id} item={item} />
+												))}
+											</div>
+										);
+									})()
+								)}
+								<Link href="/wishlist" className="mt-3 block">
+									<Button variant="outline" className="w-full">
+										See full wishlist
+									</Button>
+								</Link>
 							</TabsContent>
 						</Tabs>
 					</div>
@@ -85,7 +152,7 @@ export default function Home() {
 						className="w-full"
 					>
 						<TabsContent value="browse" className="mt-0 space-y-4">
-							<h2 className="text-lg font-semibold px-1">Browse Items</h2>
+							<h2 className="text-lg font-semibold px-1">Browse</h2>
 							<Suspense
 								fallback={<div className="w-full max-w-2xl">Loading…</div>}
 							>
@@ -101,20 +168,64 @@ export default function Home() {
 						</TabsContent>
 
 						<TabsContent value="wishlist" className="mt-0 space-y-4">
-							<h2 className="text-lg font-semibold px-1">Wishlist</h2>
+							<h2 className="text-lg font-semibold px-1">Request</h2>
 							<WishlistDraftCard
 								autoFocus={mobileWishlistFocusToken > 0}
 								focusToken={mobileWishlistFocusToken}
 							/>
+							<div className="flex items-center justify-between gap-2 px-1">
+								<div className="text-sm font-medium">Top requests</div>
+								<Select
+									value={wishlistSortBy}
+									onValueChange={(v) =>
+										setWishlistSortBy(v as "recent" | "upvoted")
+									}
+								>
+									<SelectTrigger className="h-8 w-[160px]">
+										<SelectValue placeholder="Sort by" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="recent">Most Recent</SelectItem>
+										<SelectItem value="upvoted">Most Upvoted</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							{!wishlistItems ? (
+								<div className="px-1 text-sm text-muted-foreground">
+									Loading...
+								</div>
+							) : (
+								(() => {
+									const sortedItems = [...wishlistItems].sort((a, b) => {
+										if (wishlistSortBy === "upvoted") {
+											return b.votes.length - a.votes.length;
+										}
+										return b.createdAt - a.createdAt;
+									});
+									const topItems = sortedItems.slice(0, 3);
+
+									if (topItems.length === 0) {
+										return (
+											<div className="px-1 text-sm text-muted-foreground">
+												No requests yet.
+											</div>
+										);
+									}
+
+									return topItems.map((item) => (
+										<WishlistItem key={item._id} item={item} />
+									));
+								})()
+							)}
 							<Link href="/wishlist" className="block">
 								<Button variant="outline" className="w-full">
-									Go to Wishlist
+									See full wishlist
 								</Button>
 							</Link>
 						</TabsContent>
 
 						<TabsContent value="manage" className="mt-0 space-y-4">
-							<h2 className="text-lg font-semibold px-1">Share & Manage</h2>
+							<h2 className="text-lg font-semibold px-1">Share</h2>
 							<AddItemForm />
 						</TabsContent>
 
@@ -126,11 +237,11 @@ export default function Home() {
 								</TabsTrigger>
 								<TabsTrigger value="wishlist" className="py-3">
 									<ListChecks className="h-4 w-4" />
-									Wishlist
+									Request
 								</TabsTrigger>
 								<TabsTrigger value="manage" className="py-3">
 									<Gift className="h-4 w-4" />
-									Manage
+									Share
 								</TabsTrigger>
 							</TabsList>
 						</div>
