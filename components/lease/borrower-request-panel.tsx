@@ -7,6 +7,7 @@ import { AvailabilityToggle } from "@/components/notifications/availability-togg
 import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
 import { ItemCalendar } from "@/components/item-calendar";
+import { LeaseProposeIntradayDialog } from "@/components/lease/lease-propose-intraday-dialog";
 import {
 	useItemCalendar,
 	type BorrowerCalendarState,
@@ -15,6 +16,28 @@ import type { Doc } from "@/convex/_generated/dataModel";
 import { api } from "@/convex/_generated/api";
 import { LeaseClaimCard } from "./lease-claim-card";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+function isSameDay(a: Date, b: Date): boolean {
+	return (
+		a.getFullYear() === b.getFullYear() &&
+		a.getMonth() === b.getMonth() &&
+		a.getDate() === b.getDate()
+	);
+}
+
+function pad2(n: number): string {
+	return String(n).padStart(2, "0");
+}
+
+function formatIntradayRangeLabel(range: {
+	startAt: number;
+	endAt: number;
+}): string {
+	const startHour = new Date(range.startAt).getHours();
+	const endHour = new Date(range.endAt).getHours();
+	return `${pad2(startHour)}:00–${pad2(endHour)}:00`;
+}
 
 type BorrowerRequestContextValue = {
 	item: Doc<"items">;
@@ -24,6 +47,12 @@ type BorrowerRequestContextValue = {
 	isAuthLoading: boolean;
 	myRequests: Doc<"claims">[] | undefined;
 	cancelRequest: (claimId: Doc<"claims">["_id"]) => Promise<void>;
+	intradayRange: { startAt: number; endAt: number } | null;
+	isIntradayRequired: boolean;
+	intradayDialogOpen: boolean;
+	intradayFixedDate: Date | null;
+	onIntradayDialogOpenChange: (open: boolean) => void;
+	onConfirmIntraday: (startAt: number, endAt: number) => Promise<void>;
 	onClaim: () => void;
 };
 
@@ -53,9 +82,97 @@ export function BorrowerRequestProvider(props: {
 		showMyRequestModifiers: true,
 	});
 
+	const [intradayRange, setIntradayRange] = React.useState<{
+		startAt: number;
+		endAt: number;
+	} | null>(null);
+	const [intradayDialogOpen, setIntradayDialogOpen] = React.useState(false);
+	const [intradayFixedDate, setIntradayFixedDate] = React.useState<Date | null>(
+		null,
+	);
+
+	const isIntradayRequired = Boolean(
+		calendar.date?.from &&
+			calendar.date?.to &&
+			isSameDay(calendar.date.from, calendar.date.to),
+	);
+
+	const hasOverlap = (
+		a: { startDate: number; endDate: number },
+		b: { startDate: number; endDate: number },
+	): boolean => a.startDate < b.endDate && a.endDate > b.startDate;
+
+	const selectionKey =
+		calendar.date?.from && calendar.date?.to
+			? `${calendar.date.from.getTime()}-${calendar.date.to.getTime()}`
+			: null;
+	const lastSelectionKeyRef = React.useRef<string | null>(null);
+
+	React.useEffect(() => {
+		if (selectionKey === lastSelectionKeyRef.current) return;
+		lastSelectionKeyRef.current = selectionKey;
+
+		setIntradayRange(null);
+		setIntradayDialogOpen(false);
+		setIntradayFixedDate(null);
+
+		if (calendar.date?.from && calendar.date?.to) {
+			if (isSameDay(calendar.date.from, calendar.date.to)) {
+				setIntradayFixedDate(calendar.date.from);
+			}
+		}
+	}, [calendar.date, selectionKey]);
+
+	const onConfirmIntraday = async (startAt: number, endAt: number) => {
+		if (!intradayFixedDate) {
+			throw new Error("Missing date for intraday selection");
+		}
+
+		const now = Date.now();
+		if (startAt < now) {
+			toast.error("Start time must be in the future");
+			throw new Error("Start time must be in the future");
+		}
+		if (endAt <= startAt) {
+			toast.error("End time must be after start time");
+			throw new Error("End time must be after start time");
+		}
+
+		const overlaps = (calendar.availability ?? []).some((r) =>
+			hasOverlap(
+				{ startDate: startAt, endDate: endAt },
+				{ startDate: r.startDate, endDate: r.endDate },
+			),
+		);
+		if (overlaps) {
+			toast.error("Selected hours are not available");
+			throw new Error("Selected hours are not available");
+		}
+
+		setIntradayRange({ startAt, endAt });
+		setIntradayDialogOpen(false);
+	};
+
 	const onClaim = () => {
+		if (isIntradayRequired) {
+			if (!intradayRange) {
+				setIntradayDialogOpen(true);
+				return;
+			}
+			calendar.requestItemAt(intradayRange.startAt, intradayRange.endAt, () => {
+				setIntradayRange(null);
+				setIntradayDialogOpen(false);
+				setIntradayFixedDate(null);
+				calendar.setDate(undefined);
+			});
+			return;
+		}
+
 		if (!calendar.date?.from || !calendar.date?.to) return;
 		calendar.requestItem(calendar.date.from, calendar.date.to, () => {
+			setIntradayRange(null);
+			setIntradayDialogOpen(false);
+			setIntradayFixedDate(null);
 			calendar.setDate(undefined);
 		});
 	};
@@ -70,6 +187,12 @@ export function BorrowerRequestProvider(props: {
 				isAuthLoading: calendar.isAuthLoading,
 				myRequests: calendar.myRequests,
 				cancelRequest: calendar.cancelRequest,
+				intradayRange,
+				isIntradayRequired,
+				intradayDialogOpen,
+				intradayFixedDate,
+				onIntradayDialogOpenChange: setIntradayDialogOpen,
+				onConfirmIntraday,
 				onClaim,
 			}}
 		>
@@ -80,9 +203,47 @@ export function BorrowerRequestProvider(props: {
 
 export function BorrowerRequestCalendar(props: { className?: string }) {
 	const { className } = props;
-	const { calendar } = useBorrowerRequestContext();
+	const {
+		calendar,
+		intradayRange,
+		intradayDialogOpen,
+		intradayFixedDate,
+		onIntradayDialogOpenChange,
+		onConfirmIntraday,
+	} = useBorrowerRequestContext();
+	const [isIntradayBusy, setIsIntradayBusy] = React.useState(false);
 
-	return <ItemCalendar {...calendar.calendarProps} className={className} />;
+	return (
+		<>
+			<ItemCalendar {...calendar.calendarProps} className={className} />
+			{intradayFixedDate ? (
+				<div className="mt-3">
+					<LeaseProposeIntradayDialog
+						title="Select hours"
+						description="Same-day requests are booked by the hour."
+						triggerLabel={
+							intradayRange
+								? `Change hours (${formatIntradayRangeLabel(intradayRange)})`
+								: "Select hours"
+						}
+						triggerVariant="outline"
+						triggerSize="sm"
+						triggerClassName="w-full h-8"
+						confirmLabel="Save hours"
+						cancelLabel="Cancel"
+						fixedDate={intradayFixedDate}
+						disabled={calendar.isSubmitting || isIntradayBusy}
+						open={intradayDialogOpen}
+						onOpenChange={onIntradayDialogOpenChange}
+						onBusyChange={setIsIntradayBusy}
+						onConfirm={async (startAt, endAt) => {
+							await onConfirmIntraday(startAt, endAt);
+						}}
+					/>
+				</div>
+			) : null}
+		</>
+	);
 }
 
 export function BorrowerRequestActions() {
@@ -132,6 +293,10 @@ export function BorrowerRequestActions() {
 						Sign in to request
 					</span>
 				)}
+				<span className="text-xs text-muted-foreground">
+					For intraday requests, pickup &amp; return time is set automatically
+					after approval.
+				</span>
 			</div>
 
 			{isAuthenticated && myRequests && myRequests.length > 0 && (

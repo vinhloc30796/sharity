@@ -5,6 +5,16 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useConvexAuth } from "convex/react";
 
+function isSameLocalDay(a: number, b: number): boolean {
+	const da = new Date(a);
+	const db = new Date(b);
+	return (
+		da.getFullYear() === db.getFullYear() &&
+		da.getMonth() === db.getMonth() &&
+		da.getDate() === db.getDate()
+	);
+}
+
 export function useClaimItem(itemId: Id<"items">) {
 	const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
 
@@ -70,6 +80,67 @@ export function useClaimItem(itemId: Id<"items">) {
 		}
 	};
 
+	const handleClaimAt = async (
+		startAt: number,
+		endAt: number,
+		onSuccess?: () => void,
+	) => {
+		if (!isAuthenticated) {
+			toast.error("Please sign in to request this item");
+			return;
+		}
+
+		if (endAt <= startAt) {
+			toast.error("End time must be after start time");
+			return;
+		}
+
+		const now = Date.now();
+		if (isSameLocalDay(startAt, endAt) && startAt < now) {
+			toast.error("Start time must be in the future");
+			return;
+		}
+
+		const todayStart = new Date();
+		todayStart.setHours(0, 0, 0, 0);
+		if (startAt < todayStart.getTime()) {
+			toast.error("Start date must be today or later");
+			return;
+		}
+
+		setIsSubmitting(true);
+		try {
+			await requestItem({
+				id: itemId,
+				startDate: startAt,
+				endDate: endAt,
+			});
+			toast.success("Item requested successfully");
+			onSuccess?.();
+		} catch (error: unknown) {
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+
+			if (errorMessage.includes("Unauthenticated")) {
+				toast.error("Please sign in to request this item");
+			} else if (errorMessage.includes("own item")) {
+				toast.error("You cannot claim your own item");
+			} else if (errorMessage.includes("available")) {
+				toast.error("Selected dates are not available");
+			} else if (
+				errorMessage.includes("overlap") ||
+				errorMessage.includes("Waitlist")
+			) {
+				toast.error(errorMessage);
+			} else {
+				toast.error(errorMessage || "Failed to request item");
+				console.error(error);
+			}
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
+
 	const handleCancel = async (claimId: Id<"claims">) => {
 		try {
 			// We pass only claimId as it's sufficient and safer now
@@ -85,13 +156,7 @@ export function useClaimItem(itemId: Id<"items">) {
 	const todayStart = new Date();
 	todayStart.setHours(0, 0, 0, 0);
 
-	const disabledDates = [
-		{ before: todayStart },
-		...(availability?.map((range) => ({
-			from: new Date(range.startDate),
-			to: new Date(range.endDate),
-		})) || []),
-	];
+	const disabledDates = [{ before: todayStart }];
 
 	return {
 		myRequests,
@@ -101,6 +166,7 @@ export function useClaimItem(itemId: Id<"items">) {
 		isAuthLoading,
 		isAuthenticated,
 		requestItem: handleClaim,
+		requestItemAt: handleClaimAt,
 		cancelRequest: handleCancel,
 	};
 }

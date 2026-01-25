@@ -50,9 +50,7 @@ export function UserLink({
 				)}
 			>
 				{showAvatar && (
-					<span
-						className={cn("rounded-full bg-gray-200", styles.avatar)}
-					/>
+					<span className={cn("rounded-full bg-gray-200", styles.avatar)} />
 				)}
 				<span className={cn("bg-gray-200 rounded w-20 h-4", styles.text)} />
 			</span>

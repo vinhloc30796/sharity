@@ -34,7 +34,14 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { uploadFileToConvexStorage } from "@/lib/upload-to-convex-storage";
 import { useMutation } from "convex/react";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowBigUp, CheckCircle2, ImageIcon, Pencil, UploadCloudIcon, X } from "lucide-react";
+import {
+	ArrowBigUp,
+	CheckCircle2,
+	ImageIcon,
+	Pencil,
+	UploadCloudIcon,
+	X,
+} from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -313,7 +320,11 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 								key={img.id}
 								className="relative aspect-square rounded-md overflow-hidden border"
 							>
-								<img src={img.url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+								<img
+									src={img.url}
+									alt=""
+									className="absolute inset-0 h-full w-full object-cover"
+								/>
 							</div>
 						))}
 					</div>

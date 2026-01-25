@@ -143,6 +143,27 @@ export function LeaseClaimCard(props: {
 	const isOwner = viewerRole === "owner";
 	const isApproved = claim.status === "approved";
 
+	const isIntradayLease = useMemo(() => {
+		const ONE_HOUR_MS = 60 * 60 * 1000;
+		const ONE_DAY_MS = 24 * ONE_HOUR_MS;
+
+		const duration = claim.endDate - claim.startDate;
+		if (duration <= 0 || duration >= ONE_DAY_MS) return false;
+		if (
+			claim.startDate % ONE_HOUR_MS !== 0 ||
+			claim.endDate % ONE_HOUR_MS !== 0
+		) {
+			return false;
+		}
+		const start = new Date(claim.startDate);
+		const end = new Date(claim.endDate);
+		return (
+			start.getFullYear() === end.getFullYear() &&
+			start.getMonth() === end.getMonth() &&
+			start.getDate() === end.getDate()
+		);
+	}, [claim.startDate, claim.endDate]);
+
 	const proposePickupWindow = useMutation(api.items.proposePickupWindow);
 	const proposeReturnWindow = useMutation(api.items.proposeReturnWindow);
 	const approvePickupWindow = useMutation(api.items.approvePickupWindow);
@@ -424,6 +445,12 @@ export function LeaseClaimCard(props: {
 				{(isOwner || viewerRole === "borrower") &&
 					claim.status === "approved" && (
 						<div className="space-y-2">
+							{isIntradayLease ? (
+								<div className="text-xs text-muted-foreground">
+									Intraday lease: pickup &amp; return times are set
+									automatically from the selected hours.
+								</div>
+							) : null}
 							{canRecordPickup && (
 								<div className="space-y-2">
 									{pickupProposal ? (
@@ -440,47 +467,49 @@ export function LeaseClaimCard(props: {
 										</div>
 									) : null}
 
-									<LeaseProposeWindowDialog
-										title="Propose pickup time"
-										triggerLabel={
-											pickupProposal
-												? "Change pickup time"
-												: "Propose pickup time"
-										}
-										triggerIcon={Package}
-										triggerSize="sm"
-										triggerClassName="w-full h-8"
-										confirmLabel="Send proposal"
-										cancelLabel="Cancel"
-										fixedDate={new Date(claim.startDate)}
-										defaultHour={
-											pickupProposal
-												? new Date(pickupProposal.windowStartAt).getHours()
-												: undefined
-										}
-										disabled={
-											isApproving ||
-											isRejecting ||
-											isCancelling ||
-											isApprovingPickupTime ||
-											isApprovingReturnTime
-										}
-										onConfirm={async (windowStartAt) => {
-											try {
-												await proposePickupWindow({
-													itemId,
-													claimId: claim._id,
-													windowStartAt,
-												});
-												toast.success(
-													"Pickup request sent. Now please wait for approval from your counterpart. Nothing to do for now",
-												);
-											} catch (error: unknown) {
-												toast.error(toErrorMessage(error));
-												throw error;
+									{!isIntradayLease ? (
+										<LeaseProposeWindowDialog
+											title="Propose pickup time"
+											triggerLabel={
+												pickupProposal
+													? "Change pickup time"
+													: "Propose pickup time"
 											}
-										}}
-									/>
+											triggerIcon={Package}
+											triggerSize="sm"
+											triggerClassName="w-full h-8"
+											confirmLabel="Send proposal"
+											cancelLabel="Cancel"
+											fixedDate={new Date(claim.startDate)}
+											defaultHour={
+												pickupProposal
+													? new Date(pickupProposal.windowStartAt).getHours()
+													: undefined
+											}
+											disabled={
+												isApproving ||
+												isRejecting ||
+												isCancelling ||
+												isApprovingPickupTime ||
+												isApprovingReturnTime
+											}
+											onConfirm={async (windowStartAt) => {
+												try {
+													await proposePickupWindow({
+														itemId,
+														claimId: claim._id,
+														windowStartAt,
+													});
+													toast.success(
+														"Pickup request sent. Now please wait for approval from your counterpart. Nothing to do for now",
+													);
+												} catch (error: unknown) {
+													toast.error(toErrorMessage(error));
+													throw error;
+												}
+											}}
+										/>
+									) : null}
 
 									{pickupProposal && pickupProposalActive ? (
 										pickupApproved ? (
@@ -599,47 +628,49 @@ export function LeaseClaimCard(props: {
 										</div>
 									) : null}
 
-									<LeaseProposeWindowDialog
-										title="Propose return time"
-										triggerLabel={
-											returnProposal
-												? "Change return time"
-												: "Propose return time"
-										}
-										triggerIcon={PackageCheck}
-										triggerSize="sm"
-										triggerClassName="w-full h-8"
-										confirmLabel="Send proposal"
-										cancelLabel="Cancel"
-										fixedDate={new Date(claim.endDate)}
-										defaultHour={
-											returnProposal
-												? new Date(returnProposal.windowStartAt).getHours()
-												: undefined
-										}
-										disabled={
-											isApproving ||
-											isRejecting ||
-											isCancelling ||
-											isApprovingPickupTime ||
-											isApprovingReturnTime
-										}
-										onConfirm={async (windowStartAt) => {
-											try {
-												await proposeReturnWindow({
-													itemId,
-													claimId: claim._id,
-													windowStartAt,
-												});
-												toast.success(
-													"Return request sent. Now please wait for approval from your counterpart. Nothing to do for now",
-												);
-											} catch (error: unknown) {
-												toast.error(toErrorMessage(error));
-												throw error;
+									{!isIntradayLease ? (
+										<LeaseProposeWindowDialog
+											title="Propose return time"
+											triggerLabel={
+												returnProposal
+													? "Change return time"
+													: "Propose return time"
 											}
-										}}
-									/>
+											triggerIcon={PackageCheck}
+											triggerSize="sm"
+											triggerClassName="w-full h-8"
+											confirmLabel="Send proposal"
+											cancelLabel="Cancel"
+											fixedDate={new Date(claim.endDate)}
+											defaultHour={
+												returnProposal
+													? new Date(returnProposal.windowStartAt).getHours()
+													: undefined
+											}
+											disabled={
+												isApproving ||
+												isRejecting ||
+												isCancelling ||
+												isApprovingPickupTime ||
+												isApprovingReturnTime
+											}
+											onConfirm={async (windowStartAt) => {
+												try {
+													await proposeReturnWindow({
+														itemId,
+														claimId: claim._id,
+														windowStartAt,
+													});
+													toast.success(
+														"Return request sent. Now please wait for approval from your counterpart. Nothing to do for now",
+													);
+												} catch (error: unknown) {
+													toast.error(toErrorMessage(error));
+													throw error;
+												}
+											}}
+										/>
+									) : null}
 
 									{returnProposal && returnProposalActive ? (
 										returnApproved ? (

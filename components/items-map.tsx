@@ -16,7 +16,7 @@ const PRIVACY_OFFSET = 0.0008; // ~80m
 function hashString(str: string): number {
 	let hash = 0;
 	for (let i = 0; i < str.length; i++) {
-		hash = ((hash << 5) - hash) + str.charCodeAt(i);
+		hash = (hash << 5) - hash + str.charCodeAt(i);
 		hash = hash & hash;
 	}
 	return hash;
@@ -129,46 +129,49 @@ export function ItemsMap({ items, onItemClick }: ItemsMapProps) {
 				{itemsWithLocation.map((item) => {
 					const [latOffset, lngOffset] = getPrivacyOffset(item._id);
 					return (
-					<Marker
-						key={item._id}
-						position={[item.location!.lat + latOffset, item.location!.lng + lngOffset]}
-						icon={createMarkerIcon({
-							category: item.category,
-							L: MapComponents.L,
-						})}
-						eventHandlers={{
-							click: () => onItemClick?.(item._id),
-						}}
-					>
-						<Popup>
-							<div className="min-w-[150px]">
-								{item.imageUrls && item.imageUrls[0] && (
-									<img
-										src={item.imageUrls[0]}
-										alt={item.name}
-										className="w-full h-20 object-cover rounded mb-2"
-									/>
-								)}
-								<Link
-									href={`/item/${item._id}`}
-									className="font-semibold text-sm hover:underline"
-								>
-									{item.name}
-								</Link>
-								{item.category && (
-									<p className="text-xs text-muted-foreground">
-										{CATEGORY_LABELS[item.category]}
-									</p>
-								)}
-								{item.location?.ward && (
-									<p className="text-xs text-muted-foreground mt-1">
-										Area: {item.location.ward}
-									</p>
-								)}
-							</div>
-						</Popup>
-					</Marker>
-				);
+						<Marker
+							key={item._id}
+							position={[
+								item.location!.lat + latOffset,
+								item.location!.lng + lngOffset,
+							]}
+							icon={createMarkerIcon({
+								category: item.category,
+								L: MapComponents.L,
+							})}
+							eventHandlers={{
+								click: () => onItemClick?.(item._id),
+							}}
+						>
+							<Popup>
+								<div className="min-w-[150px]">
+									{item.imageUrls && item.imageUrls[0] && (
+										<img
+											src={item.imageUrls[0]}
+											alt={item.name}
+											className="w-full h-20 object-cover rounded mb-2"
+										/>
+									)}
+									<Link
+										href={`/item/${item._id}`}
+										className="font-semibold text-sm hover:underline"
+									>
+										{item.name}
+									</Link>
+									{item.category && (
+										<p className="text-xs text-muted-foreground">
+											{CATEGORY_LABELS[item.category]}
+										</p>
+									)}
+									{item.location?.ward && (
+										<p className="text-xs text-muted-foreground mt-1">
+											Area: {item.location.ward}
+										</p>
+									)}
+								</div>
+							</Popup>
+						</Marker>
+					);
 				})}
 			</MapContainer>
 		</div>

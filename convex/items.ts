@@ -545,11 +545,28 @@ export const requestItem = mutation({
 		todayStart.setHours(0, 0, 0, 0);
 		// Allow some buffer or strip time components if strict?
 		// For now simple checks.
-		if (args.endDate < args.startDate) {
+		if (args.endDate <= args.startDate) {
 			throw new Error("End date must be after start date");
 		}
 		if (args.startDate < todayStart.getTime()) {
 			throw new Error("Start date must be today or later");
+		}
+
+		const duration = args.endDate - args.startDate;
+		const isHourAligned =
+			args.startDate % ONE_HOUR_MS === 0 && args.endDate % ONE_HOUR_MS === 0;
+		const isIntraday = duration < ONE_DAY_MS && isHourAligned;
+
+		if (duration < ONE_DAY_MS && !isHourAligned) {
+			throw new Error("Time must be aligned to the hour");
+		}
+
+		if (isIntraday) {
+			if (args.startDate < now) {
+				throw new Error("Start time must be in the future");
+			}
+			assertHourAligned(args.startDate);
+			assertHourAligned(args.endDate);
 		}
 
 		// Check for specific overlaps with APPROVED claims
@@ -700,6 +717,65 @@ export const approveClaim = mutation({
 			actorId: identity.subject,
 			createdAt: now,
 		});
+
+		const isHourAligned =
+			claim.startDate % ONE_HOUR_MS === 0 && claim.endDate % ONE_HOUR_MS === 0;
+		const isIntraday =
+			claim.endDate - claim.startDate < ONE_DAY_MS && isHourAligned;
+
+		if (isIntraday) {
+			const pickupProposalId = `auto-pickup-${args.claimId}`;
+			const pickupWindowStartAt = claim.startDate;
+			const pickupWindowEndAt = claim.startDate + ONE_HOUR_MS;
+
+			await ctx.db.insert("lease_activity", {
+				itemId: args.id,
+				claimId: args.claimId,
+				type: "lease_pickup_proposed",
+				actorId: claim.claimerId,
+				createdAt: now,
+				proposalId: pickupProposalId,
+				windowStartAt: pickupWindowStartAt,
+				windowEndAt: pickupWindowEndAt,
+			});
+
+			await ctx.db.insert("lease_activity", {
+				itemId: args.id,
+				claimId: args.claimId,
+				type: "lease_pickup_approved",
+				actorId: identity.subject,
+				createdAt: now,
+				proposalId: pickupProposalId,
+				windowStartAt: pickupWindowStartAt,
+				windowEndAt: pickupWindowEndAt,
+			});
+
+			const returnProposalId = `auto-return-${args.claimId}`;
+			const returnWindowStartAt = claim.endDate;
+			const returnWindowEndAt = claim.endDate + ONE_HOUR_MS;
+
+			await ctx.db.insert("lease_activity", {
+				itemId: args.id,
+				claimId: args.claimId,
+				type: "lease_return_proposed",
+				actorId: claim.claimerId,
+				createdAt: now,
+				proposalId: returnProposalId,
+				windowStartAt: returnWindowStartAt,
+				windowEndAt: returnWindowEndAt,
+			});
+
+			await ctx.db.insert("lease_activity", {
+				itemId: args.id,
+				claimId: args.claimId,
+				type: "lease_return_approved",
+				actorId: identity.subject,
+				createdAt: now,
+				proposalId: returnProposalId,
+				windowStartAt: returnWindowStartAt,
+				windowEndAt: returnWindowEndAt,
+			});
+		}
 
 		// Notify claimer
 		await ctx.db.insert("notifications", {
@@ -1844,7 +1920,7 @@ export const migrateAddWard = action({
 						headers: {
 							"User-Agent": "Sharity App Migration",
 						},
-					}
+					},
 				);
 
 				if (!response.ok) {

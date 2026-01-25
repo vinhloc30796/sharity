@@ -7,8 +7,19 @@ import { Calendar } from "@/components/ui/calendar";
 import { useClaimItem } from "@/hooks/use-claim-item";
 
 type CalendarProps = React.ComponentProps<typeof Calendar>;
+type BorrowerCalendarProps = Omit<
+	CalendarProps,
+	"mode" | "selected" | "onSelect"
+> & {
+	mode: "range";
+	selected: DateRange | undefined;
+	onSelect: (range: DateRange | undefined) => void;
+};
+type OwnerCalendarProps = Omit<CalendarProps, "mode"> & { mode: "single" };
 
 type BorrowerMonths = 1 | 2 | "responsive";
+
+type AvailabilityRange = { startDate: number; endDate: number };
 
 export type BorrowerCalendarConfig = {
 	mode: "borrower";
@@ -37,21 +48,23 @@ export type BorrowerCalendarState = {
 	date: DateRange | undefined;
 	setDate: (date: DateRange | undefined) => void;
 	numberOfMonths: number;
-	calendarProps: CalendarProps;
+	calendarProps: BorrowerCalendarProps;
 	hoveredClaimId: Id<"claims"> | null;
 	isSubmitting: boolean;
 	isAuthenticated: boolean;
 	isAuthLoading: boolean;
 	myRequests: ReturnType<typeof useClaimItem>["myRequests"];
+	availability: AvailabilityRange[] | undefined;
 	cancelRequest: ReturnType<typeof useClaimItem>["cancelRequest"];
 	requestItem: ReturnType<typeof useClaimItem>["requestItem"];
+	requestItemAt: ReturnType<typeof useClaimItem>["requestItemAt"];
 	disabledDates: ReturnType<typeof useClaimItem>["disabledDates"];
 };
 
 export type OwnerCalendarState = {
 	mode: "owner";
 	hoveredClaimId: Id<"claims"> | null;
-	calendarProps: CalendarProps;
+	calendarProps: OwnerCalendarProps;
 };
 
 const EMPTY_OWNER_REQUESTS: OwnerRequestBase[] = [];
@@ -60,7 +73,8 @@ function toDayRange(req: { startDate: number; endDate: number }): {
 	from: Date;
 	to: Date;
 } {
-	return { from: new Date(req.startDate), to: new Date(req.endDate) };
+	const endInclusive = Math.max(req.startDate, req.endDate - 1);
+	return { from: new Date(req.startDate), to: new Date(endInclusive) };
 }
 
 function isWithinClaimRange(
@@ -68,7 +82,29 @@ function isWithinClaimRange(
 	req: { startDate: number; endDate: number },
 ): boolean {
 	const t = day.getTime();
-	return t >= req.startDate && t <= req.endDate;
+	return t >= req.startDate && t < req.endDate;
+}
+
+function startOfLocalDayAt(at: number): number {
+	const d = new Date(at);
+	d.setHours(0, 0, 0, 0);
+	return d.getTime();
+}
+
+function toDisabledDayRange(
+	range: AvailabilityRange,
+): { from: Date; to: Date } | null {
+	const ONE_HOUR_MS = 60 * 60 * 1000;
+	const ONE_DAY_MS = 24 * ONE_HOUR_MS;
+
+	const startDay = startOfLocalDayAt(range.startDate);
+	const endDay = startOfLocalDayAt(range.endDate);
+	const isAligned = range.startDate === startDay && range.endDate === endDay;
+	const isAtLeastOneDay = range.endDate - range.startDate >= ONE_DAY_MS;
+	if (!isAligned || !isAtLeastOneDay) return null;
+
+	const endInclusive = Math.max(range.startDate, range.endDate - 1);
+	return { from: new Date(range.startDate), to: new Date(endInclusive) };
 }
 
 function useResponsiveMonths(enabled: boolean): number {
@@ -100,11 +136,13 @@ export function useItemCalendar<TRequest extends OwnerRequestBase>(
 ): BorrowerCalendarState | OwnerCalendarState {
 	const {
 		requestItem,
+		requestItemAt,
 		disabledDates,
 		isSubmitting,
 		isAuthenticated,
 		isAuthLoading,
 		myRequests,
+		availability,
 		cancelRequest,
 	} = useClaimItem(config.itemId);
 
@@ -140,11 +178,18 @@ export function useItemCalendar<TRequest extends OwnerRequestBase>(
 		);
 	}, [config.mode, myRequests]);
 
-	const borrowerCalendarProps: CalendarProps = {
+	const disabledDayRanges = React.useMemo(() => {
+		if (config.mode !== "borrower") return [];
+		return (availability ?? [])
+			.map(toDisabledDayRange)
+			.filter((v): v is { from: Date; to: Date } => v !== null);
+	}, [config.mode, availability]);
+
+	const borrowerCalendarProps: BorrowerCalendarProps = {
 		mode: "range",
 		selected: date,
 		onSelect: setDate,
-		disabled: disabledDates,
+		disabled: [...disabledDates, ...disabledDayRanges],
 		numberOfMonths,
 		onDayMouseEnter: (day) => {
 			if (config.mode !== "borrower") return;
@@ -192,7 +237,7 @@ export function useItemCalendar<TRequest extends OwnerRequestBase>(
 		return ownerRequests.filter((r) => r.status === "rejected").map(toDayRange);
 	}, [isOwnerMode, ownerRequests]);
 
-	const ownerCalendarProps: CalendarProps = {
+	const ownerCalendarProps: OwnerCalendarProps = {
 		mode: "single",
 		numberOfMonths: isOwnerMode ? config.months : 2,
 		disabled: disabledDates,
@@ -233,8 +278,10 @@ export function useItemCalendar<TRequest extends OwnerRequestBase>(
 			isAuthenticated,
 			isAuthLoading,
 			myRequests,
+			availability,
 			cancelRequest,
 			requestItem,
+			requestItemAt,
 			disabledDates,
 			hoveredClaimId,
 		};

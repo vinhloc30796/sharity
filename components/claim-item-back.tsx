@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 
 import type { Doc } from "../convex/_generated/dataModel";
@@ -18,11 +18,41 @@ import { Loader2 } from "lucide-react";
 import { useItemCard } from "./item-card";
 import { AvailabilityToggle } from "./notifications/availability-toggle";
 import { LeaseClaimCard } from "./lease/lease-claim-card";
+import { LeaseProposeIntradayDialog } from "./lease/lease-propose-intraday-dialog";
 import { api } from "@/convex/_generated/api";
+import { toast } from "sonner";
 
 interface ClaimItemBackProps {
 	item: Doc<"items">;
 	viewerRole?: "borrower" | "owner";
+}
+
+function isSameDay(a: Date, b: Date): boolean {
+	return (
+		a.getFullYear() === b.getFullYear() &&
+		a.getMonth() === b.getMonth() &&
+		a.getDate() === b.getDate()
+	);
+}
+
+function pad2(n: number): string {
+	return String(n).padStart(2, "0");
+}
+
+function formatIntradayRangeLabel(range: {
+	startAt: number;
+	endAt: number;
+}): string {
+	const startHour = new Date(range.startAt).getHours();
+	const endHour = new Date(range.endAt).getHours();
+	return `${pad2(startHour)}:00–${pad2(endHour)}:00`;
+}
+
+function hasOverlap(
+	a: { startDate: number; endDate: number },
+	b: { startDate: number; endDate: number },
+): boolean {
+	return a.startDate < b.endDate && a.endDate > b.startDate;
 }
 
 function BorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
@@ -35,10 +65,46 @@ function BorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 		showMyRequestModifiers: true,
 	});
 
+	const [intradayRange, setIntradayRange] = useState<{
+		startAt: number;
+		endAt: number;
+	} | null>(null);
+	const [intradayDialogOpen, setIntradayDialogOpen] = useState(false);
+	const [intradayFixedDate, setIntradayFixedDate] = useState<Date | null>(null);
+	const [isIntradayBusy, setIsIntradayBusy] = useState(false);
+
+	const selectionKey =
+		calendar.date?.from && calendar.date?.to
+			? `${calendar.date.from.getTime()}-${calendar.date.to.getTime()}`
+			: null;
+	const lastSelectionKeyRef = useRef<string | null>(null);
+
+	useEffect(() => {
+		if (selectionKey === lastSelectionKeyRef.current) return;
+		lastSelectionKeyRef.current = selectionKey;
+
+		setIntradayRange(null);
+		setIntradayDialogOpen(false);
+		setIntradayFixedDate(null);
+
+		if (calendar.date?.from && calendar.date?.to) {
+			if (isSameDay(calendar.date.from, calendar.date.to)) {
+				setIntradayFixedDate(calendar.date.from);
+			}
+		}
+	}, [calendar.date, selectionKey]);
+
+	const isIntradayRequired = Boolean(
+		calendar.date?.from &&
+			calendar.date?.to &&
+			isSameDay(calendar.date.from, calendar.date.to),
+	);
+
 	const requestDisabled =
 		!calendar.date?.from ||
 		!calendar.date?.to ||
 		calendar.isSubmitting ||
+		isIntradayBusy ||
 		calendar.isAuthLoading ||
 		!calendar.isAuthenticated;
 
@@ -66,8 +132,24 @@ function BorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
 
 	const onClaim = () => {
+		if (isIntradayRequired) {
+			if (!intradayRange) {
+				setIntradayDialogOpen(true);
+				return;
+			}
+			calendar.requestItemAt(intradayRange.startAt, intradayRange.endAt, () => {
+				setIntradayRange(null);
+				setIntradayDialogOpen(false);
+				setIntradayFixedDate(null);
+				calendar.setDate(undefined);
+			});
+			return;
+		}
 		if (!calendar.date?.from || !calendar.date?.to) return;
 		calendar.requestItem(calendar.date.from, calendar.date.to, () => {
+			setIntradayRange(null);
+			setIntradayDialogOpen(false);
+			setIntradayFixedDate(null);
 			calendar.setDate(undefined);
 		});
 	};
@@ -115,6 +197,54 @@ function BorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 				<div className="flex justify-center w-full max-w-full">
 					<ItemCalendar {...calendar.calendarProps} />
 				</div>
+				{intradayFixedDate ? (
+					<div className="mt-3">
+						<LeaseProposeIntradayDialog
+							title="Select hours"
+							description="Same-day requests are booked by the hour."
+							triggerLabel={
+								intradayRange
+									? `Change hours (${formatIntradayRangeLabel(intradayRange)})`
+									: "Select hours"
+							}
+							triggerVariant="outline"
+							triggerSize="sm"
+							triggerClassName="w-full h-8"
+							confirmLabel="Save hours"
+							cancelLabel="Cancel"
+							fixedDate={intradayFixedDate}
+							disabled={calendar.isSubmitting || isIntradayBusy}
+							open={intradayDialogOpen}
+							onOpenChange={setIntradayDialogOpen}
+							onBusyChange={setIsIntradayBusy}
+							onConfirm={async (startAt, endAt) => {
+								const now = Date.now();
+								if (startAt < now) {
+									toast.error("Start time must be in the future");
+									throw new Error("Start time must be in the future");
+								}
+								if (endAt <= startAt) {
+									toast.error("End time must be after start time");
+									throw new Error("End time must be after start time");
+								}
+
+								const overlaps = (calendar.availability ?? []).some((r) =>
+									hasOverlap(
+										{ startDate: startAt, endDate: endAt },
+										{ startDate: r.startDate, endDate: r.endDate },
+									),
+								);
+								if (overlaps) {
+									toast.error("Selected hours are not available");
+									throw new Error("Selected hours are not available");
+								}
+
+								setIntradayRange({ startAt, endAt });
+								setIntradayDialogOpen(false);
+							}}
+						/>
+					</div>
+				) : null}
 			</CardContent>
 			<CardFooter className="mt-auto border-t gap-2 justify-between">
 				<AvailabilityToggle id={item._id} />

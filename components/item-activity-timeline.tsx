@@ -32,7 +32,8 @@ function EventDetails({ event }: { event: Doc<"item_activity"> }) {
 				: "";
 		return (
 			<span>
-				Borrower: <UserLink userId={event.borrowerId} size="sm" showAvatar={false} />
+				Borrower:{" "}
+				<UserLink userId={event.borrowerId} size="sm" showAvatar={false} />
 				{dates}
 			</span>
 		);
@@ -79,7 +80,12 @@ export function ItemActivityTimeline({
 									{format(new Date(event.createdAt), "MMM d, yyyy p")}
 								</span>
 								<span className="text-xs text-muted-foreground flex items-center gap-1">
-									by <UserLink userId={event.actorId} size="sm" showAvatar={false} />
+									by{" "}
+									<UserLink
+										userId={event.actorId}
+										size="sm"
+										showAvatar={false}
+									/>
 								</span>
 							</div>
 							<div className="text-xs text-muted-foreground">
