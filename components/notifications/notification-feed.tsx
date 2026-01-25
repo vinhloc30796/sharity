@@ -14,6 +14,8 @@ export function NotificationFeed() {
 	const notifications = useQuery(api.notifications.get);
 	const markAsRead = useMutation(api.notifications.markAsRead);
 	const markAllAsRead = useMutation(api.notifications.markAllAsRead);
+	const approveClaim = useMutation(api.items.approveClaim);
+	const rejectClaim = useMutation(api.items.rejectClaim);
 	const approvePickupWindow = useMutation(api.items.approvePickupWindow);
 	const approveReturnWindow = useMutation(api.items.approveReturnWindow);
 	const markPickedUp = useMutation(api.items.markPickedUp);
@@ -118,6 +120,57 @@ export function NotificationFeed() {
 
 		const renderAction = () => {
 			const commonDisabled = !claimId;
+
+			if (n.type === "new_request") {
+				const canAct = !!claimId && n.claim?.status === "pending";
+				return (
+					<div className="flex items-center gap-2">
+						<Button
+							size="sm"
+							variant="outline"
+							className="h-7 text-destructive hover:text-destructive"
+							disabled={!canAct}
+							onClick={async (e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								if (!claimId) return;
+								try {
+									await rejectClaim({ id: itemId, claimId });
+									toast.success("Request rejected");
+									await handleMarkRead(n._id);
+								} catch (error: unknown) {
+									const message =
+										error instanceof Error ? error.message : String(error);
+									toast.error(message);
+								}
+							}}
+						>
+							Reject
+						</Button>
+						<Button
+							size="sm"
+							className="h-7"
+							disabled={!canAct}
+							onClick={async (e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								if (!claimId) return;
+								try {
+									await approveClaim({ id: itemId, claimId });
+									toast.success("Request approved");
+									await handleMarkRead(n._id);
+								} catch (error: unknown) {
+									const message =
+										error instanceof Error ? error.message : String(error);
+									toast.error(message);
+								}
+							}}
+						>
+							Approve
+						</Button>
+					</div>
+				);
+			}
 
 			if (n.type === "pickup_proposed") {
 				return (

@@ -29,8 +29,9 @@ import { ItemForm } from "./item-form";
 import { useState } from "react";
 import { Doc, Id } from "../convex/_generated/dataModel";
 import { ItemCard, useItemCard } from "./item-card";
-import { Check, X, Pencil, Trash2 } from "lucide-react";
+import { Clock, Pencil, Trash2 } from "lucide-react";
 import { ClaimItemBack } from "./claim-item-back";
+import { LeaseClaimHeader } from "@/components/lease/lease-claim-header";
 
 // Badge not available, using span
 
@@ -160,12 +161,32 @@ export function MyItemCard({
 		isOwner && (nextPendingClaim || activeApprovedClaim),
 	);
 
+	const rightHeader = !isOwner ? (
+		<span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-indigo-100 text-indigo-800 hover:bg-indigo-100/80">
+			Borrowed
+		</span>
+	) : (
+		<span
+			className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${classNameForOwnerStatus(status)}`}
+		>
+			{labelForOwnerStatus(status)}
+			{activeApprovedClaim ? (
+				<span className="ml-2 hidden sm:inline text-xs text-muted-foreground">
+					to {formatActor(activeApprovedClaim.claimerId)} (
+					{format(activeApprovedClaim.startDate, "MMM d")} -{" "}
+					{format(activeApprovedClaim.endDate, "MMM d")})
+				</span>
+			) : null}
+		</span>
+	);
+
 	return (
 		<ItemCard
 			item={item}
-			rightHeader={<></>} // Suppress default header
+			rightHeader={rightHeader}
 			density="compact"
-			descriptionLines={2}
+			hideDescription
+			hideMetaRow
 			backContent={
 				hasActionableBack ? (
 					<ClaimItemBack item={item} viewerRole="owner" />
@@ -256,69 +277,60 @@ export function MyItemCard({
 				)
 			}
 		>
-			<div className="mb-4">
+			<div className="space-y-3">
 				{!isOwner ? (
-					<span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-indigo-100 text-indigo-800 hover:bg-indigo-100/80">
-						Received from {item.ownerId}
-					</span>
-				) : (
-					<span
-						className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${classNameForOwnerStatus(status)}`}
-					>
-						{labelForOwnerStatus(status)}
-						{activeApprovedClaim ? (
-							<span className="ml-2 text-xs text-muted-foreground">
-								to {formatActor(activeApprovedClaim.claimerId)} (
-								{format(activeApprovedClaim.startDate, "MMM d")} -{" "}
-								{format(activeApprovedClaim.endDate, "MMM d")})
-							</span>
-						) : null}
-					</span>
-				)}
-			</div>
-
-			{isOwner && pendingClaims.length > 0 && (
-				<div className="mt-3 flex items-center justify-between gap-3 rounded-md border bg-amber-50 px-3 py-2">
-					<div className="min-w-0">
-						<div className="text-sm font-medium text-amber-900">
-							{pendingClaims.length} pending request
-							{pendingClaims.length > 1 ? "s" : ""}
-						</div>
-						{nextPendingClaim ? (
-							<div className="text-xs text-amber-900/80 truncate">
-								{formatActor(nextPendingClaim.claimerId)} ·{" "}
-								{format(nextPendingClaim.startDate, "MMM d")} -{" "}
-								{format(nextPendingClaim.endDate, "MMM d")}
-							</div>
-						) : null}
+					<div className="text-xs text-muted-foreground">
+						Received from {formatActor(item.ownerId)}
 					</div>
-					{nextPendingClaim ? (
-						<div className="flex shrink-0 gap-2">
+				) : null}
+
+				{item.description ? (
+					<p className="text-gray-600 text-sm line-clamp-2">
+						{item.description}
+					</p>
+				) : null}
+
+				{isOwner && nextPendingClaim ? (
+					<div className="rounded-md border bg-muted/30 p-3 space-y-3">
+						<div className="flex items-center justify-between gap-2">
+							<div className="text-xs text-muted-foreground">
+								{pendingClaims.length} pending request
+								{pendingClaims.length > 1 ? "s" : ""}
+							</div>
+						</div>
+						<LeaseClaimHeader
+							claim={nextPendingClaim}
+							requestedAt={
+								nextPendingClaim.requestedAt ?? nextPendingClaim._creationTime
+							}
+							stateLabel="Awaiting approval"
+							stateVariant="secondary"
+							StateIcon={Clock}
+						/>
+						<div className="flex gap-2">
 							<Button
 								size="sm"
 								variant="outline"
-								className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+								className="flex-1 h-8 text-destructive hover:text-destructive"
 								onClick={() =>
 									rejectClaim({ claimId: nextPendingClaim._id, id: item._id })
 								}
 							>
-								<X className="h-4 w-4" />
-								<span className="sr-only">Reject</span>
+								Reject
 							</Button>
 							<Button
 								size="sm"
-								className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700 text-white"
+								className="flex-1 h-8"
 								onClick={() =>
 									approveClaim({ claimId: nextPendingClaim._id, id: item._id })
 								}
 							>
-								<Check className="h-4 w-4" />
-								<span className="sr-only">Approve</span>
+								Approve
 							</Button>
 						</div>
-					) : null}
-				</div>
-			)}
+					</div>
+				) : null}
+			</div>
 		</ItemCard>
 	);
 }

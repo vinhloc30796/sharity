@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import Link from "next/link";
 import { useState, useRef } from "react";
@@ -132,6 +132,11 @@ export function ItemForm({
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
+	const notifications = useQuery(api.notifications.get);
+
+	const hasMyItemsStatus = (notifications ?? []).some(
+		(n) => n.type === "new_request" && n.claim?.status === "pending",
+	);
 
 	// Map to store storage IDs for newly uploaded files
 	const fileStorageIds = useRef<globalThis.Map<File, Id<"_storage">>>(
@@ -417,9 +422,12 @@ export function ItemForm({
 					variant="secondary"
 					className="w-full sm:w-auto"
 				>
-					<Link href="/my-items">
+					<Link href="/my-items" className="relative">
 						<ListChecks className="h-4 w-4" />
 						My Items
+						{hasMyItemsStatus ? (
+							<span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-background" />
+						) : null}
 					</Link>
 				</Button>
 			</div>
