@@ -40,8 +40,8 @@ export function RatingSummary({ userId, compact = false }: RatingSummaryProps) {
 	}
 
 	return (
-		<Card>
-			<CardContent className="pt-4">
+		<Card className="py-4 gap-3">
+			<CardContent className="px-4 md:px-6">
 				<div className="flex flex-col items-center gap-2">
 					<div className="flex items-center gap-2">
 						<StarRating value={summary.averageStars ?? 0} readonly size="lg" />

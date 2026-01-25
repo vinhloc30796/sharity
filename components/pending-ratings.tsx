@@ -35,15 +35,15 @@ export function PendingRatings() {
 
 	return (
 		<>
-			<Card className="border-yellow-200 bg-yellow-50/50">
-				<CardHeader className="pb-3">
+			<Card className="border-yellow-200 bg-yellow-50/50 py-4 gap-3">
+				<CardHeader className="px-4 md:px-6 pb-2">
 					<CardTitle className="text-base flex items-center gap-2">
 						<Star className="h-4 w-4 text-yellow-500" />
 						Rate Your Transactions
 					</CardTitle>
 				</CardHeader>
-				<CardContent>
-					<p className="text-sm text-muted-foreground mb-3">
+				<CardContent className="px-4 md:px-6">
+					<p className="text-sm text-muted-foreground mb-2">
 						You have {pendingRatings.length} transaction
 						{pendingRatings.length !== 1 ? "s" : ""} to rate.
 					</p>

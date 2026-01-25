@@ -67,7 +67,7 @@ export default function ProfilePage() {
 
 	return (
 		<main className="min-h-screen bg-gray-50/50">
-			<div className="max-w-2xl mx-auto p-4 md:p-8 space-y-6">
+			<div className="max-w-2xl mx-auto px-4 pb-4 pt-0 md:px-8 md:pb-8 md:pt-2 space-y-5">
 				<div className="flex items-center justify-between">
 					<Link
 						href="/"
@@ -102,8 +102,8 @@ export default function ProfilePage() {
 				</div>
 
 				{/* Profile Header */}
-				<Card>
-					<CardContent className="pt-6">
+				<Card className="py-4 gap-4">
+					<CardContent className="px-4 md:px-6">
 						<div className="flex items-start gap-4">
 							<div className="relative h-20 w-20 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200 flex-shrink-0">
 								{avatarUrl ? (
@@ -141,11 +141,11 @@ export default function ProfilePage() {
 
 				{/* Contact Info */}
 				{profile?.contacts && (
-					<Card>
-						<CardHeader>
+					<Card className="py-4 gap-3">
+						<CardHeader className="px-4 md:px-6 pb-2">
 							<CardTitle className="text-base">Contact Information</CardTitle>
 						</CardHeader>
-						<CardContent>
+						<CardContent className="px-4 md:px-6">
 							<ContactInfo contacts={profile.contacts} showValues />
 						</CardContent>
 					</Card>

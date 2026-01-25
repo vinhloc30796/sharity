@@ -76,7 +76,7 @@ export default function UserProfilePage() {
 
 				{/* Profile Header */}
 				<Card>
-					<CardContent className="pt-6">
+					<CardContent>
 						<div className="flex items-start gap-4">
 							<div className="relative h-20 w-20 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200 flex-shrink-0">
 								{profile.avatarUrl ? (

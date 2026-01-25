@@ -32,7 +32,7 @@ export function RatingsList({ userId }: RatingsListProps) {
 	}
 
 	if (allRatings.length === 0) {
-		return <div className="text-sm text-muted-foreground">No ratings yet.</div>;
+		return null;
 	}
 
 	return (
@@ -92,8 +92,8 @@ function RatingsGrid({ ratings }: { ratings: Rating[] }) {
 
 function RatingCard({ rating }: { rating: Rating }) {
 	return (
-		<Card>
-			<CardContent className="pt-4">
+		<Card className="py-4 gap-3">
+			<CardContent className="px-4 md:px-6">
 				<div className="flex items-start justify-between gap-2">
 					<div className="flex flex-col gap-2">
 						<div className="flex items-center gap-2">

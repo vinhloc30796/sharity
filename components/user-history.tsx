@@ -32,10 +32,10 @@ export function UserHistory({ userId }: UserHistoryProps) {
 	}
 
 	return (
-		<div className="flex flex-col gap-4">
+		<div className="flex flex-col gap-3">
 			<div className="grid grid-cols-2 gap-4">
-				<Card>
-					<CardContent className="pt-4 text-center">
+				<Card className="py-4 gap-3">
+					<CardContent className="px-4 md:px-6 text-center">
 						<div className="flex items-center justify-center gap-2 text-muted-foreground">
 							<ArrowRight className="h-4 w-4" />
 							<span className="text-sm">Lent</span>
@@ -43,8 +43,8 @@ export function UserHistory({ userId }: UserHistoryProps) {
 						<div className="text-2xl font-bold">{stats.totalLent}</div>
 					</CardContent>
 				</Card>
-				<Card>
-					<CardContent className="pt-4 text-center">
+				<Card className="py-4 gap-3">
+					<CardContent className="px-4 md:px-6 text-center">
 						<div className="flex items-center justify-center gap-2 text-muted-foreground">
 							<ArrowLeft className="h-4 w-4" />
 							<span className="text-sm">Borrowed</span>
@@ -102,8 +102,8 @@ function HistoryList({
 	return (
 		<div className="flex flex-col gap-2">
 			{items.map((item) => (
-				<Card key={item.claimId}>
-					<CardContent className="pt-4">
+				<Card key={item.claimId} className="py-4 gap-3">
+					<CardContent className="px-4 md:px-6">
 						<div className="flex items-center gap-3">
 							{item.itemImageUrl ? (
 								<img
