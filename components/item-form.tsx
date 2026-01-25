@@ -82,6 +82,8 @@ export type MediaImage =
 	| { source: "cloudinary"; publicId: string; url: string }
 	| { source: "storage"; storageId: Id<"_storage">; url: string };
 
+type CloudinaryMediaImage = Extract<MediaImage, { source: "cloudinary" }>;
+
 interface ItemFormProps {
 	initialValues?: {
 		name: string;
@@ -145,10 +147,9 @@ export function ItemForm({
 	const [isGettingLocation, setIsGettingLocation] = useState(false);
 	const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
 
-	const [existingImages, setExistingImages] = useState<MediaImage[]>(
+	const [existingImages, setExistingImages] = useState<CloudinaryMediaImage[]>(
 		(initialValues?.images ?? []).filter(
-			(img): img is Extract<MediaImage, { source: "cloudinary" }> =>
-				img.source === "cloudinary",
+			(img): img is CloudinaryMediaImage => img.source === "cloudinary",
 		),
 	);
 
@@ -164,8 +165,7 @@ export function ItemForm({
 		(n) => n.type === "new_request" && n.claim?.status === "pending",
 	);
 
-	const imageKey = (img: MediaImage): string =>
-		img.source === "cloudinary" ? img.publicId : img.storageId;
+	const imageKey = (img: CloudinaryMediaImage): string => img.publicId;
 
 	const handleGetLocation = () => {
 		if (!navigator.geolocation) {

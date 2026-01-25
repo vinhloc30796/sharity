@@ -66,6 +66,12 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 		api.cloudinary.upload,
 	);
 	const query = encodeURIComponent(item.text.trim());
+	const cloudImages = item.images.filter(
+		(
+			img,
+		): img is Extract<(typeof item.images)[number], { source: "cloudinary" }> =>
+			img.source === "cloudinary",
+	);
 
 	const [isEditOpen, setIsEditOpen] = useState(false);
 	const [editText, setEditText] = useState(item.text);
@@ -165,22 +171,22 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 			<Card className="w-full gap-0 py-2">
 				<div className="flex items-center gap-3 px-4">
 					{/* Image thumbnail */}
-					{item.images.length > 0 && (
+					{cloudImages.length > 0 && (
 						<button
 							type="button"
-							onClick={() => setPreviewImage(item.images[0].url)}
+							onClick={() => setPreviewImage(cloudImages[0].url)}
 							className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border bg-gray-100 hover:opacity-80 transition-opacity"
 						>
 							<CloudinaryImage
-								src={item.images[0].url}
+								src={cloudImages[0].url}
 								alt=""
 								fill
 								sizes="40px"
 								className="object-cover"
 							/>
-							{item.images.length > 1 && (
+							{cloudImages.length > 1 && (
 								<span className="absolute bottom-0 right-0 bg-black/60 text-white text-[10px] px-1 rounded-tl">
-									+{item.images.length - 1}
+									+{cloudImages.length - 1}
 								</span>
 							)}
 						</button>
@@ -343,7 +349,7 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 						</AlertDialogTitle>
 					</AlertDialogHeader>
 					<div className="grid grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto">
-						{item.images.map((img) => (
+						{cloudImages.map((img) => (
 							<div
 								key={imageKey(img)}
 								className="relative aspect-square rounded-md overflow-hidden border"
