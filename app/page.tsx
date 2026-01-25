@@ -67,7 +67,7 @@ export default function Home() {
 							<TabsContent value="share" className="mt-4">
 								<AddItemForm />
 							</TabsContent>
-							<TabsContent value="request" className="mt-4">
+							<TabsContent value="request" className="mt-4 space-y-4">
 								<WishlistDraftCard
 									autoFocus={desktopRequestFocusToken > 0}
 									focusToken={desktopRequestFocusToken}
@@ -114,7 +114,7 @@ export default function Home() {
 										return (
 											<div className="mt-2 grid gap-2">
 												{topItems.map((item) => (
-													<WishlistItem key={item._id} item={item} />
+													<WishlistItem key={item._id} item={item} compact />
 												))}
 											</div>
 										);

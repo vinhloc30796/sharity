@@ -2,13 +2,9 @@
 
 import { format } from "date-fns";
 
+import { UserLink } from "@/components/user-link";
 import { cn } from "@/lib/utils";
 import { Doc } from "../convex/_generated/dataModel";
-
-function formatActor(actorId: string): string {
-	if (actorId.length <= 16) return actorId;
-	return `${actorId.slice(0, 8)}…${actorId.slice(-6)}`;
-}
 
 function formatEventTitle(event: Doc<"item_activity">): string {
 	switch (event.type) {
@@ -25,26 +21,24 @@ function formatEventTitle(event: Doc<"item_activity">): string {
 	}
 }
 
-function formatEventDetails(event: Doc<"item_activity">): string | null {
+function EventDetails({ event }: { event: Doc<"item_activity"> }) {
 	if (event.type === "loan_started" && event.borrowerId) {
 		const dates =
 			event.startDate && event.endDate
-				? ` (${format(new Date(event.startDate), "MMM d")} - ${format(
+				? ` (${format(new Date(event.startDate), "MMM d")} – ${format(
 						new Date(event.endDate),
 						"MMM d",
 					)})`
 				: "";
-		return `Borrower: ${formatActor(event.borrowerId)}${dates}`;
+		return (
+			<span>
+				Borrower: <UserLink userId={event.borrowerId} size="sm" showAvatar={false} />
+				{dates}
+			</span>
+		);
 	}
 
-	if (
-		(event.type === "item_picked_up" || event.type === "item_returned") &&
-		event.claimId
-	) {
-		return `Claim: ${event.claimId}`;
-	}
-
-	if (event.note) return event.note;
+	if (event.note) return <span>{event.note}</span>;
 	return null;
 }
 
@@ -75,25 +69,22 @@ export function ItemActivityTimeline({
 		<div className={cn("space-y-3", className)}>
 			{events.map((event) => {
 				const title = formatEventTitle(event);
-				const details = formatEventDetails(event);
 				return (
 					<div key={event._id} className="flex gap-3">
 						<div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-muted-foreground" />
 						<div className="min-w-0">
-							<div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+							<div className="flex flex-wrap items-center gap-x-2 gap-y-1">
 								<span className="text-sm font-medium">{title}</span>
 								<span className="text-xs text-muted-foreground">
 									{format(new Date(event.createdAt), "MMM d, yyyy p")}
 								</span>
-								<span className="text-xs text-muted-foreground">
-									by {formatActor(event.actorId)}
+								<span className="text-xs text-muted-foreground flex items-center gap-1">
+									by <UserLink userId={event.actorId} size="sm" showAvatar={false} />
 								</span>
 							</div>
-							{details && (
-								<div className="text-xs text-muted-foreground break-all">
-									{details}
-								</div>
-							)}
+							<div className="text-xs text-muted-foreground">
+								<EventDetails event={event} />
+							</div>
 						</div>
 					</div>
 				);

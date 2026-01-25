@@ -23,6 +23,7 @@ export default defineSchema({
 				lat: v.number(),
 				lng: v.number(),
 				address: v.optional(v.string()),
+				ward: v.optional(v.string()), // Public display name (district/ward)
 			}),
 		),
 	}),
@@ -133,6 +134,7 @@ export default defineSchema({
 		userId: v.string(),
 		votes: v.array(v.string()), // Array of userIds who voted
 		createdAt: v.number(),
+		imageStorageIds: v.optional(v.array(v.id("_storage"))),
 	}).index("by_createdAt", ["createdAt"]),
 
 	// User profiles (extends Clerk user data)
@@ -141,6 +143,8 @@ export default defineSchema({
 		name: v.optional(v.string()),
 		avatarStorageId: v.optional(v.id("_storage")),
 		address: v.optional(v.string()),
+		ward: v.optional(v.string()), // Public area/ward (privacy-safe)
+		bio: v.optional(v.string()), // About Me field (max 500 chars)
 		contacts: v.optional(
 			v.object({
 				telegram: v.optional(v.string()),

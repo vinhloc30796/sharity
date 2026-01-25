@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import { Calendar, Clock } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { UserLink } from "@/components/user-link";
 import type { Doc } from "@/convex/_generated/dataModel";
 
 type LeaseClaimHeaderProps = {
@@ -24,7 +25,7 @@ export function LeaseClaimHeader(props: LeaseClaimHeaderProps) {
 	return (
 		<div className="flex flex-col gap-2">
 			<div className="flex items-center justify-between gap-2">
-				<div className="text-sm font-medium">{claim.claimerId}</div>
+				<UserLink userId={claim.claimerId} size="sm" />
 				<Badge variant={stateVariant} className="gap-1 h-5 text-xs shrink-0">
 					<StateIcon className="h-3 w-3" />
 					{stateLabel}

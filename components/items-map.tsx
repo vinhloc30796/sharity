@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Doc } from "../convex/_generated/dataModel";
 import { CATEGORY_LABELS, type ItemCategory } from "./item-form";
@@ -8,6 +9,26 @@ import { createMarkerIcon } from "./item-marker";
 // Da Lat coordinates
 const DEFAULT_CENTER: [number, number] = [11.9404, 108.4583];
 const DEFAULT_ZOOM = 13;
+
+// Privacy: small stable offset (~50-100m) based on item ID
+const PRIVACY_OFFSET = 0.0008; // ~80m
+
+function hashString(str: string): number {
+	let hash = 0;
+	for (let i = 0; i < str.length; i++) {
+		hash = ((hash << 5) - hash) + str.charCodeAt(i);
+		hash = hash & hash;
+	}
+	return hash;
+}
+
+function getPrivacyOffset(itemId: string): [number, number] {
+	const hash1 = hashString(itemId + "_lat");
+	const hash2 = hashString(itemId + "_lng");
+	const latOffset = ((hash1 % 1000) / 500 - 1) * PRIVACY_OFFSET;
+	const lngOffset = ((hash2 % 1000) / 500 - 1) * PRIVACY_OFFSET;
+	return [latOffset, lngOffset];
+}
 
 // Component to fix Leaflet tile loading issue
 function InvalidateSize() {
@@ -52,7 +73,7 @@ interface ItemsMapProps {
 	items: (Doc<"items"> & {
 		imageUrls?: string[];
 		category?: ItemCategory;
-		location?: { lat: number; lng: number; address?: string };
+		location?: { lat: number; lng: number; address?: string; ward?: string };
 	})[];
 	onItemClick?: (id: string) => void;
 }
@@ -105,10 +126,12 @@ export function ItemsMap({ items, onItemClick }: ItemsMapProps) {
 					attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 					url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
 				/>
-				{itemsWithLocation.map((item) => (
+				{itemsWithLocation.map((item) => {
+					const [latOffset, lngOffset] = getPrivacyOffset(item._id);
+					return (
 					<Marker
 						key={item._id}
-						position={[item.location!.lat, item.location!.lng]}
+						position={[item.location!.lat + latOffset, item.location!.lng + lngOffset]}
 						icon={createMarkerIcon({
 							category: item.category,
 							L: MapComponents.L,
@@ -126,21 +149,27 @@ export function ItemsMap({ items, onItemClick }: ItemsMapProps) {
 										className="w-full h-20 object-cover rounded mb-2"
 									/>
 								)}
-								<h3 className="font-semibold text-sm">{item.name}</h3>
+								<Link
+									href={`/item/${item._id}`}
+									className="font-semibold text-sm hover:underline"
+								>
+									{item.name}
+								</Link>
 								{item.category && (
 									<p className="text-xs text-muted-foreground">
 										{CATEGORY_LABELS[item.category]}
 									</p>
 								)}
-								{item.location?.address && (
+								{item.location?.ward && (
 									<p className="text-xs text-muted-foreground mt-1">
-										{item.location.address}
+										Area: {item.location.ward}
 									</p>
 								)}
 							</div>
 						</Popup>
 					</Marker>
-				))}
+				);
+				})}
 			</MapContainer>
 		</div>
 	);

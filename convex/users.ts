@@ -42,6 +42,7 @@ export const getMyProfile = query({
 				email: clerkData.email,
 				avatarUrl: clerkData.avatarUrl,
 				address: null,
+				bio: null,
 				contacts: null,
 				hasProfile: false,
 				clerkData,
@@ -63,6 +64,39 @@ export const getMyProfile = query({
 			avatarUrl,
 			hasProfile: true,
 			clerkData,
+		};
+	},
+});
+
+/**
+ * Get basic user info (name + avatar) for display in UI
+ * Lightweight query for UserLink component
+ */
+export const getBasicInfo = query({
+	args: { userId: v.string() },
+	handler: async (ctx, args) => {
+		const profile = await ctx.db
+			.query("users")
+			.withIndex("by_clerk_id", (q) => q.eq("clerkId", args.userId))
+			.first();
+
+		if (!profile) {
+			return {
+				userId: args.userId,
+				name: null,
+				avatarUrl: null,
+			};
+		}
+
+		let avatarUrl: string | null = null;
+		if (profile.avatarStorageId) {
+			avatarUrl = await ctx.storage.getUrl(profile.avatarStorageId);
+		}
+
+		return {
+			userId: args.userId,
+			name: profile.name || null,
+			avatarUrl,
 		};
 	},
 });
@@ -95,6 +129,7 @@ export const getProfile = query({
 			name: profile.name,
 			avatarUrl,
 			address: profile.address,
+			bio: profile.bio, // Bio is public
 			// Only show which contact methods are available, not the actual values
 			availableContacts: {
 				telegram: !!profile.contacts?.telegram,
@@ -177,6 +212,7 @@ export const updateProfile = mutation({
 	args: {
 		name: v.optional(v.string()),
 		address: v.optional(v.string()),
+		bio: v.optional(v.string()),
 		contacts: contactsValidator,
 		avatarStorageId: v.optional(v.id("_storage")),
 	},
@@ -184,6 +220,11 @@ export const updateProfile = mutation({
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) {
 			throw new Error("Unauthenticated");
+		}
+
+		// Validate bio length
+		if (args.bio && args.bio.length > 500) {
+			throw new Error("Bio must be 500 characters or less");
 		}
 
 		const existingProfile = await ctx.db
@@ -207,6 +248,7 @@ export const updateProfile = mutation({
 			clerkId: identity.subject,
 			name: args.name,
 			address: args.address,
+			bio: args.bio,
 			contacts: args.contacts,
 			avatarStorageId: args.avatarStorageId,
 			createdAt: now,

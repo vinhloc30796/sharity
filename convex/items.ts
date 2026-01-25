@@ -423,6 +423,7 @@ const locationValidator = v.optional(
 		lat: v.number(),
 		lng: v.number(),
 		address: v.optional(v.string()),
+		ward: v.optional(v.string()),
 	}),
 );
 
@@ -1814,5 +1815,91 @@ export const seedImages = action({
 		}
 
 		return { success, failed };
+	},
+});
+
+// Migration: Add ward to items that have location but no ward
+export const migrateAddWard = action({
+	args: {},
+	handler: async (ctx) => {
+		// Get all items
+		const items = await ctx.runQuery(api.items.get);
+
+		let updated = 0;
+		let skipped = 0;
+		let failed = 0;
+
+		for (const item of items) {
+			// Skip if no location or already has ward
+			if (!item.location || item.location.ward) {
+				skipped++;
+				continue;
+			}
+
+			try {
+				// Reverse geocode using Nominatim
+				const response = await fetch(
+					`https://nominatim.openstreetmap.org/reverse?format=json&lat=${item.location.lat}&lon=${item.location.lng}&addressdetails=1`,
+					{
+						headers: {
+							"User-Agent": "Sharity App Migration",
+						},
+					}
+				);
+
+				if (!response.ok) {
+					throw new Error(`Geocoding failed: ${response.status}`);
+				}
+
+				const data = await response.json();
+				const address = data.address || {};
+
+				// Extract ward (same logic as location-picker-dialog.tsx)
+				const ward =
+					address.suburb ||
+					address.quarter ||
+					address.neighbourhood ||
+					address.city_district ||
+					address.town ||
+					address.city ||
+					address.county ||
+					"Unknown area";
+
+				// Update item with ward
+				await ctx.runMutation(internal.items.updateLocationWard, {
+					id: item._id,
+					ward,
+				});
+
+				console.log(`✅ ${item.name} → ${ward}`);
+				updated++;
+
+				// Rate limit: Nominatim allows 1 request/second
+				await new Promise((resolve) => setTimeout(resolve, 1100));
+			} catch (error) {
+				console.error(`❌ ${item.name}:`, error);
+				failed++;
+			}
+		}
+
+		return { updated, skipped, failed };
+	},
+});
+
+export const updateLocationWard = internalMutation({
+	args: {
+		id: v.id("items"),
+		ward: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const item = await ctx.db.get(args.id);
+		if (!item || !item.location) return;
+
+		await ctx.db.patch(args.id, {
+			location: {
+				...item.location,
+				ward: args.ward,
+			},
+		});
 	},
 });
