@@ -9,6 +9,7 @@ import { ItemActivityTimeline } from "@/components/item-activity-timeline";
 import { BorrowerRequestPanel } from "@/components/lease/borrower-request-panel";
 import { LeaseClaimCard } from "@/components/lease/lease-claim-card";
 import { CATEGORY_LABELS, ItemForm } from "@/components/item-form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -29,13 +30,6 @@ import {
 	CarouselNext,
 	CarouselPrevious,
 } from "@/components/ui/carousel";
-import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@/components/ui/dialog";
 import { Toggle } from "@/components/ui/toggle";
 import { ItemCalendar } from "@/components/item-calendar";
 import { cn } from "@/lib/utils";
@@ -67,7 +61,7 @@ export default function ItemDetailPage({
 	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
 
 	// UI State
-	const [editingId, setEditingId] = useState<string | null>(null);
+	const [isEditing, setIsEditing] = useState(false);
 	const [showInactive, setShowInactive] = useState(false);
 	const claimCardRefs = useRef<Map<Id<"claims">, HTMLDivElement>>(new Map());
 
@@ -206,50 +200,9 @@ export default function ItemDetailPage({
 
 	const ownerItemActions = item.isOwner ? (
 		<div className="flex flex-wrap gap-4">
-			<Dialog
-				open={editingId === item._id}
-				onOpenChange={(open) => setEditingId(open ? item._id : null)}
-			>
-				<DialogTrigger asChild>
-					<Button variant="outline">Edit Item</Button>
-				</DialogTrigger>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Edit Item</DialogTitle>
-					</DialogHeader>
-					<ItemForm
-						initialValues={{
-							name: item.name,
-							description: item.description || "",
-							imageStorageIds: item.imageStorageIds,
-							imageUrls: item.imageUrls,
-							images: item.images,
-							giveaway: Boolean(item.giveaway),
-						}}
-						enableModeSwitch
-						onSubmit={async (values) => {
-							if (
-								typeof values.giveaway === "boolean" &&
-								values.giveaway !== Boolean(item.giveaway)
-							) {
-								await switchItemMode({
-									id: item._id,
-									giveaway: values.giveaway,
-								});
-							}
-							await updateItem({
-								id: item._id,
-								name: values.name,
-								description: values.description,
-								imageStorageIds: values.imageStorageIds,
-							});
-							setEditingId(null);
-							toast.success("Item updated");
-						}}
-						submitLabel="Save Changes"
-					/>
-				</DialogContent>
-			</Dialog>
+			<Button variant="outline" onClick={() => setIsEditing((v) => !v)}>
+				{isEditing ? "Cancel" : "Edit Item"}
+			</Button>
 
 			<AlertDialog>
 				<AlertDialogTrigger asChild>
@@ -280,11 +233,86 @@ export default function ItemDetailPage({
 		</div>
 	) : null;
 
+	const viewSection = (
+		<div
+			data-state={isEditing ? "closed" : "open"}
+			className={cn(
+				"grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out",
+				"data-[state=open]:grid-rows-[1fr] data-[state=closed]:grid-rows-[0fr]",
+			)}
+		>
+			<div className="min-h-0 overflow-hidden">
+				<div className="space-y-6 data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:slide-in-from-top-2">
+					{detailsSection}
+					{imageSection}
+				</div>
+			</div>
+		</div>
+	);
+
+	const editSection = (
+		<div
+			data-state={isEditing ? "open" : "closed"}
+			className={cn(
+				"grid overflow-hidden transition-[grid-template-rows] duration-300 ease-out",
+				"data-[state=open]:grid-rows-[1fr] data-[state=closed]:grid-rows-[0fr]",
+			)}
+		>
+			<div className="min-h-0 overflow-hidden">
+				<div className="data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:slide-in-from-top-2">
+					<Card>
+						<CardHeader className="pb-2">
+							<CardTitle>Edit Item</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<ItemForm
+								initialValues={{
+									name: item.name,
+									description: item.description || "",
+									imageStorageIds: item.imageStorageIds,
+									imageUrls: item.imageUrls,
+									images: item.images,
+									category: item.category,
+									location: item.location,
+									giveaway: Boolean(item.giveaway),
+								}}
+								enableModeSwitch
+								onSubmit={async (values) => {
+									if (
+										typeof values.giveaway === "boolean" &&
+										values.giveaway !== Boolean(item.giveaway)
+									) {
+										await switchItemMode({
+											id: item._id,
+											giveaway: values.giveaway,
+										});
+									}
+									await updateItem({
+										id: item._id,
+										name: values.name,
+										description: values.description,
+										imageStorageIds: values.imageStorageIds,
+										category: values.category,
+										location: values.location,
+									});
+									setIsEditing(false);
+									toast.success("Item updated");
+								}}
+								submitLabel="Save Changes"
+							/>
+						</CardContent>
+					</Card>
+				</div>
+			</div>
+		</div>
+	);
+
 	const leftColumn = (
 		<div className="space-y-6">
-			{detailsSection}
-			{imageSection}
-			{ownerItemActions}
+			{viewSection}
+			{!isEditing ? ownerItemActions : null}
+			{editSection}
+			{isEditing ? ownerItemActions : null}
 		</div>
 	);
 

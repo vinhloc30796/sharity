@@ -496,6 +496,77 @@ export const update = mutation({
 	},
 });
 
+export const switchItemMode = mutation({
+	args: {
+		id: v.id("items"),
+		giveaway: v.boolean(),
+	},
+	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) throw new Error("Unauthenticated");
+
+		const item = await ctx.db.get(args.id);
+		if (!item) throw new Error("Item not found");
+		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
+
+		const currentGiveaway = Boolean(item.giveaway);
+		if (currentGiveaway === args.giveaway) {
+			return { changed: false };
+		}
+
+		const claims = await ctx.db
+			.query("claims")
+			.withIndex("by_item", (q) => q.eq("itemId", args.id))
+			.collect();
+
+		const activeApproved = claims.filter((c) => {
+			if (c.status !== "approved") return false;
+			return !c.returnedAt && !c.transferredAt && !c.expiredAt && !c.missingAt;
+		});
+
+		if (activeApproved.length > 0) {
+			const pickedUpNotClosed = activeApproved.some(
+				(c) => !!c.pickedUpAt && !c.returnedAt && !c.transferredAt,
+			);
+			if (pickedUpNotClosed) {
+				throw new Error(
+					"cannot switch mode when item is already picked up & not returned",
+				);
+			}
+			throw new Error(
+				"Cannot switch mode while there is an active approved request",
+			);
+		}
+
+		const now = Date.now();
+		const pendingClaims = claims.filter((c) => c.status === "pending");
+		for (const claim of pendingClaims) {
+			await ctx.db.patch(claim._id, { status: "rejected", rejectedAt: now });
+
+			await ctx.db.insert("lease_activity", {
+				itemId: args.id,
+				claimId: claim._id,
+				type: "lease_rejected",
+				actorId: identity.subject,
+				createdAt: now,
+				note: "Rejected due to item mode switch",
+			});
+
+			await ctx.db.insert("notifications", {
+				recipientId: claim.claimerId,
+				type: "request_rejected",
+				itemId: args.id,
+				requestId: claim._id,
+				isRead: false,
+				createdAt: now,
+			});
+		}
+
+		await ctx.db.patch(args.id, { giveaway: args.giveaway });
+		return { changed: true, rejectedCount: pendingClaims.length };
+	},
+});
+
 export const deleteItem = mutation({
 	args: { id: v.id("items") },
 	handler: async (ctx, args) => {
