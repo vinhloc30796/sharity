@@ -632,21 +632,6 @@ export const requestItem = mutation({
 		if (args.endDate <= args.startDate) {
 			throw new Error("End date must be after start date");
 		}
-		if (item.giveaway) {
-			// Giveaway requests represent a pickup day in the user's local timezone.
-			// We can't reliably compute "today" on the server due to timezone mismatch.
-			// Instead, allow the request as long as the requested day hasn't fully passed.
-			if (args.endDate <= now) {
-				throw new Error("Start date must be today or later");
-			}
-		} else {
-			const todayStart = new Date(now);
-			todayStart.setHours(0, 0, 0, 0);
-			// For now simple checks.
-			if (args.startDate < todayStart.getTime()) {
-				throw new Error("Start date must be today or later");
-			}
-		}
 
 		const duration = args.endDate - args.startDate;
 		const isHourAligned =
@@ -655,6 +640,28 @@ export const requestItem = mutation({
 
 		if (duration < ONE_DAY_MS && !isHourAligned) {
 			throw new Error("Time must be aligned to the hour");
+		}
+
+		if (item.giveaway) {
+			// Giveaway requests represent a pickup day in the user's local timezone.
+			// We can't reliably compute "today" on the server due to timezone mismatch.
+			// Instead, allow the request as long as the requested day hasn't fully passed.
+			if (args.endDate <= now) {
+				throw new Error("Start date must be today or later");
+			}
+		} else if (!isIntraday) {
+			// Non-intraday leases are selected as calendar days in the user's local
+			// timezone. Avoid server-midnight comparisons (Convex often runs in UTC).
+			//
+			// We still enforce:
+			// - the requested range hasn't fully passed (endDate must be in the future)
+			// - the start isn't too far in the past (allows "today" across timezones)
+			if (args.endDate <= now) {
+				throw new Error("Start date must be today or later");
+			}
+			if (args.startDate < now - ONE_DAY_MS) {
+				throw new Error("Start date must be today or later");
+			}
 		}
 
 		if (isIntraday) {
