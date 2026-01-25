@@ -114,7 +114,7 @@ export default function Home() {
 										return (
 											<div className="mt-2 grid gap-2">
 												{topItems.map((item) => (
-													<WishlistItem key={item._id} item={item} />
+													<WishlistItem key={item._id} item={item} compact />
 												))}
 											</div>
 										);

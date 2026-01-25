@@ -46,9 +46,10 @@ interface WishlistItemProps {
 		images: { id: string; url: string }[];
 		isOwner: boolean;
 	};
+	compact?: boolean;
 }
 
-export function WishlistItem({ item }: WishlistItemProps) {
+export function WishlistItem({ item, compact }: WishlistItemProps) {
 	const toggleVote = useMutation(api.wishlist.toggleVote);
 	const updateWishlist = useMutation(api.wishlist.update);
 	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
@@ -195,9 +196,11 @@ export function WishlistItem({ item }: WishlistItemProps) {
 						<span className="text-xs">{item.votes.length}</span>
 					</Button>
 
-					<span className="text-xs text-muted-foreground whitespace-nowrap">
-						{formatDistanceToNow(item.createdAt, { addSuffix: true })}
-					</span>
+					{!compact && (
+						<span className="text-xs text-muted-foreground whitespace-nowrap">
+							{formatDistanceToNow(item.createdAt, { addSuffix: true })}
+						</span>
+					)}
 				</div>
 			</Card>
 
