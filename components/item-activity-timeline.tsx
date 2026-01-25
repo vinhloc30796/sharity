@@ -6,6 +6,13 @@ import { UserLink } from "@/components/user-link";
 import { cn } from "@/lib/utils";
 import { Doc } from "../convex/_generated/dataModel";
 
+function Actor({ actorId }: { actorId: string }) {
+	if (actorId === "system") {
+		return <span>System</span>;
+	}
+	return <UserLink userId={actorId} size="sm" showAvatar={false} />;
+}
+
 function formatEventTitle(
 	event: Doc<"item_activity">,
 	isGiveaway: boolean,
@@ -91,12 +98,7 @@ export function ItemActivityTimeline({
 									{format(new Date(event.createdAt), "MMM d, yyyy p")}
 								</span>
 								<span className="text-xs text-muted-foreground flex items-center gap-1">
-									by{" "}
-									<UserLink
-										userId={event.actorId}
-										size="sm"
-										showAvatar={false}
-									/>
+									by <Actor actorId={event.actorId} />
 								</span>
 							</div>
 							<div className="text-xs text-muted-foreground">

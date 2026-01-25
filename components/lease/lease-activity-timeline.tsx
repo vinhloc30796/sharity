@@ -2,15 +2,18 @@
 
 import { format } from "date-fns";
 import type { Doc } from "@/convex/_generated/dataModel";
+import { UserLink } from "@/components/user-link";
 import { cn } from "@/lib/utils";
 
 export type LeaseActivityEvent = Doc<"lease_activity"> & {
 	photoUrls?: string[];
 };
 
-function formatActor(actorId: string): string {
-	if (actorId.length <= 16) return actorId;
-	return `${actorId.slice(0, 8)}...${actorId.slice(-6)}`;
+function Actor({ actorId }: { actorId: string }) {
+	if (actorId === "system") {
+		return <span>System</span>;
+	}
+	return <UserLink userId={actorId} size="sm" showAvatar={false} />;
 }
 
 function formatEventTitle(event: LeaseActivityEvent): string {
@@ -80,8 +83,8 @@ export function LeaseActivityTimeline({
 								<span className="text-xs text-muted-foreground">
 									{format(new Date(event.createdAt), "MMM d, yyyy p")}
 								</span>
-								<span className="text-xs text-muted-foreground">
-									by {formatActor(event.actorId)}
+								<span className="text-xs text-muted-foreground flex items-center gap-1">
+									by <Actor actorId={event.actorId} />
 								</span>
 							</div>
 
