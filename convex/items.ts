@@ -1,10 +1,53 @@
 import { v } from "convex/values";
-import { api, internal } from "./_generated/api";
+import { api, components, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { action, internalMutation, mutation, query } from "./_generated/server";
+import { CloudinaryClient } from "@imaxis/cloudinary-convex";
+import { vCloudinaryRef } from "./mediaTypes";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
+const cloudinary = new CloudinaryClient(components.cloudinary);
+
+type MediaImage =
+	| { source: "cloudinary"; publicId: string; url: string }
+	| { source: "storage"; storageId: Id<"_storage">; url: string };
+
+async function resolveImages(args: {
+	ctx: { storage: { getUrl: (id: Id<"_storage">) => Promise<string | null> } };
+	imageCloudinary?: { publicId: string; secureUrl: string }[];
+	imageStorageIds?: Id<"_storage">[];
+}): Promise<{ images: MediaImage[]; imageUrls: string[] }> {
+	const cloud = (args.imageCloudinary ?? []).map((img) => ({
+		source: "cloudinary" as const,
+		publicId: img.publicId,
+		url: img.secureUrl,
+	}));
+
+	const storageIds = args.imageStorageIds ?? [];
+	if (storageIds.length === 0) {
+		return { images: cloud, imageUrls: cloud.map((i) => i.url) };
+	}
+
+	const storageUrls = await Promise.all(
+		storageIds.map((id) => args.ctx.storage.getUrl(id)),
+	);
+	const storage = storageIds
+		.map((storageId, idx) => {
+			const url = storageUrls[idx];
+			if (!url) return null;
+			return { source: "storage" as const, storageId, url };
+		})
+		.filter(
+			(
+				img,
+			): img is { source: "storage"; storageId: Id<"_storage">; url: string } =>
+				img !== null,
+		);
+
+	const images = [...cloud, ...storage];
+	return { images, imageUrls: images.map((i) => i.url) };
+}
 
 function assertValidLeaseDaysLimits(args: {
 	giveaway: boolean;
@@ -202,26 +245,16 @@ export const get = query({
 				items
 					.filter((item) => !activeUnavailableOwners.has(item.ownerId))
 					.map(async (item) => {
-						let imageUrls: (string | null)[] = [];
-						if (item.imageStorageIds) {
-							imageUrls = await Promise.all(
-								item.imageStorageIds.map((id) => ctx.storage.getUrl(id)),
-							);
-						}
-
-						const images = item.imageStorageIds
-							? (item.imageStorageIds
-									.map((id, idx) => ({ id, url: imageUrls[idx] }))
-									.filter((img) => img.url !== null) as {
-									id: Id<"_storage">;
-									url: string;
-								}[])
-							: [];
+						const { images, imageUrls } = await resolveImages({
+							ctx,
+							imageCloudinary: item.imageCloudinary,
+							imageStorageIds: item.imageStorageIds,
+						});
 
 						return {
 							...item,
 							images,
-							imageUrls: images.map((i) => i.url),
+							imageUrls,
 							isRequested: false,
 						};
 					}),
@@ -241,25 +274,16 @@ export const get = query({
 				.filter((item) => item.ownerId !== identity.subject)
 				.filter((item) => !activeUnavailableOwners.has(item.ownerId))
 				.map(async (item) => {
-					let imageUrls: (string | null)[] = [];
-					if (item.imageStorageIds) {
-						imageUrls = await Promise.all(
-							item.imageStorageIds.map((id) => ctx.storage.getUrl(id)),
-						);
-					}
-					const images = item.imageStorageIds
-						? (item.imageStorageIds
-								.map((id, idx) => ({ id, url: imageUrls[idx] }))
-								.filter((img) => img.url !== null) as {
-								id: Id<"_storage">;
-								url: string;
-							}[])
-						: [];
+					const { images, imageUrls } = await resolveImages({
+						ctx,
+						imageCloudinary: item.imageCloudinary,
+						imageStorageIds: item.imageStorageIds,
+					});
 
 					return {
 						...item,
 						images,
-						imageUrls: images.map((i) => i.url),
+						imageUrls,
 						isRequested: myClaimedItemIds.has(item._id),
 					};
 				}),
@@ -276,21 +300,11 @@ export const getById = query({
 
 		if (!item) return null;
 
-		let imageUrls: (string | null)[] = [];
-		if (item.imageStorageIds) {
-			imageUrls = await Promise.all(
-				item.imageStorageIds.map((id) => ctx.storage.getUrl(id)),
-			);
-		}
-
-		const images = item.imageStorageIds
-			? (item.imageStorageIds
-					.map((id, idx) => ({ id, url: imageUrls[idx] }))
-					.filter((img) => img.url !== null) as {
-					id: Id<"_storage">;
-					url: string;
-				}[])
-			: [];
+		const { images, imageUrls } = await resolveImages({
+			ctx,
+			imageCloudinary: item.imageCloudinary,
+			imageStorageIds: item.imageStorageIds,
+		});
 
 		const isOwner = identity?.subject === item.ownerId;
 
@@ -314,7 +328,7 @@ export const getById = query({
 		return {
 			...item,
 			images,
-			imageUrls: images.map((i) => i.url),
+			imageUrls,
 			isOwner,
 			requests,
 			myClaims,
@@ -423,25 +437,16 @@ export const getMyItems = query({
 
 		const resultWithUrls = await Promise.all(
 			result.map(async (item) => {
-				let imageUrls: (string | null)[] = [];
-				if (item.imageStorageIds) {
-					imageUrls = await Promise.all(
-						item.imageStorageIds.map((id) => ctx.storage.getUrl(id)),
-					);
-				}
-				const images = item.imageStorageIds
-					? (item.imageStorageIds
-							.map((id, idx) => ({ id, url: imageUrls[idx] }))
-							.filter((img) => img.url !== null) as {
-							id: Id<"_storage">;
-							url: string;
-						}[])
-					: [];
+				const { images, imageUrls } = await resolveImages({
+					ctx,
+					imageCloudinary: item.imageCloudinary,
+					imageStorageIds: item.imageStorageIds,
+				});
 
 				return {
 					...item,
 					images,
-					imageUrls: images.map((i) => i.url),
+					imageUrls,
 				};
 			}),
 		);
@@ -479,6 +484,7 @@ export const create = mutation({
 		minLeaseDays: v.optional(v.number()),
 		maxLeaseDays: v.optional(v.number()),
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
+		imageCloudinary: v.optional(v.array(vCloudinaryRef)),
 		category: categoryValidator,
 		location: locationValidator,
 	},
@@ -503,6 +509,7 @@ export const create = mutation({
 			minLeaseDays: args.minLeaseDays,
 			maxLeaseDays: args.maxLeaseDays,
 			imageStorageIds: args.imageStorageIds,
+			imageCloudinary: args.imageCloudinary,
 			category: args.category,
 			location: args.location,
 		});
@@ -522,6 +529,7 @@ export const update = mutation({
 		name: v.optional(v.string()),
 		description: v.optional(v.string()),
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
+		imageCloudinary: v.optional(v.array(vCloudinaryRef)),
 		category: categoryValidator,
 		location: locationValidator,
 		minLeaseDays: v.optional(v.number()),
@@ -1006,11 +1014,13 @@ export const getLeaseActivity = query({
 
 		const eventsWithPhotos = await Promise.all(
 			events.map(async (event) => {
+				const cloudUrls = (event.photoCloudinary ?? []).map((p) => p.secureUrl);
 				const ids = event.photoStorageIds ?? [];
 				const urls = await Promise.all(ids.map((id) => ctx.storage.getUrl(id)));
-				const photoUrls = urls.filter(
+				const storageUrls = urls.filter(
 					(u): u is string => typeof u === "string",
 				);
+				const photoUrls = [...cloudUrls, ...storageUrls];
 				return { ...event, photoUrls };
 			}),
 		);
@@ -1393,6 +1403,7 @@ export const markPickedUp = mutation({
 		claimId: v.id("claims"),
 		note: v.optional(v.string()),
 		photoStorageIds: v.optional(v.array(v.id("_storage"))),
+		photoCloudinary: v.optional(v.array(vCloudinaryRef)),
 	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
@@ -1479,6 +1490,7 @@ export const markPickedUp = mutation({
 			createdAt,
 			note: args.note,
 			photoStorageIds: args.photoStorageIds,
+			photoCloudinary: args.photoCloudinary,
 			proposalId: latestProposal.proposalId,
 			windowStartAt: latestProposal.windowStartAt,
 			windowEndAt: latestProposal.windowEndAt,
@@ -1495,6 +1507,7 @@ export const markPickedUp = mutation({
 				createdAt,
 				note: args.note,
 				photoStorageIds: args.photoStorageIds,
+				photoCloudinary: args.photoCloudinary,
 				proposalId: latestProposal.proposalId,
 				windowStartAt: latestProposal.windowStartAt,
 				windowEndAt: latestProposal.windowEndAt,
@@ -1525,6 +1538,7 @@ export const markReturned = mutation({
 		claimId: v.id("claims"),
 		note: v.optional(v.string()),
 		photoStorageIds: v.optional(v.array(v.id("_storage"))),
+		photoCloudinary: v.optional(v.array(vCloudinaryRef)),
 	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
@@ -1622,6 +1636,7 @@ export const markReturned = mutation({
 			createdAt,
 			note: args.note,
 			photoStorageIds: args.photoStorageIds,
+			photoCloudinary: args.photoCloudinary,
 			proposalId: latestProposal.proposalId,
 			windowStartAt: latestProposal.windowStartAt,
 			windowEndAt: latestProposal.windowEndAt,
@@ -2032,6 +2047,16 @@ export const updateImageInternal = internalMutation({
 	},
 });
 
+export const updateImageCloudinaryInternal = internalMutation({
+	args: {
+		id: v.id("items"),
+		imageCloudinary: v.array(vCloudinaryRef),
+	},
+	handler: async (ctx, args) => {
+		await ctx.db.patch(args.id, { imageCloudinary: args.imageCloudinary });
+	},
+});
+
 // Image URLs for seeding
 const SEED_IMAGE_URLS: Record<string, string> = {
 	"Rice Cooker":
@@ -2079,24 +2104,40 @@ export const seedImages = action({
 				const response = await fetch(imageUrl);
 				if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-				const imageBlob = await response.blob();
+				const contentType =
+					response.headers.get("content-type") || "image/jpeg";
+				const buffer = await response.arrayBuffer();
+				const bytes = new Uint8Array(buffer);
+				const table =
+					"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+				let base64 = "";
+				for (let i = 0; i < bytes.length; i += 3) {
+					const a = bytes[i]!;
+					const b = i + 1 < bytes.length ? bytes[i + 1]! : 0;
+					const c = i + 2 < bytes.length ? bytes[i + 2]! : 0;
+					const n = (a << 16) | (b << 8) | c;
+					base64 += table[(n >> 18) & 63]!;
+					base64 += table[(n >> 12) & 63]!;
+					base64 += i + 1 < bytes.length ? table[(n >> 6) & 63]! : "=";
+					base64 += i + 2 < bytes.length ? table[n & 63]! : "=";
+				}
+				const dataUrl = `data:${contentType};base64,${base64}`;
 
-				// Get upload URL and upload
-				const uploadUrl = await ctx.runMutation(api.items.generateUploadUrl);
-				const uploadResponse = await fetch(uploadUrl, {
-					method: "POST",
-					headers: { "Content-Type": imageBlob.type || "image/jpeg" },
-					body: imageBlob,
+				const uploaded = await cloudinary.upload(ctx, dataUrl, {
+					folder: "items",
+					tags: ["seed", "items"],
 				});
+				if (!uploaded.publicId || !uploaded.secureUrl) {
+					throw new Error(
+						"Cloudinary upload returned missing publicId/secureUrl",
+					);
+				}
 
-				if (!uploadResponse.ok) throw new Error("Upload failed");
-
-				const { storageId } = await uploadResponse.json();
-
-				// Update item
-				await ctx.runMutation(internal.items.updateImageInternal, {
+				await ctx.runMutation(internal.items.updateImageCloudinaryInternal, {
 					id: item._id,
-					imageStorageIds: [storageId],
+					imageCloudinary: [
+						{ publicId: uploaded.publicId, secureUrl: uploaded.secureUrl },
+					],
 				});
 
 				console.log(`✅ ${item.name} - done`);

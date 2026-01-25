@@ -1,9 +1,10 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { useCloudinaryUpload } from "@imaxis/cloudinary-convex/react";
 import Link from "next/link";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,16 +75,17 @@ export interface Location {
 	ward?: string;
 }
 import { toast } from "sonner";
-import { uploadFileToConvexStorage } from "@/lib/upload-to-convex-storage";
+import type { CloudinaryRef } from "@/lib/cloudinary-ref";
+
+export type MediaImage =
+	| { source: "cloudinary"; publicId: string; url: string }
+	| { source: "storage"; storageId: Id<"_storage">; url: string };
 
 interface ItemFormProps {
 	initialValues?: {
 		name: string;
 		description: string;
-		// We expect properly paired images now, but fallback to arrays if needed
-		images?: { id: Id<"_storage">; url: string }[];
-		imageStorageIds?: Id<"_storage">[]; // Fallback
-		imageUrls?: string[]; // Fallback
+		images?: MediaImage[];
 		category?: ItemCategory;
 		location?: Location;
 		giveaway?: boolean;
@@ -94,6 +96,7 @@ interface ItemFormProps {
 		name: string;
 		description: string;
 		imageStorageIds?: Id<"_storage">[];
+		imageCloudinary?: CloudinaryRef[];
 		category?: ItemCategory;
 		location?: Location;
 		giveaway?: boolean;
@@ -141,41 +144,24 @@ export function ItemForm({
 	const [isGettingLocation, setIsGettingLocation] = useState(false);
 	const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
 
-	// Initialize existing images. Prefer 'images' field, else fallback to mapping if lengths match.
-	const [existingImages, setExistingImages] = useState<
-		{ id: Id<"_storage">; url: string }[]
-	>(() => {
-		if (initialValues?.images) {
-			return initialValues.images;
-		}
-		if (initialValues?.imageStorageIds && initialValues?.imageUrls) {
-			// Best effort mapping if lengths match, otherwise ignore to avoid mismatch/deletion bugs
-			if (
-				initialValues.imageStorageIds.length === initialValues.imageUrls.length
-			) {
-				return initialValues.imageStorageIds.map((id, i) => ({
-					id,
-					url: initialValues.imageUrls![i],
-				}));
-			}
-		}
-		return [];
-	});
+	const [existingImages, setExistingImages] = useState<MediaImage[]>(
+		initialValues?.images ?? [],
+	);
 
 	const [files, setFiles] = useState<File[]>([]);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
 	const notifications = useQuery(api.notifications.get);
+	const { upload: uploadToCloudinary } = useCloudinaryUpload(
+		api.cloudinary.upload,
+	);
 
 	const hasMyItemsStatus = (notifications ?? []).some(
 		(n) => n.type === "new_request" && n.claim?.status === "pending",
 	);
 
-	// Map to store storage IDs for newly uploaded files
-	const fileStorageIds = useRef<globalThis.Map<File, Id<"_storage">>>(
-		new globalThis.Map(),
-	);
+	const imageKey = (img: MediaImage): string =>
+		img.source === "cloudinary" ? img.publicId : img.storageId;
 
 	const handleGetLocation = () => {
 		if (!navigator.geolocation) {
@@ -253,30 +239,38 @@ export function ItemForm({
 				);
 			}
 
-			// 1. Upload new files
-			const newIds: Id<"_storage">[] = [];
-
+			// 1. Upload new files to Cloudinary
+			const newCloudinary: CloudinaryRef[] = [];
 			for (const file of files) {
-				let storageId = fileStorageIds.current.get(file);
+				const result = (await uploadToCloudinary(file, {
+					folder: "items",
+					tags: ["items"],
+				})) as unknown as CloudinaryRef;
 
-				// If not already uploaded, upload now
-				if (!storageId) {
-					storageId = await uploadFileToConvexStorage({
-						file,
-						generateUploadUrl: async () => await generateUploadUrl(),
-					});
-					fileStorageIds.current.set(file, storageId);
+				if (!result?.publicId || !result?.secureUrl) {
+					throw new Error(
+						"Cloudinary upload failed: missing publicId/secureUrl",
+					);
 				}
-
-				if (storageId) {
-					newIds.push(storageId);
-				}
+				newCloudinary.push(result);
 			}
 
-			// 2. Gather IDs from existing images (that weren't deleted)
-			const existingIds = existingImages.map((img) => img.id);
+			// 2. Keep existing images, split by storage vs Cloudinary
+			const existingStorageIds = existingImages
+				.filter(
+					(img): img is Extract<MediaImage, { source: "storage" }> =>
+						img.source === "storage",
+				)
+				.map((img) => img.storageId);
 
-			const finalStorageIds = [...existingIds, ...newIds];
+			const existingCloudinary = existingImages
+				.filter(
+					(img): img is Extract<MediaImage, { source: "cloudinary" }> =>
+						img.source === "cloudinary",
+				)
+				.map((img) => ({ publicId: img.publicId, secureUrl: img.url }));
+
+			const finalCloudinary = [...existingCloudinary, ...newCloudinary];
 
 			// Build location with address if coordinates exist
 			const finalLocation = location
@@ -287,7 +281,9 @@ export function ItemForm({
 				name,
 				description,
 				imageStorageIds:
-					finalStorageIds.length > 0 ? finalStorageIds : undefined,
+					existingStorageIds.length > 0 ? existingStorageIds : undefined,
+				imageCloudinary:
+					finalCloudinary.length > 0 ? finalCloudinary : undefined,
 				category,
 				location: finalLocation,
 				giveaway: enableModeSwitch ? giveaway : undefined,
@@ -300,7 +296,6 @@ export function ItemForm({
 				setDescription("");
 				setExistingImages([]);
 				setFiles([]);
-				fileStorageIds.current.clear();
 				setCategory(undefined);
 				setLocation(undefined);
 				setAddress("");
@@ -520,7 +515,7 @@ export function ItemForm({
 				{existingImages.length > 0 && (
 					<div className="grid grid-cols-5 gap-2 mb-2">
 						{existingImages.map((img) => (
-							<div key={img.id} className="relative group aspect-square">
+							<div key={imageKey(img)} className="relative group aspect-square">
 								<img
 									src={img.url}
 									alt="Item"
@@ -530,7 +525,7 @@ export function ItemForm({
 									type="button"
 									onClick={() =>
 										setExistingImages((prev) =>
-											prev.filter((p) => p.id !== img.id),
+											prev.filter((p) => imageKey(p) !== imageKey(img)),
 										)
 									}
 									className="absolute top-1 right-1 bg-black/50 hover:bg-red-600 text-white p-1 rounded-full transition-colors opacity-0 group-hover:opacity-100"

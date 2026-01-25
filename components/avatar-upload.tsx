@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { useCloudinaryUpload } from "@imaxis/cloudinary-convex/react";
 import { Button } from "@/components/ui/button";
 import { Camera, Loader2, User } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import type { CloudinaryRef } from "@/lib/cloudinary-ref";
 
 interface AvatarUploadProps {
 	currentUrl?: string | null;
-	onUpload: (storageId: Id<"_storage">) => void;
+	onUpload: (avatar: CloudinaryRef) => void;
 	size?: "sm" | "md" | "lg";
 	disabled?: boolean;
 }
@@ -32,7 +32,9 @@ export function AvatarUpload({
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	const generateUploadUrl = useMutation(api.users.generateAvatarUploadUrl);
+	const { upload: uploadToCloudinary } = useCloudinaryUpload(
+		api.cloudinary.upload,
+	);
 
 	const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
@@ -57,17 +59,16 @@ export function AvatarUpload({
 		setIsUploading(true);
 
 		try {
-			const postUrl = await generateUploadUrl();
-			const result = await fetch(postUrl, {
-				method: "POST",
-				headers: { "Content-Type": file.type },
-				body: file,
-			});
+			const result = (await uploadToCloudinary(file, {
+				folder: "avatars",
+				tags: ["avatars"],
+			})) as unknown as CloudinaryRef;
 
-			if (!result.ok) throw new Error("Upload failed");
+			if (!result?.publicId || !result?.secureUrl) {
+				throw new Error("Cloudinary upload failed: missing publicId/secureUrl");
+			}
 
-			const data = await result.json();
-			onUpload(data.storageId);
+			onUpload(result);
 			toast.success("Avatar uploaded");
 		} catch (error) {
 			console.error("Error uploading avatar:", error);

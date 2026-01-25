@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { vCloudinaryRef } from "./mediaTypes";
 
 export default defineSchema({
 	items: defineTable({
@@ -10,6 +11,7 @@ export default defineSchema({
 		minLeaseDays: v.optional(v.number()),
 		maxLeaseDays: v.optional(v.number()),
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
+		imageCloudinary: v.optional(v.array(vCloudinaryRef)),
 		category: v.optional(
 			v.union(
 				v.literal("kitchen"),
@@ -69,6 +71,7 @@ export default defineSchema({
 		createdAt: v.number(),
 		note: v.optional(v.string()),
 		photoStorageIds: v.optional(v.array(v.id("_storage"))),
+		photoCloudinary: v.optional(v.array(vCloudinaryRef)),
 		proposalId: v.optional(v.string()),
 		windowStartAt: v.optional(v.number()),
 		windowEndAt: v.optional(v.number()),
@@ -140,6 +143,7 @@ export default defineSchema({
 		votes: v.array(v.string()), // Array of userIds who voted
 		createdAt: v.number(),
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
+		imageCloudinary: v.optional(v.array(vCloudinaryRef)),
 	}).index("by_createdAt", ["createdAt"]),
 
 	// User profiles (extends Clerk user data)
@@ -147,6 +151,7 @@ export default defineSchema({
 		clerkId: v.string(), // Clerk user ID (identity.subject)
 		name: v.optional(v.string()),
 		avatarStorageId: v.optional(v.id("_storage")),
+		avatarCloudinary: v.optional(vCloudinaryRef),
 		address: v.optional(v.string()),
 		ward: v.optional(v.string()), // Public area/ward (privacy-safe)
 		bio: v.optional(v.string()), // About Me field (max 500 chars)
@@ -171,6 +176,7 @@ export default defineSchema({
 		stars: v.number(), // 1-5 stars
 		comment: v.optional(v.string()),
 		photoStorageIds: v.optional(v.array(v.id("_storage"))),
+		photoCloudinary: v.optional(v.array(vCloudinaryRef)),
 		createdAt: v.number(),
 	})
 		.index("by_to_user", ["toUserId"])

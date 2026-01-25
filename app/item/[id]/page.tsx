@@ -58,7 +58,6 @@ export default function ItemDetailPage({
 	const markReturned = useMutation(api.items.markReturned);
 	const markExpired = useMutation(api.items.markExpired);
 	const markMissing = useMutation(api.items.markMissing);
-	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
 
 	// UI State
 	const [isEditing, setIsEditing] = useState(false);
@@ -269,8 +268,6 @@ export default function ItemDetailPage({
 								initialValues={{
 									name: item.name,
 									description: item.description || "",
-									imageStorageIds: item.imageStorageIds,
-									imageUrls: item.imageUrls,
 									images: item.images,
 									category: item.category,
 									location: item.location,
@@ -294,6 +291,7 @@ export default function ItemDetailPage({
 										name: values.name,
 										description: values.description,
 										imageStorageIds: values.imageStorageIds,
+										imageCloudinary: values.imageCloudinary,
 										category: values.category,
 										location: values.location,
 										minLeaseDays: values.minLeaseDays,
@@ -364,7 +362,6 @@ export default function ItemDetailPage({
 									markReturned={markReturnedAction}
 									markExpired={markExpiredAction}
 									markMissing={markMissingAction}
-									generateUploadUrl={async () => await generateUploadUrl()}
 								/>
 							</div>
 						))}

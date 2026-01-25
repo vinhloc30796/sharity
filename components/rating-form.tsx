@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import { useCloudinaryUpload } from "@imaxis/cloudinary-convex/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/file-upload";
 import { UploadCloudIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import type { CloudinaryRef } from "@/lib/cloudinary-ref";
 
 interface RatingFormProps {
 	claimId: Id<"claims">;
@@ -41,11 +43,9 @@ export function RatingForm({
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const createRating = useMutation(api.ratings.createRating);
-	const generateUploadUrl = useMutation(
-		api.ratings.generateRatingPhotoUploadUrl,
+	const { upload: uploadToCloudinary } = useCloudinaryUpload(
+		api.cloudinary.upload,
 	);
-
-	const fileStorageIds = useRef<Map<File, Id<"_storage">>>(new Map());
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -58,37 +58,27 @@ export function RatingForm({
 		setIsSubmitting(true);
 
 		try {
-			// Upload photos if any
-			const photoStorageIds: Id<"_storage">[] = [];
-
+			const photoCloudinary: CloudinaryRef[] = [];
 			for (const file of files) {
-				let storageId = fileStorageIds.current.get(file);
+				const result = (await uploadToCloudinary(file, {
+					folder: "ratings",
+					tags: ["ratings"],
+				})) as unknown as CloudinaryRef;
 
-				if (!storageId) {
-					const postUrl = await generateUploadUrl();
-					const result = await fetch(postUrl, {
-						method: "POST",
-						headers: { "Content-Type": file.type },
-						body: file,
-					});
-
-					if (!result.ok) throw new Error("Upload failed");
-					const data = await result.json();
-					storageId = data.storageId;
-					fileStorageIds.current.set(file, storageId!);
+				if (!result?.publicId || !result?.secureUrl) {
+					throw new Error(
+						"Cloudinary upload failed: missing publicId/secureUrl",
+					);
 				}
-
-				if (storageId) {
-					photoStorageIds.push(storageId);
-				}
+				photoCloudinary.push(result);
 			}
 
 			await createRating({
 				claimId,
 				stars,
 				comment: comment.trim() || undefined,
-				photoStorageIds:
-					photoStorageIds.length > 0 ? photoStorageIds : undefined,
+				photoCloudinary:
+					photoCloudinary.length > 0 ? photoCloudinary : undefined,
 			});
 
 			toast.success("Rating submitted successfully");
@@ -104,7 +94,7 @@ export function RatingForm({
 	return (
 		<form onSubmit={handleSubmit} className="flex flex-col gap-4">
 			<div className="text-sm text-muted-foreground">
-				Rate the {targetRole} for "{itemName}"
+				Rate the {targetRole} for &quot;{itemName}&quot;
 			</div>
 
 			<div className="flex flex-col gap-2">

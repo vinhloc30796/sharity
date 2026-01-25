@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { vCloudinaryRef } from "./mediaTypes";
 
 export const list = query({
 	args: {},
@@ -33,13 +34,21 @@ export const list = query({
 				const isLiked = userId ? wishlistItem.votes.includes(userId) : false;
 
 				// Resolve image URLs
-				const images: { id: string; url: string }[] = [];
-				if (wishlistItem.imageStorageIds) {
-					for (const storageId of wishlistItem.imageStorageIds) {
-						const url = await ctx.storage.getUrl(storageId);
-						if (url) {
-							images.push({ id: storageId, url });
-						}
+				const images: (
+					| { source: "cloudinary"; publicId: string; url: string }
+					| { source: "storage"; storageId: string; url: string }
+				)[] = [
+					...(wishlistItem.imageCloudinary ?? []).map((img) => ({
+						source: "cloudinary" as const,
+						publicId: img.publicId,
+						url: img.secureUrl,
+					})),
+				];
+
+				for (const storageId of wishlistItem.imageStorageIds ?? []) {
+					const url = await ctx.storage.getUrl(storageId);
+					if (url) {
+						images.push({ source: "storage", storageId, url });
 					}
 				}
 
@@ -61,6 +70,7 @@ export const create = mutation({
 	args: {
 		text: v.string(),
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
+		imageCloudinary: v.optional(v.array(vCloudinaryRef)),
 	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
@@ -72,6 +82,7 @@ export const create = mutation({
 			votes: [],
 			createdAt: Date.now(),
 			imageStorageIds: args.imageStorageIds,
+			imageCloudinary: args.imageCloudinary,
 		});
 	},
 });
@@ -100,6 +111,7 @@ export const update = mutation({
 		id: v.id("wishlist"),
 		text: v.string(),
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
+		imageCloudinary: v.optional(v.array(vCloudinaryRef)),
 	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
@@ -112,6 +124,7 @@ export const update = mutation({
 		await ctx.db.patch(args.id, {
 			text: args.text,
 			imageStorageIds: args.imageStorageIds,
+			imageCloudinary: args.imageCloudinary,
 		});
 	},
 });

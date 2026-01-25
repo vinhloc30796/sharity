@@ -31,7 +31,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
-import { uploadFileToConvexStorage } from "@/lib/upload-to-convex-storage";
+import { useCloudinaryUpload } from "@imaxis/cloudinary-convex/react";
+import type { CloudinaryRef } from "@/lib/cloudinary-ref";
 import { useMutation } from "convex/react";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -50,7 +51,10 @@ interface WishlistItemProps {
 	item: Doc<"wishlist"> & {
 		matchCount: number;
 		isLiked: boolean;
-		images: { id: string; url: string }[];
+		images: (
+			| { source: "cloudinary"; publicId: string; url: string }
+			| { source: "storage"; storageId: string; url: string }
+		)[];
 		isOwner: boolean;
 	};
 	compact?: boolean;
@@ -59,7 +63,9 @@ interface WishlistItemProps {
 export function WishlistItem({ item, compact }: WishlistItemProps) {
 	const toggleVote = useMutation(api.wishlist.toggleVote);
 	const updateWishlist = useMutation(api.wishlist.update);
-	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
+	const { upload: uploadToCloudinary } = useCloudinaryUpload(
+		api.cloudinary.upload,
+	);
 	const query = encodeURIComponent(item.text.trim());
 
 	const [isEditOpen, setIsEditOpen] = useState(false);
@@ -69,9 +75,11 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-	const fileStorageIds = useRef<globalThis.Map<File, Id<"_storage">>>(
-		new globalThis.Map(),
-	);
+	const imageKey = (
+		img:
+			| { source: "cloudinary"; publicId: string; url: string }
+			| { source: "storage"; storageId: string; url: string },
+	): string => (img.source === "cloudinary" ? img.publicId : img.storageId);
 
 	const handleVote = async () => {
 		try {
@@ -85,7 +93,6 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 		setEditText(item.text);
 		setExistingImages(item.images);
 		setEditFiles([]);
-		fileStorageIds.current.clear();
 		setIsEditOpen(true);
 	};
 
@@ -95,32 +102,52 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 
 		setIsSubmitting(true);
 		try {
-			// Upload new files
-			const newIds: Id<"_storage">[] = [];
+			// Upload new files to Cloudinary
+			const newCloudinary: CloudinaryRef[] = [];
 			for (const file of editFiles) {
-				let storageId = fileStorageIds.current.get(file);
-				if (!storageId) {
-					storageId = await uploadFileToConvexStorage({
-						file,
-						generateUploadUrl: async () => await generateUploadUrl(),
-					});
-					fileStorageIds.current.set(file, storageId);
+				const result = (await uploadToCloudinary(file, {
+					folder: "wishlist",
+					tags: ["wishlist"],
+				})) as unknown as CloudinaryRef;
+				if (!result?.publicId || !result?.secureUrl) {
+					throw new Error(
+						"Cloudinary upload failed: missing publicId/secureUrl",
+					);
 				}
-				if (storageId) {
-					newIds.push(storageId);
-				}
+				newCloudinary.push(result);
 			}
 
-			// Combine existing images (that weren't removed) with new uploads
-			const allImageIds = [
-				...existingImages.map((img) => img.id as Id<"_storage">),
-				...newIds,
-			];
+			const existingStorageIds = existingImages
+				.filter(
+					(
+						img,
+					): img is Extract<
+						(typeof existingImages)[number],
+						{ source: "storage" }
+					> => img.source === "storage",
+				)
+				.map((img) => img.storageId as Id<"_storage">);
+
+			const existingCloudinary = existingImages
+				.filter(
+					(
+						img,
+					): img is Extract<
+						(typeof existingImages)[number],
+						{ source: "cloudinary" }
+					> => img.source === "cloudinary",
+				)
+				.map((img) => ({ publicId: img.publicId, secureUrl: img.url }));
+
+			const imageCloudinary = [...existingCloudinary, ...newCloudinary];
 
 			await updateWishlist({
 				id: item._id,
 				text: trimmed,
-				imageStorageIds: allImageIds.length > 0 ? allImageIds : undefined,
+				imageStorageIds:
+					existingStorageIds.length > 0 ? existingStorageIds : undefined,
+				imageCloudinary:
+					imageCloudinary.length > 0 ? imageCloudinary : undefined,
 			});
 
 			setIsEditOpen(false);
@@ -133,7 +160,9 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 	};
 
 	const removeExistingImage = (imageId: string) => {
-		setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
+		setExistingImages((prev) =>
+			prev.filter((img) => imageKey(img) !== imageId),
+		);
 	};
 
 	return (
@@ -234,7 +263,7 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 								<div className="flex flex-wrap gap-2">
 									{existingImages.map((img) => (
 										<div
-											key={img.id}
+											key={imageKey(img)}
 											className="group relative h-16 w-16 rounded-md overflow-hidden border"
 										>
 											<img
@@ -244,7 +273,7 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 											/>
 											<button
 												type="button"
-												onClick={() => removeExistingImage(img.id)}
+												onClick={() => removeExistingImage(imageKey(img))}
 												className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 hover:bg-black/70 transition-all"
 											>
 												<X className="h-3 w-3" />
@@ -317,7 +346,7 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 					<div className="grid grid-cols-2 gap-2 max-h-[60vh] overflow-y-auto">
 						{item.images.map((img) => (
 							<div
-								key={img.id}
+								key={imageKey(img)}
 								className="relative aspect-square rounded-md overflow-hidden border"
 							>
 								<img

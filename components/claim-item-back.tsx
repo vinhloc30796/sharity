@@ -250,7 +250,6 @@ function LoanBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 
 	const markPickedUp = useMutation(api.items.markPickedUp);
 	const markReturned = useMutation(api.items.markReturned);
-	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
 
 	const onClaim = () => {
 		if (isIntradayRequired) {
@@ -289,7 +288,6 @@ function LoanBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 					}
 					markPickedUp={markPickedUp}
 					markReturned={markReturned}
-					generateUploadUrl={async () => await generateUploadUrl()}
 				/>
 				<CardFooter className="mt-auto border-t gap-2 justify-end">
 					<Button variant="ghost" size="sm" onClick={flipToFront}>
@@ -421,7 +419,6 @@ function OwnerClaimItemBack({ item }: { item: Doc<"items"> }) {
 	const markReturned = useMutation(api.items.markReturned);
 	const markExpired = useMutation(api.items.markExpired);
 	const markMissing = useMutation(api.items.markMissing);
-	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
 
 	if (primaryClaim) {
 		return (
@@ -438,7 +435,6 @@ function OwnerClaimItemBack({ item }: { item: Doc<"items"> }) {
 					markReturned={markReturned}
 					markExpired={markExpired}
 					markMissing={markMissing}
-					generateUploadUrl={async () => await generateUploadUrl()}
 				/>
 				<CardFooter className="mt-auto border-t gap-2 justify-end">
 					<Button variant="ghost" size="sm" onClick={flipToFront}>

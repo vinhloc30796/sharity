@@ -36,3 +36,6 @@ yarn-error.log*
 # Claude Code specific files (not useful for Cursor users)
 # CLAUDE.md is kept - it's standard project docs readable by any IDE
 .claude/
+
+# clerk configuration (can include secrets)
+/.clerk/

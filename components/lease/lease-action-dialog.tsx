@@ -3,6 +3,7 @@
 import type { ComponentProps } from "react";
 import { useState } from "react";
 import { type LucideIcon, UploadCloudIcon } from "lucide-react";
+import { useCloudinaryUpload } from "@imaxis/cloudinary-convex/react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,8 +26,8 @@ import {
 } from "@/components/ui/file-upload";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { Id } from "@/convex/_generated/dataModel";
-import { uploadFileToConvexStorage } from "@/lib/upload-to-convex-storage";
+import { api } from "@/convex/_generated/api";
+import type { CloudinaryRef } from "@/lib/cloudinary-ref";
 
 import type { MutationResult } from "./lease-claim-types";
 
@@ -44,11 +45,12 @@ type PhotoConfig = {
 	label: string;
 	maxFiles: number;
 	accept: string;
+	folder: string;
 };
 
 type ActionPayload = {
 	note?: string;
-	photoStorageIds?: Id<"_storage">[];
+	photoCloudinary?: CloudinaryRef[];
 };
 
 type BaseDialogProps = {
@@ -70,12 +72,10 @@ type BaseDialogProps = {
 
 type DialogWithPhotos = BaseDialogProps & {
 	photoConfig: PhotoConfig;
-	generateUploadUrl: () => Promise<string>;
 };
 
 type DialogWithoutPhotos = BaseDialogProps & {
 	photoConfig?: undefined;
-	generateUploadUrl?: undefined;
 };
 
 type LeaseActionDialogProps = DialogWithPhotos | DialogWithoutPhotos;
@@ -106,6 +106,9 @@ export function LeaseActionDialog(props: LeaseActionDialogProps) {
 	const [isSaving, setIsSaving] = useState(false);
 	const isDisabled = Boolean(disabled);
 	const hasPhotos = props.photoConfig !== undefined;
+	const { upload: uploadToCloudinary } = useCloudinaryUpload(
+		api.cloudinary.upload,
+	);
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
@@ -192,21 +195,26 @@ export function LeaseActionDialog(props: LeaseActionDialogProps) {
 							setIsSaving(true);
 							onBusyChange?.(true);
 							try {
-								let photoStorageIds: Id<"_storage">[] | undefined;
+								let photoCloudinary: CloudinaryRef[] | undefined;
 								if (hasPhotos && files.length > 0) {
-									photoStorageIds = await Promise.all(
-										files.map((file) =>
-											uploadFileToConvexStorage({
-												file,
-												generateUploadUrl: async () =>
-													await props.generateUploadUrl(),
-											}),
-										),
-									);
+									const uploaded: CloudinaryRef[] = [];
+									for (const file of files) {
+										const result = (await uploadToCloudinary(file, {
+											folder: props.photoConfig.folder,
+											tags: ["leases"],
+										})) as unknown as CloudinaryRef;
+										if (!result?.publicId || !result?.secureUrl) {
+											throw new Error(
+												"Cloudinary upload failed: missing publicId/secureUrl",
+											);
+										}
+										uploaded.push(result);
+									}
+									photoCloudinary = uploaded;
 								}
 								await onConfirm({
 									note: note || undefined,
-									photoStorageIds,
+									photoCloudinary,
 								});
 								setFiles([]);
 								setNote("");

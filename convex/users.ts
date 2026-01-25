@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { vCloudinaryRef } from "./mediaTypes";
 
 // Contact info validator
 const contactsValidator = v.optional(
@@ -51,7 +52,9 @@ export const getMyProfile = query({
 
 		// Get avatar URL if exists
 		let avatarUrl: string | null = null;
-		if (profile.avatarStorageId) {
+		if (profile.avatarCloudinary) {
+			avatarUrl = profile.avatarCloudinary.secureUrl;
+		} else if (profile.avatarStorageId) {
 			avatarUrl = await ctx.storage.getUrl(profile.avatarStorageId);
 		} else if (identity.pictureUrl) {
 			// Fallback to Clerk avatar
@@ -89,7 +92,9 @@ export const getBasicInfo = query({
 		}
 
 		let avatarUrl: string | null = null;
-		if (profile.avatarStorageId) {
+		if (profile.avatarCloudinary) {
+			avatarUrl = profile.avatarCloudinary.secureUrl;
+		} else if (profile.avatarStorageId) {
 			avatarUrl = await ctx.storage.getUrl(profile.avatarStorageId);
 		}
 
@@ -118,7 +123,9 @@ export const getProfile = query({
 
 		// Get avatar URL if exists
 		let avatarUrl: string | null = null;
-		if (profile.avatarStorageId) {
+		if (profile.avatarCloudinary) {
+			avatarUrl = profile.avatarCloudinary.secureUrl;
+		} else if (profile.avatarStorageId) {
 			avatarUrl = await ctx.storage.getUrl(profile.avatarStorageId);
 		}
 
@@ -194,7 +201,9 @@ export const getProfileWithContacts = query({
 		}
 
 		let avatarUrl: string | null = null;
-		if (profile.avatarStorageId) {
+		if (profile.avatarCloudinary) {
+			avatarUrl = profile.avatarCloudinary.secureUrl;
+		} else if (profile.avatarStorageId) {
 			avatarUrl = await ctx.storage.getUrl(profile.avatarStorageId);
 		}
 
@@ -215,6 +224,7 @@ export const updateProfile = mutation({
 		bio: v.optional(v.string()),
 		contacts: contactsValidator,
 		avatarStorageId: v.optional(v.id("_storage")),
+		avatarCloudinary: v.optional(vCloudinaryRef),
 	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
@@ -309,7 +319,9 @@ export const getUserHistory = query({
 			lendingClaims.map(async (claim) => {
 				const item = itemsMap.get(claim.itemId);
 				let imageUrl: string | null = null;
-				if (item?.imageStorageIds?.[0]) {
+				if (item?.imageCloudinary?.[0]) {
+					imageUrl = item.imageCloudinary[0].secureUrl;
+				} else if (item?.imageStorageIds?.[0]) {
 					imageUrl = await ctx.storage.getUrl(item.imageStorageIds[0]);
 				}
 				return {
@@ -330,7 +342,9 @@ export const getUserHistory = query({
 			borrowingClaims.map(async (claim) => {
 				const item = itemsMap.get(claim.itemId);
 				let imageUrl: string | null = null;
-				if (item?.imageStorageIds?.[0]) {
+				if (item?.imageCloudinary?.[0]) {
+					imageUrl = item.imageCloudinary[0].secureUrl;
+				} else if (item?.imageStorageIds?.[0]) {
 					imageUrl = await ctx.storage.getUrl(item.imageStorageIds[0]);
 				}
 				return {

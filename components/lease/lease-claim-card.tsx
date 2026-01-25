@@ -127,7 +127,6 @@ export function LeaseClaimCard(props: {
 	markReturned: (args: RecordLeaseArgs) => MutationResult;
 	markExpired?: (args: MarkLeaseStatusArgs) => MutationResult;
 	markMissing?: (args: MarkLeaseStatusArgs) => MutationResult;
-	generateUploadUrl: () => Promise<string>;
 }) {
 	const {
 		itemId,
@@ -142,7 +141,6 @@ export function LeaseClaimCard(props: {
 		markReturned,
 		markExpired,
 		markMissing,
-		generateUploadUrl,
 	} = props;
 
 	const events = useQuery(api.items.getLeaseActivity, { claimId: claim._id });
@@ -555,15 +553,15 @@ export function LeaseClaimCard(props: {
 														label: "Photos (optional)",
 														maxFiles: 5,
 														accept: "image/*",
+														folder: "leases",
 													}}
-													generateUploadUrl={generateUploadUrl}
-													onConfirm={async ({ note, photoStorageIds }) => {
+													onConfirm={async ({ note, photoCloudinary }) => {
 														try {
 															await markPickedUp({
 																itemId,
 																claimId: claim._id,
 																note,
-																photoStorageIds,
+																photoCloudinary,
 															});
 															toast.success("Pickup confirmed");
 														} catch (error: unknown) {
@@ -717,15 +715,15 @@ export function LeaseClaimCard(props: {
 														label: "Photos (optional)",
 														maxFiles: 5,
 														accept: "image/*",
+														folder: "leases",
 													}}
-													generateUploadUrl={generateUploadUrl}
-													onConfirm={async ({ note, photoStorageIds }) => {
+													onConfirm={async ({ note, photoCloudinary }) => {
 														try {
 															await markReturned({
 																itemId,
 																claimId: claim._id,
 																note,
-																photoStorageIds,
+																photoCloudinary,
 															});
 															toast.success("Return confirmed");
 														} catch (error: unknown) {

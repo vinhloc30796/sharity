@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,12 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { AvatarUpload } from "@/components/avatar-upload";
 import { Loader2, MessageCircle, Phone, Facebook } from "lucide-react";
 import { toast } from "sonner";
+import type { CloudinaryRef } from "@/lib/cloudinary-ref";
 
 interface ProfileFormProps {
 	initialValues?: {
 		name?: string | null;
 		avatarUrl?: string | null;
-		avatarStorageId?: Id<"_storage">;
+		avatarCloudinary?: CloudinaryRef;
 		address?: string | null;
 		bio?: string | null;
 		contacts?: {
@@ -43,9 +43,9 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 		initialValues?.contacts?.facebook || "",
 	);
 	const [phone, setPhone] = useState(initialValues?.contacts?.phone || "");
-	const [avatarStorageId, setAvatarStorageId] = useState<
-		Id<"_storage"> | undefined
-	>(initialValues?.avatarStorageId);
+	const [avatarCloudinary, setAvatarCloudinary] = useState<
+		CloudinaryRef | undefined
+	>(initialValues?.avatarCloudinary);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const updateProfile = useMutation(api.users.updateProfile);
@@ -65,13 +65,17 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 			// Only include contacts if at least one is set
 			const hasContacts = Object.values(contacts).some((v) => v);
 
-			await updateProfile({
+			const payload: Parameters<typeof updateProfile>[0] = {
 				name: name.trim() || undefined,
 				address: address.trim() || undefined,
 				bio: bio.trim() || undefined,
 				contacts: hasContacts ? contacts : undefined,
-				avatarStorageId,
-			});
+			};
+			if (avatarCloudinary) {
+				payload.avatarCloudinary = avatarCloudinary;
+			}
+
+			await updateProfile(payload);
 
 			toast.success("Profile updated");
 			onSuccess?.();
@@ -88,7 +92,7 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 			<div className="flex justify-center">
 				<AvatarUpload
 					currentUrl={initialValues?.avatarUrl}
-					onUpload={setAvatarStorageId}
+					onUpload={setAvatarCloudinary}
 					size="lg"
 					disabled={isSubmitting}
 				/>

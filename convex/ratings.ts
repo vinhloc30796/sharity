@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { vCloudinaryRef } from "./mediaTypes";
 
 /**
  * Check if current user can rate someone for a specific claim
@@ -78,6 +79,7 @@ export const createRating = mutation({
 		stars: v.number(), // 1-5
 		comment: v.optional(v.string()),
 		photoStorageIds: v.optional(v.array(v.id("_storage"))),
+		photoCloudinary: v.optional(v.array(vCloudinaryRef)),
 	},
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
@@ -135,6 +137,7 @@ export const createRating = mutation({
 			stars: args.stars,
 			comment: args.comment,
 			photoStorageIds: args.photoStorageIds,
+			photoCloudinary: args.photoCloudinary,
 			createdAt: Date.now(),
 		});
 
@@ -165,13 +168,13 @@ export const getRatingsForUser = query({
 		// Get photo URLs
 		const ratingsWithPhotos = await Promise.all(
 			ratings.map(async (rating) => {
-				let photoUrls: string[] = [];
-				if (rating.photoStorageIds) {
-					const urls = await Promise.all(
-						rating.photoStorageIds.map((id) => ctx.storage.getUrl(id)),
-					);
-					photoUrls = urls.filter((url): url is string => url !== null);
-				}
+				const cloudUrls = (rating.photoCloudinary ?? []).map(
+					(p) => p.secureUrl,
+				);
+				const ids = rating.photoStorageIds ?? [];
+				const urls = await Promise.all(ids.map((id) => ctx.storage.getUrl(id)));
+				const storageUrls = urls.filter((url): url is string => url !== null);
+				const photoUrls = [...cloudUrls, ...storageUrls];
 
 				return {
 					...rating,
@@ -287,7 +290,9 @@ export const getMyPendingRatings = query({
 			if (!isLender && !isBorrower) continue;
 
 			let imageUrl: string | null = null;
-			if (item.imageStorageIds?.[0]) {
+			if (item.imageCloudinary?.[0]) {
+				imageUrl = item.imageCloudinary[0].secureUrl;
+			} else if (item.imageStorageIds?.[0]) {
 				imageUrl = await ctx.storage.getUrl(item.imageStorageIds[0]);
 			}
 

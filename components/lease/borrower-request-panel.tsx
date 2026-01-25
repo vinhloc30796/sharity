@@ -262,7 +262,6 @@ export function BorrowerRequestActions() {
 
 	const markPickedUp = useMutation(api.items.markPickedUp);
 	const markReturned = useMutation(api.items.markReturned);
-	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
 	const [showInactive, setShowInactive] = React.useState(false);
 
 	return (
@@ -348,7 +347,6 @@ export function BorrowerRequestActions() {
 										}
 										markPickedUp={markPickedUp}
 										markReturned={markReturned}
-										generateUploadUrl={async () => await generateUploadUrl()}
 									/>
 								</div>
 							))}
@@ -412,7 +410,6 @@ export function GiveawayBorrowerRequestPanel({
 
 	const markPickedUp = useMutation(api.items.markPickedUp);
 	const markReturned = useMutation(api.items.markReturned);
-	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
 
 	const [pickupDay, setPickupDay] = React.useState<Date | undefined>(undefined);
 	const [showInactive, setShowInactive] = React.useState(false);
@@ -540,7 +537,6 @@ export function GiveawayBorrowerRequestPanel({
 										}
 										markPickedUp={markPickedUp}
 										markReturned={markReturned}
-										generateUploadUrl={async () => await generateUploadUrl()}
 									/>
 								</div>
 							))}

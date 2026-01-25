@@ -24,8 +24,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
-import { uploadFileToConvexStorage } from "@/lib/upload-to-convex-storage";
+import { useCloudinaryUpload } from "@imaxis/cloudinary-convex/react";
+import type { CloudinaryRef } from "@/lib/cloudinary-ref";
 import { useMutation, useQuery } from "convex/react";
 import { CheckCircle2, Plus, UploadCloudIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -50,13 +50,11 @@ export function WishlistDraftCard({
 	const [showMatchAlert, setShowMatchAlert] = useState(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
-	const fileStorageIds = useRef<globalThis.Map<File, Id<"_storage">>>(
-		new globalThis.Map(),
-	);
-
 	const createWishlist = useMutation(api.wishlist.create);
-	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
 	const items = useQuery(api.items.get);
+	const { upload: uploadToCloudinary } = useCloudinaryUpload(
+		api.cloudinary.upload,
+	);
 
 	useEffect(() => {
 		if (autoFocus) {
@@ -101,29 +99,27 @@ export function WishlistDraftCard({
 		if (!trimmed) return;
 		setIsSubmitting(true);
 		try {
-			// Upload files
-			const newIds: Id<"_storage">[] = [];
+			const imageCloudinary: CloudinaryRef[] = [];
 			for (const file of files) {
-				let storageId = fileStorageIds.current.get(file);
-				if (!storageId) {
-					storageId = await uploadFileToConvexStorage({
-						file,
-						generateUploadUrl: async () => await generateUploadUrl(),
-					});
-					fileStorageIds.current.set(file, storageId);
+				const result = (await uploadToCloudinary(file, {
+					folder: "wishlist",
+					tags: ["wishlist"],
+				})) as unknown as CloudinaryRef;
+				if (!result?.publicId || !result?.secureUrl) {
+					throw new Error(
+						"Cloudinary upload failed: missing publicId/secureUrl",
+					);
 				}
-				if (storageId) {
-					newIds.push(storageId);
-				}
+				imageCloudinary.push(result);
 			}
 
 			await createWishlist({
 				text: trimmed,
-				imageStorageIds: newIds.length > 0 ? newIds : undefined,
+				imageCloudinary:
+					imageCloudinary.length > 0 ? imageCloudinary : undefined,
 			});
 			setText("");
 			setFiles([]);
-			fileStorageIds.current.clear();
 			setShowMatchAlert(false);
 			toast.success("Request added to wishlist!");
 		} catch (error) {

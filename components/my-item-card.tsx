@@ -27,11 +27,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ItemForm } from "./item-form";
 import { useState } from "react";
-import { Doc, Id } from "../convex/_generated/dataModel";
+import { Doc } from "../convex/_generated/dataModel";
 import { ItemCard, useItemCard } from "./item-card";
 import { Clock, Pencil, Trash2 } from "lucide-react";
 import { ClaimItemBack } from "./claim-item-back";
 import { LeaseClaimHeader } from "@/components/lease/lease-claim-header";
+import type { MediaImage } from "./item-form";
 
 // Badge not available, using span
 
@@ -132,7 +133,7 @@ export function MyItemCard({
 }: {
 	item: Doc<"items"> & {
 		imageUrls?: string[];
-		images?: { id: Id<"_storage">; url: string }[];
+		images?: MediaImage[];
 	};
 	isOwner?: boolean;
 }) {
@@ -235,8 +236,6 @@ export function MyItemCard({
 									initialValues={{
 										name: item.name,
 										description: item.description || "",
-										imageStorageIds: item.imageStorageIds,
-										imageUrls: item.imageUrls,
 										images: item.images,
 										giveaway: Boolean(item.giveaway),
 									}}
@@ -256,6 +255,7 @@ export function MyItemCard({
 											name: values.name,
 											description: values.description,
 											imageStorageIds: values.imageStorageIds,
+											imageCloudinary: values.imageCloudinary,
 										});
 										setEditingId(null);
 									}}

@@ -1,4 +1,5 @@
 import type { Id } from "@/convex/_generated/dataModel";
+import type { CloudinaryRef } from "@/lib/cloudinary-ref";
 
 export type ViewerRole = "owner" | "borrower";
 
@@ -11,7 +12,7 @@ export type RecordLeaseArgs = {
 	itemId: Id<"items">;
 	claimId: Id<"claims">;
 	note?: string;
-	photoStorageIds?: Id<"_storage">[];
+	photoCloudinary?: CloudinaryRef[];
 };
 
 export type MarkLeaseStatusArgs = {
