@@ -6,11 +6,7 @@ import { useRouter } from "next/navigation";
 import { use, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ItemActivityTimeline } from "@/components/item-activity-timeline";
-import {
-	BorrowerRequestActions,
-	BorrowerRequestCalendar,
-	BorrowerRequestProvider,
-} from "@/components/lease/borrower-request-panel";
+import { BorrowerRequestPanel } from "@/components/lease/borrower-request-panel";
 import { LeaseClaimCard } from "@/components/lease/lease-claim-card";
 import { CATEGORY_LABELS, ItemForm } from "@/components/item-form";
 import {
@@ -60,6 +56,7 @@ export default function ItemDetailPage({
 
 	// Mutations for Owner
 	const updateItem = useMutation(api.items.update);
+	const switchItemMode = useMutation(api.items.switchItemMode);
 	const deleteItem = useMutation(api.items.deleteItem);
 	const approveClaim = useMutation(api.items.approveClaim);
 	const rejectClaim = useMutation(api.items.rejectClaim);
@@ -94,10 +91,15 @@ export default function ItemDetailPage({
 		if (showInactive) return true;
 		// Active means:
 		// 1. Pending
-		// 2. Approved AND NOT (returned OR expired OR missing)
+		// 2. Approved AND NOT (returned OR transferred OR expired OR missing)
 		if (req.status === "pending") return true;
 		if (req.status === "approved") {
-			return !req.returnedAt && !req.expiredAt && !req.missingAt;
+			return (
+				!req.returnedAt &&
+				!req.transferredAt &&
+				!req.expiredAt &&
+				!req.missingAt
+			);
 		}
 		return false;
 	});
@@ -182,6 +184,7 @@ export default function ItemDetailPage({
 			</div>
 
 			<div className="flex flex-wrap gap-2 mb-4">
+				{item.giveaway ? <Badge>Giveaway</Badge> : null}
 				{item.category && (
 					<Badge variant="secondary">{CATEGORY_LABELS[item.category]}</Badge>
 				)}
@@ -221,8 +224,19 @@ export default function ItemDetailPage({
 							imageStorageIds: item.imageStorageIds,
 							imageUrls: item.imageUrls,
 							images: item.images,
+							giveaway: Boolean(item.giveaway),
 						}}
+						enableModeSwitch
 						onSubmit={async (values) => {
+							if (
+								typeof values.giveaway === "boolean" &&
+								values.giveaway !== Boolean(item.giveaway)
+							) {
+								await switchItemMode({
+									id: item._id,
+									giveaway: values.giveaway,
+								});
+							}
 							await updateItem({
 								id: item._id,
 								name: values.name,
@@ -311,6 +325,7 @@ export default function ItemDetailPage({
 									itemId={item._id}
 									claim={claim}
 									viewerRole="owner"
+									isGiveaway={Boolean(item.giveaway)}
 									approveClaim={approveClaimAction}
 									rejectClaim={rejectClaimAction}
 									markPickedUp={markPickedUpAction}
@@ -336,7 +351,10 @@ export default function ItemDetailPage({
 			<div>{ownerActionsSection}</div>
 			<div className="border-t pt-6">
 				<h3 className="text-xl font-semibold mb-3">Activity</h3>
-				<ItemActivityTimeline events={activity} />
+				<ItemActivityTimeline
+					events={activity}
+					isGiveaway={Boolean(item.giveaway)}
+				/>
 			</div>
 		</div>
 	);
@@ -344,17 +362,13 @@ export default function ItemDetailPage({
 	const borrowerRightColumn = (
 		<div className="space-y-6">
 			<h2 className="text-2xl font-semibold">Checks Availability & Request</h2>
-			<div className="bg-white border rounded-lg p-4 w-full">
-				<div className="flex justify-center w-full max-w-full">
-					<BorrowerRequestCalendar className="mx-auto" />
-				</div>
-			</div>
-			<div>
-				<BorrowerRequestActions />
-			</div>
+			<BorrowerRequestPanel item={item} fullWidth />
 			<div className="border-t pt-6">
 				<h3 className="text-xl font-semibold mb-3">Activity</h3>
-				<ItemActivityTimeline events={activity} />
+				<ItemActivityTimeline
+					events={activity}
+					isGiveaway={Boolean(item.giveaway)}
+				/>
 			</div>
 		</div>
 	);
@@ -375,12 +389,10 @@ export default function ItemDetailPage({
 					{ownerRightColumn}
 				</div>
 			) : (
-				<BorrowerRequestProvider item={item}>
-					<div className="grid grid-cols-1 md:grid-cols-[2fr_2fr] gap-8">
-						{leftColumn}
-						{borrowerRightColumn}
-					</div>
-				</BorrowerRequestProvider>
+				<div className="grid grid-cols-1 md:grid-cols-[2fr_2fr] gap-8">
+					{leftColumn}
+					{borrowerRightColumn}
+				</div>
 			)}
 		</div>
 	);

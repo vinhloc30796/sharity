@@ -6,12 +6,15 @@ import { UserLink } from "@/components/user-link";
 import { cn } from "@/lib/utils";
 import { Doc } from "../convex/_generated/dataModel";
 
-function formatEventTitle(event: Doc<"item_activity">): string {
+function formatEventTitle(
+	event: Doc<"item_activity">,
+	isGiveaway: boolean,
+): string {
 	switch (event.type) {
 		case "item_created":
 			return "Item created";
 		case "loan_started":
-			return "Loan started";
+			return isGiveaway ? "Giveaway approved" : "Loan started";
 		case "item_picked_up":
 			return "Item picked up";
 		case "item_returned":
@@ -21,7 +24,13 @@ function formatEventTitle(event: Doc<"item_activity">): string {
 	}
 }
 
-function EventDetails({ event }: { event: Doc<"item_activity"> }) {
+function EventDetails({
+	event,
+	isGiveaway,
+}: {
+	event: Doc<"item_activity">;
+	isGiveaway: boolean;
+}) {
 	if (event.type === "loan_started" && event.borrowerId) {
 		const dates =
 			event.startDate && event.endDate
@@ -32,7 +41,7 @@ function EventDetails({ event }: { event: Doc<"item_activity"> }) {
 				: "";
 		return (
 			<span>
-				Borrower:{" "}
+				{isGiveaway ? "Recipient: " : "Borrower: "}
 				<UserLink userId={event.borrowerId} size="sm" showAvatar={false} />
 				{dates}
 			</span>
@@ -46,9 +55,11 @@ function EventDetails({ event }: { event: Doc<"item_activity"> }) {
 export function ItemActivityTimeline({
 	events,
 	className,
+	isGiveaway = false,
 }: {
 	events: Doc<"item_activity">[] | undefined;
 	className?: string;
+	isGiveaway?: boolean;
 }) {
 	if (events === undefined) {
 		return (
@@ -69,7 +80,7 @@ export function ItemActivityTimeline({
 	return (
 		<div className={cn("space-y-3", className)}>
 			{events.map((event) => {
-				const title = formatEventTitle(event);
+				const title = formatEventTitle(event, isGiveaway);
 				return (
 					<div key={event._id} className="flex gap-3">
 						<div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-muted-foreground" />
@@ -89,7 +100,7 @@ export function ItemActivityTimeline({
 								</span>
 							</div>
 							<div className="text-xs text-muted-foreground">
-								<EventDetails event={event} />
+								<EventDetails event={event} isGiveaway={isGiveaway} />
 							</div>
 						</div>
 					</div>

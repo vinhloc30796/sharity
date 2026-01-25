@@ -8,6 +8,7 @@ import type { Doc } from "../convex/_generated/dataModel";
 import { useItemCalendar } from "@/hooks/use-item-calendar";
 import { ItemCalendar } from "@/components/item-calendar";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
 	CardContent,
 	CardFooter,
@@ -21,10 +22,19 @@ import { LeaseClaimCard } from "./lease/lease-claim-card";
 import { LeaseProposeIntradayDialog } from "./lease/lease-propose-intraday-dialog";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
+import { useClaimItem } from "@/hooks/use-claim-item";
 
 interface ClaimItemBackProps {
 	item: Doc<"items">;
 	viewerRole?: "borrower" | "owner";
+}
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+function startOfLocalDay(day: Date): Date {
+	const d = new Date(day);
+	d.setHours(0, 0, 0, 0);
+	return d;
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -55,7 +65,118 @@ function hasOverlap(
 	return a.startDate < b.endDate && a.endDate > b.startDate;
 }
 
+function startOfLocalDayAt(at: number): number {
+	const d = new Date(at);
+	d.setHours(0, 0, 0, 0);
+	return d.getTime();
+}
+
+function toDisabledDayRange(range: { startDate: number; endDate: number }): {
+	from: Date;
+	to: Date;
+} | null {
+	const startDay = startOfLocalDayAt(range.startDate);
+	const endDay = startOfLocalDayAt(range.endDate);
+	const isAligned = range.startDate === startDay && range.endDate === endDay;
+	const isAtLeastOneDay = range.endDate - range.startDate >= ONE_DAY_MS;
+	if (!isAligned || !isAtLeastOneDay) return null;
+
+	const endInclusive = Math.max(range.startDate, range.endDate - 1);
+	return { from: new Date(range.startDate), to: new Date(endInclusive) };
+}
+
+function GiveawayBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
+	const { flipToFront } = useItemCard();
+	const {
+		isAuthenticated,
+		isAuthLoading,
+		isSubmitting,
+		requestItem,
+		availability,
+	} = useClaimItem(item._id);
+
+	const [pickupDay, setPickupDay] = useState<Date | undefined>(undefined);
+
+	const disabledDayRanges = useMemo(() => {
+		return (availability ?? [])
+			.map(toDisabledDayRange)
+			.filter((v): v is { from: Date; to: Date } => v !== null);
+	}, [availability]);
+
+	const requestDisabled =
+		!pickupDay || isSubmitting || isAuthLoading || !isAuthenticated;
+
+	return (
+		<>
+			<CardHeader className="space-y-1">
+				<CardTitle className="text-base">Request to Receive</CardTitle>
+				{!isAuthenticated ? (
+					<div className="text-sm text-muted-foreground">
+						{isAuthLoading ? "Connecting..." : "Sign in to request."}
+					</div>
+				) : (
+					<div className="text-xs text-muted-foreground">
+						Giveaway: no return needed. Ownership transfers after pickup.
+					</div>
+				)}
+			</CardHeader>
+			<CardContent className="space-y-3">
+				<div className="flex justify-center w-full max-w-full">
+					<Calendar
+						mode="single"
+						selected={pickupDay}
+						onSelect={setPickupDay}
+						disabled={[
+							{ before: startOfLocalDay(new Date()) },
+							...disabledDayRanges,
+						]}
+						numberOfMonths={2}
+					/>
+				</div>
+			</CardContent>
+			<CardFooter className="mt-auto border-t gap-2 justify-between">
+				<AvailabilityToggle id={item._id} />
+				<div className="flex gap-2">
+					<Button variant="ghost" size="sm" onClick={flipToFront}>
+						Back
+					</Button>
+					<Link href={`/item/${item._id}`} className="hidden sm:block">
+						<Button variant="outline" size="sm">
+							Details
+						</Button>
+					</Link>
+					<Button
+						size="sm"
+						disabled={requestDisabled}
+						onClick={async () => {
+							if (!pickupDay) return;
+							const startDate = startOfLocalDay(pickupDay);
+							const endDate = new Date(startDate.getTime() + ONE_DAY_MS);
+							await requestItem(startDate, endDate, () =>
+								setPickupDay(undefined),
+							);
+						}}
+					>
+						{isSubmitting ? (
+							<Loader2 className="h-4 w-4 animate-spin" />
+						) : (
+							"Request"
+						)}
+					</Button>
+				</div>
+			</CardFooter>
+		</>
+	);
+}
+
 function BorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
+	if (item.giveaway) {
+		return <GiveawayBorrowerClaimItemBack item={item} />;
+	}
+	return <LoanBorrowerClaimItemBack item={item} />;
+}
+
+function LoanBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 	const { flipToFront } = useItemCard();
 
 	const calendar = useItemCalendar({
@@ -162,6 +283,7 @@ function BorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 					claim={primaryClaim}
 					viewerRole="borrower"
 					layout="embedded"
+					isGiveaway={Boolean(item.giveaway)}
 					cancelClaim={async ({ claimId }) =>
 						await calendar.cancelRequest(claimId)
 					}
@@ -309,6 +431,7 @@ function OwnerClaimItemBack({ item }: { item: Doc<"items"> }) {
 					claim={primaryClaim}
 					viewerRole="owner"
 					layout="embedded"
+					isGiveaway={Boolean(item.giveaway)}
 					approveClaim={approveClaim}
 					rejectClaim={rejectClaim}
 					markPickedUp={markPickedUp}

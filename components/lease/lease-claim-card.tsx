@@ -53,6 +53,8 @@ function badgeVariantForState(
 			return "secondary";
 		case "picked_up":
 			return "default";
+		case "transferred":
+			return "outline";
 		case "returned":
 			return "outline";
 		case "expired":
@@ -76,6 +78,8 @@ function labelForState(state: string): string {
 			return "Rejected";
 		case "picked_up":
 			return "In use";
+		case "transferred":
+			return "Transferred";
 		case "returned":
 			return "Completed";
 		case "expired":
@@ -97,6 +101,8 @@ function getStateIcon(state: string) {
 			return X;
 		case "picked_up":
 			return Package;
+		case "transferred":
+			return PackageCheck;
 		case "returned":
 			return PackageCheck;
 		case "expired":
@@ -112,6 +118,7 @@ export function LeaseClaimCard(props: {
 	itemId: Id<"items">;
 	claim: Doc<"claims">;
 	viewerRole: ViewerRole;
+	isGiveaway: boolean;
 	layout?: "card" | "embedded";
 	approveClaim?: (args: ApproveClaimArgs) => MutationResult;
 	rejectClaim?: (args: RejectClaimArgs) => MutationResult;
@@ -126,6 +133,7 @@ export function LeaseClaimCard(props: {
 		itemId,
 		claim,
 		viewerRole,
+		isGiveaway,
 		layout = "card",
 		approveClaim,
 		rejectClaim,
@@ -165,8 +173,8 @@ export function LeaseClaimCard(props: {
 	}, [claim.startDate, claim.endDate]);
 
 	const proposePickupWindow = useMutation(api.items.proposePickupWindow);
-	const proposeReturnWindow = useMutation(api.items.proposeReturnWindow);
 	const approvePickupWindow = useMutation(api.items.approvePickupWindow);
+	const proposeReturnWindow = useMutation(api.items.proposeReturnWindow);
 	const approveReturnWindow = useMutation(api.items.approveReturnWindow);
 
 	const [isApproving, setIsApproving] = useState(false);
@@ -193,13 +201,15 @@ export function LeaseClaimCard(props: {
 			missingAt: byType.get("lease_missing"),
 			pickedUpAt: byType.get("lease_picked_up"),
 			returnedAt: byType.get("lease_returned"),
+			transferredAt: byType.get("lease_transferred") ?? claim.transferredAt,
 		};
-	}, [leaseEvents]);
+	}, [leaseEvents, claim.transferredAt]);
 
 	const derivedState = useMemo(() => {
 		if (eventTimes.rejectedAt) return "rejected";
 		if (eventTimes.missingAt) return "missing";
 		if (eventTimes.returnedAt) return "returned";
+		if (eventTimes.transferredAt) return "transferred";
 		if (eventTimes.expiredAt) return "expired";
 		if (eventTimes.pickedUpAt) return "picked_up";
 		if (eventTimes.approvedAt) return "approved";
@@ -293,9 +303,11 @@ export function LeaseClaimCard(props: {
 		!eventTimes.expiredAt &&
 		!eventTimes.rejectedAt;
 	const canRecordReturn =
+		!isGiveaway &&
 		isApproved &&
 		!!eventTimes.pickedUpAt &&
 		!eventTimes.returnedAt &&
+		!eventTimes.transferredAt &&
 		!eventTimes.missingAt &&
 		!eventTimes.rejectedAt;
 
@@ -316,10 +328,12 @@ export function LeaseClaimCard(props: {
 		!eventTimes.expiredAt &&
 		!eventTimes.rejectedAt;
 	const canMarkMissing =
+		!isGiveaway &&
 		isOwner &&
 		isApproved &&
 		!!eventTimes.pickedUpAt &&
 		!eventTimes.returnedAt &&
+		!eventTimes.transferredAt &&
 		!eventTimes.missingAt &&
 		!eventTimes.rejectedAt;
 
@@ -416,8 +430,16 @@ export function LeaseClaimCard(props: {
 
 						{rejectClaim ? (
 							<LeaseActionDialog
-								title="Reject lease request"
-								description="This will notify the borrower that their request was declined."
+								title={
+									isGiveaway
+										? "Reject giveaway request"
+										: "Reject lease request"
+								}
+								description={
+									isGiveaway
+										? "This will notify the requester that their request was declined."
+										: "This will notify the borrower that their request was declined."
+								}
 								triggerLabel="Reject"
 								triggerIcon={X}
 								triggerVariant="outline"
@@ -655,6 +677,7 @@ export function LeaseClaimCard(props: {
 												isApprovingReturnTime
 											}
 											onConfirm={async (windowStartAt) => {
+												if (isGiveaway) return;
 												try {
 													await proposeReturnWindow({
 														itemId,
@@ -777,8 +800,16 @@ export function LeaseClaimCard(props: {
 								<div className="flex gap-2">
 									{canMarkExpired && markExpired && (
 										<LeaseActionDialog
-											title="Mark lease as expired"
-											description="The borrower didn't pick up the item. This will end the lease."
+											title={
+												isGiveaway
+													? "Mark giveaway as expired"
+													: "Mark lease as expired"
+											}
+											description={
+												isGiveaway
+													? "The requester didn't pick up the item. This will end the giveaway."
+													: "The borrower didn't pick up the item. This will end the lease."
+											}
 											triggerLabel="Expired"
 											triggerIcon={AlertTriangle}
 											triggerVariant="outline"

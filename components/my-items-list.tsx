@@ -14,7 +14,7 @@ export function MyItemsList() {
 	if (items.length === 0) {
 		return (
 			<div className="text-center p-4 text-gray-500">
-				You haven&apos;t shared any items yet.
+				You don&apos;t have any items yet.
 			</div>
 		);
 	}

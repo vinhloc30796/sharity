@@ -6,6 +6,7 @@ export default defineSchema({
 		name: v.string(),
 		description: v.optional(v.string()),
 		ownerId: v.string(), // For MVP, we'll just store a string ID
+		giveaway: v.optional(v.boolean()),
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
 		category: v.optional(
 			v.union(
@@ -60,6 +61,7 @@ export default defineSchema({
 			v.literal("lease_return_approved"),
 			v.literal("lease_picked_up"),
 			v.literal("lease_returned"),
+			v.literal("lease_transferred"),
 		),
 		actorId: v.string(),
 		createdAt: v.number(),
@@ -88,6 +90,7 @@ export default defineSchema({
 		rejectedAt: v.optional(v.number()),
 		pickedUpAt: v.optional(v.number()),
 		returnedAt: v.optional(v.number()),
+		transferredAt: v.optional(v.number()),
 		expiredAt: v.optional(v.number()),
 		missingAt: v.optional(v.number()),
 	})

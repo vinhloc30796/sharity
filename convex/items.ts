@@ -357,7 +357,12 @@ export const getMyItems = query({
 			.collect();
 
 		const activeBorrowedClaims = myClaims.filter(
-			(c) => !!c.pickedUpAt && !c.returnedAt && !c.expiredAt && !c.missingAt,
+			(c) =>
+				!!c.pickedUpAt &&
+				!c.returnedAt &&
+				!c.transferredAt &&
+				!c.expiredAt &&
+				!c.missingAt,
 		);
 
 		const borrowedItemIds = activeBorrowedClaims.map((c) => c.itemId);
@@ -431,6 +436,7 @@ export const create = mutation({
 	args: {
 		name: v.string(),
 		description: v.optional(v.string()),
+		giveaway: v.optional(v.boolean()),
 		imageStorageIds: v.optional(v.array(v.id("_storage"))),
 		category: categoryValidator,
 		location: locationValidator,
@@ -446,6 +452,7 @@ export const create = mutation({
 			name: args.name,
 			description: args.description,
 			ownerId,
+			giveaway: args.giveaway,
 			imageStorageIds: args.imageStorageIds,
 			category: args.category,
 			location: args.location,
@@ -525,6 +532,16 @@ export const requestItem = mutation({
 		if (item.ownerId === identity.subject)
 			throw new Error("Cannot claim your own item");
 
+		if (item.giveaway) {
+			if (args.endDate !== args.startDate + ONE_DAY_MS) {
+				throw new Error("Giveaway pickup date must be a single day");
+			}
+			// We intentionally don't validate "start of local day" here because
+			// server timezones differ from user timezones (Convex often runs in UTC).
+			// Hour alignment is enough to keep the data clean for calendar math.
+			assertHourAligned(args.startDate);
+		}
+
 		const ownerBlocks = await ctx.db
 			.query("owner_unavailability")
 			.withIndex("by_owner", (q) => q.eq("ownerId", item.ownerId))
@@ -541,15 +558,23 @@ export const requestItem = mutation({
 
 		// Validate dates
 		const now = Date.now();
-		const todayStart = new Date(now);
-		todayStart.setHours(0, 0, 0, 0);
-		// Allow some buffer or strip time components if strict?
-		// For now simple checks.
 		if (args.endDate <= args.startDate) {
 			throw new Error("End date must be after start date");
 		}
-		if (args.startDate < todayStart.getTime()) {
-			throw new Error("Start date must be today or later");
+		if (item.giveaway) {
+			// Giveaway requests represent a pickup day in the user's local timezone.
+			// We can't reliably compute "today" on the server due to timezone mismatch.
+			// Instead, allow the request as long as the requested day hasn't fully passed.
+			if (args.endDate <= now) {
+				throw new Error("Start date must be today or later");
+			}
+		} else {
+			const todayStart = new Date(now);
+			todayStart.setHours(0, 0, 0, 0);
+			// For now simple checks.
+			if (args.startDate < todayStart.getTime()) {
+				throw new Error("Start date must be today or later");
+			}
 		}
 
 		const duration = args.endDate - args.startDate;
@@ -577,7 +602,7 @@ export const requestItem = mutation({
 			.collect();
 
 		const activeApprovedClaims = approvedClaims.filter(
-			(c) => !c.expiredAt && !c.returnedAt,
+			(c) => !c.expiredAt && !c.returnedAt && !c.transferredAt,
 		);
 
 		const hasOverlap = activeApprovedClaims.some((claim) =>
@@ -608,7 +633,10 @@ export const requestItem = mutation({
 		const myBlockingRequests = myActiveRequests.filter(
 			(r) =>
 				r.status === "pending" ||
-				(r.status === "approved" && !r.expiredAt && !r.returnedAt),
+				(r.status === "approved" &&
+					!r.expiredAt &&
+					!r.returnedAt &&
+					!r.transferredAt),
 		);
 
 		const hasSelfOverlap = myBlockingRequests.some((req) =>
@@ -750,31 +778,33 @@ export const approveClaim = mutation({
 				windowEndAt: pickupWindowEndAt,
 			});
 
-			const returnProposalId = `auto-return-${args.claimId}`;
-			const returnWindowStartAt = claim.endDate;
-			const returnWindowEndAt = claim.endDate + ONE_HOUR_MS;
+			if (!item.giveaway) {
+				const returnProposalId = `auto-return-${args.claimId}`;
+				const returnWindowStartAt = claim.endDate;
+				const returnWindowEndAt = claim.endDate + ONE_HOUR_MS;
 
-			await ctx.db.insert("lease_activity", {
-				itemId: args.id,
-				claimId: args.claimId,
-				type: "lease_return_proposed",
-				actorId: claim.claimerId,
-				createdAt: now,
-				proposalId: returnProposalId,
-				windowStartAt: returnWindowStartAt,
-				windowEndAt: returnWindowEndAt,
-			});
+				await ctx.db.insert("lease_activity", {
+					itemId: args.id,
+					claimId: args.claimId,
+					type: "lease_return_proposed",
+					actorId: claim.claimerId,
+					createdAt: now,
+					proposalId: returnProposalId,
+					windowStartAt: returnWindowStartAt,
+					windowEndAt: returnWindowEndAt,
+				});
 
-			await ctx.db.insert("lease_activity", {
-				itemId: args.id,
-				claimId: args.claimId,
-				type: "lease_return_approved",
-				actorId: identity.subject,
-				createdAt: now,
-				proposalId: returnProposalId,
-				windowStartAt: returnWindowStartAt,
-				windowEndAt: returnWindowEndAt,
-			});
+				await ctx.db.insert("lease_activity", {
+					itemId: args.id,
+					claimId: args.claimId,
+					type: "lease_return_approved",
+					actorId: identity.subject,
+					createdAt: now,
+					proposalId: returnProposalId,
+					windowStartAt: returnWindowStartAt,
+					windowEndAt: returnWindowEndAt,
+				});
+			}
 		}
 
 		// Notify claimer
@@ -958,6 +988,9 @@ export const proposeReturnWindow = mutation({
 
 		const item = await ctx.db.get(args.itemId);
 		if (!item) throw new Error("Item not found");
+		if (item.giveaway) {
+			throw new Error("Return is not required for giveaway items");
+		}
 
 		const userId = identity.subject;
 		if (userId !== item.ownerId && userId !== claim.claimerId) {
@@ -1128,6 +1161,9 @@ export const approveReturnWindow = mutation({
 
 		const item = await ctx.db.get(args.itemId);
 		if (!item) throw new Error("Item not found");
+		if (item.giveaway) {
+			throw new Error("Return is not required for giveaway items");
+		}
 
 		const userId = identity.subject;
 		if (userId !== item.ownerId && userId !== claim.claimerId) {
@@ -1226,6 +1262,8 @@ export const markPickedUp = mutation({
 		const item = await ctx.db.get(args.itemId);
 		if (!item) throw new Error("Item not found");
 
+		const itemOwnerIdAtPickup = item.ownerId;
+
 		const userId = identity.subject;
 		if (userId !== item.ownerId && userId !== claim.claimerId) {
 			throw new Error("Unauthorized");
@@ -1295,9 +1333,27 @@ export const markPickedUp = mutation({
 
 		await ctx.db.patch(args.claimId, { pickedUpAt: createdAt });
 
+		if (item.giveaway) {
+			await ctx.db.insert("lease_activity", {
+				itemId: args.itemId,
+				claimId: args.claimId,
+				type: "lease_transferred",
+				actorId: userId,
+				createdAt,
+				note: args.note,
+				photoStorageIds: args.photoStorageIds,
+				proposalId: latestProposal.proposalId,
+				windowStartAt: latestProposal.windowStartAt,
+				windowEndAt: latestProposal.windowEndAt,
+			});
+
+			await ctx.db.patch(args.claimId, { transferredAt: createdAt });
+			await ctx.db.patch(args.itemId, { ownerId: claim.claimerId });
+		}
+
 		await ctx.db.insert("notifications", {
 			recipientId: otherPartyId({
-				itemOwnerId: item.ownerId,
+				itemOwnerId: itemOwnerIdAtPickup,
 				claimerId: claim.claimerId,
 				actorId: userId,
 			}),
@@ -1340,6 +1396,9 @@ export const markReturned = mutation({
 
 		const item = await ctx.db.get(args.itemId);
 		if (!item) throw new Error("Item not found");
+		if (item.giveaway) {
+			throw new Error("Return is not required for giveaway items");
+		}
 
 		const userId = identity.subject;
 		if (userId !== item.ownerId && userId !== claim.claimerId) {
@@ -1553,6 +1612,9 @@ export const markMissing = mutation({
 
 		const item = await ctx.db.get(args.itemId);
 		if (!item) throw new Error("Item not found");
+		if (item.giveaway) {
+			throw new Error("Missing returns are not tracked for giveaway items");
+		}
 		if (item.ownerId !== identity.subject) throw new Error("Unauthorized");
 
 		const existing = await ctx.db
@@ -1648,7 +1710,9 @@ export const getAvailability = query({
 			.filter((q) => q.eq(q.field("status"), "approved"))
 			.collect();
 
-		const activeClaims = claims.filter((c) => !c.expiredAt && !c.returnedAt);
+		const activeClaims = claims.filter(
+			(c) => !c.expiredAt && !c.returnedAt && !c.transferredAt,
+		);
 
 		const ownerBlocks = await ctx.db
 			.query("owner_unavailability")

@@ -5,6 +5,7 @@ import { useMutation } from "convex/react";
 import { Loader2 } from "lucide-react";
 import { AvailabilityToggle } from "@/components/notifications/availability-toggle";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Toggle } from "@/components/ui/toggle";
 import { ItemCalendar } from "@/components/item-calendar";
 import { LeaseProposeIntradayDialog } from "@/components/lease/lease-propose-intraday-dialog";
@@ -12,6 +13,7 @@ import {
 	useItemCalendar,
 	type BorrowerCalendarState,
 } from "@/hooks/use-item-calendar";
+import { useClaimItem } from "@/hooks/use-claim-item";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { api } from "@/convex/_generated/api";
 import { LeaseClaimCard } from "./lease-claim-card";
@@ -319,7 +321,12 @@ export function BorrowerRequestActions() {
 								if (showInactive) return true;
 								if (req.status === "pending") return true;
 								if (req.status === "approved") {
-									return !req.returnedAt && !req.expiredAt && !req.missingAt;
+									return (
+										!req.returnedAt &&
+										!req.transferredAt &&
+										!req.expiredAt &&
+										!req.missingAt
+									);
 								}
 								return false;
 							})
@@ -335,6 +342,7 @@ export function BorrowerRequestActions() {
 										itemId={item._id}
 										claim={claim}
 										viewerRole="borrower"
+										isGiveaway={false}
 										cancelClaim={async ({ claimId }) =>
 											await cancelRequest(claimId)
 										}
@@ -352,13 +360,193 @@ export function BorrowerRequestActions() {
 }
 
 // Handles borrower availability selection and request actions for a single item.
-export function BorrowerRequestPanel({ item }: { item: Doc<"items"> }) {
+export function BorrowerRequestPanel({
+	item,
+	fullWidth,
+}: {
+	item: Doc<"items">;
+	fullWidth?: boolean;
+}) {
+	if (item.giveaway) {
+		return <GiveawayBorrowerRequestPanel item={item} fullWidth={fullWidth} />;
+	}
 	return (
 		<BorrowerRequestProvider item={item}>
-			<div className="bg-white border rounded-lg p-4 inline-block w-full max-w-md mx-auto md:mx-0">
+			<div
+				className={cn(
+					"bg-white border rounded-lg p-4 w-full",
+					fullWidth ? undefined : "inline-block max-w-md mx-auto md:mx-0",
+				)}
+			>
 				<BorrowerRequestCalendar className="mx-auto" />
 			</div>
 			<BorrowerRequestActions />
 		</BorrowerRequestProvider>
+	);
+}
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+function startOfLocalDay(day: Date): Date {
+	const d = new Date(day);
+	d.setHours(0, 0, 0, 0);
+	return d;
+}
+
+export function GiveawayBorrowerRequestPanel({
+	item,
+	fullWidth,
+}: {
+	item: Doc<"items">;
+	fullWidth?: boolean;
+}) {
+	const {
+		isAuthenticated,
+		isAuthLoading,
+		isSubmitting,
+		requestItem,
+		cancelRequest,
+		myRequests,
+		availability,
+	} = useClaimItem(item._id);
+
+	const markPickedUp = useMutation(api.items.markPickedUp);
+	const markReturned = useMutation(api.items.markReturned);
+	const generateUploadUrl = useMutation(api.items.generateUploadUrl);
+
+	const [pickupDay, setPickupDay] = React.useState<Date | undefined>(undefined);
+	const [showInactive, setShowInactive] = React.useState(false);
+
+	const disabledDayRanges = React.useMemo(() => {
+		const startOfLocalDayAt = (at: number): number => {
+			const d = new Date(at);
+			d.setHours(0, 0, 0, 0);
+			return d.getTime();
+		};
+
+		const toDisabledDayRange = (range: {
+			startDate: number;
+			endDate: number;
+		}): {
+			from: Date;
+			to: Date;
+		} | null => {
+			const startDay = startOfLocalDayAt(range.startDate);
+			const endDay = startOfLocalDayAt(range.endDate);
+			const isAligned =
+				range.startDate === startDay && range.endDate === endDay;
+			const isAtLeastOneDay = range.endDate - range.startDate >= ONE_DAY_MS;
+			if (!isAligned || !isAtLeastOneDay) return null;
+
+			const endInclusive = Math.max(range.startDate, range.endDate - 1);
+			return { from: new Date(range.startDate), to: new Date(endInclusive) };
+		};
+
+		return (availability ?? [])
+			.map(toDisabledDayRange)
+			.filter((v): v is { from: Date; to: Date } => v !== null);
+	}, [availability]);
+
+	const requestDisabled =
+		!pickupDay || isSubmitting || isAuthLoading || !isAuthenticated;
+
+	return (
+		<>
+			<div
+				className={cn(
+					"bg-white border rounded-lg p-4 w-full",
+					fullWidth ? undefined : "inline-block max-w-md mx-auto md:mx-0",
+				)}
+			>
+				<div className="space-y-2">
+					<div className="text-sm font-medium">Pick a pickup day</div>
+					<div className="text-xs text-muted-foreground">
+						Giveaway: no return needed. Ownership transfers after pickup.
+					</div>
+				</div>
+				<div className="mt-3 flex justify-center">
+					<Calendar
+						mode="single"
+						selected={pickupDay}
+						onSelect={setPickupDay}
+						disabled={[
+							{ before: startOfLocalDay(new Date()) },
+							...disabledDayRanges,
+						]}
+						numberOfMonths={2}
+					/>
+				</div>
+				<div className="mt-4 flex items-center justify-between gap-2">
+					<AvailabilityToggle id={item._id} />
+					<Button
+						size="sm"
+						disabled={requestDisabled}
+						onClick={async () => {
+							if (!pickupDay) return;
+							const startDate = startOfLocalDay(pickupDay);
+							const endDate = new Date(startDate.getTime() + ONE_DAY_MS);
+							await requestItem(startDate, endDate, () =>
+								setPickupDay(undefined),
+							);
+						}}
+					>
+						{isSubmitting ? (
+							<Loader2 className="h-4 w-4 animate-spin" />
+						) : (
+							"Request"
+						)}
+					</Button>
+				</div>
+			</div>
+
+			{isAuthenticated && myRequests && myRequests.length > 0 ? (
+				<div className="mt-6">
+					<div className="flex justify-between items-center mb-3">
+						<h4 className="font-medium">Your Requests</h4>
+						<Toggle
+							pressed={showInactive}
+							onPressedChange={setShowInactive}
+							variant="outline"
+							size="sm"
+							aria-label="Toggle inactive requests"
+						>
+							{showInactive ? "Hide Inactive" : "Show Inactive"}
+						</Toggle>
+					</div>
+					<div className="space-y-4">
+						{myRequests
+							.filter((req) => {
+								if (showInactive) return true;
+								if (req.status === "pending") return true;
+								if (req.status === "approved") {
+									return (
+										!req.returnedAt &&
+										!req.transferredAt &&
+										!req.expiredAt &&
+										!req.missingAt
+									);
+								}
+								return false;
+							})
+							.map((claim) => (
+								<div key={claim._id}>
+									<LeaseClaimCard
+										itemId={item._id}
+										claim={claim}
+										viewerRole="borrower"
+										isGiveaway
+										cancelClaim={async ({ claimId }) =>
+											await cancelRequest(claimId)
+										}
+										markPickedUp={markPickedUp}
+										markReturned={markReturned}
+										generateUploadUrl={async () => await generateUploadUrl()}
+									/>
+								</div>
+							))}
+					</div>
+				</div>
+			) : null}
+		</>
 	);
 }

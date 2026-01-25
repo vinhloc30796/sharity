@@ -52,6 +52,9 @@ export function NotificationFeed() {
 		const { itemId, claimId, windowStartAt, windowEndAt } =
 			getNotificationActionContext(n);
 
+		const isGiveaway = Boolean(n.item?.giveaway);
+		const isTransferred = Boolean(n.claim?.transferredAt);
+
 		let message = "";
 		switch (n.type) {
 			case "new_request":
@@ -85,7 +88,10 @@ export function NotificationFeed() {
 				}
 				break;
 			case "pickup_confirmed":
-				message = `Pickup confirmed for "${n.item?.name}"`;
+				message =
+					isGiveaway && isTransferred
+						? `Transfer completed for "${n.item?.name}"`
+						: `Pickup confirmed for "${n.item?.name}"`;
 				break;
 			case "pickup_expired":
 				message = `Pickup expired for "${n.item?.name}"`;
@@ -199,6 +205,22 @@ export function NotificationFeed() {
 			}
 
 			if (n.type === "return_proposed") {
+				if (isGiveaway || isTransferred) {
+					return (
+						<Button
+							size="sm"
+							variant="outline"
+							className="h-7"
+							onClick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								navigateToItem(itemId);
+							}}
+						>
+							View
+						</Button>
+					);
+				}
 				return (
 					<Button
 						size="sm"
@@ -251,6 +273,22 @@ export function NotificationFeed() {
 			}
 
 			if (n.type === "return_approved") {
+				if (isGiveaway || isTransferred) {
+					return (
+						<Button
+							size="sm"
+							variant="outline"
+							className="h-7"
+							onClick={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								navigateToItem(itemId);
+							}}
+						>
+							View
+						</Button>
+					);
+				}
 				return (
 					<Button
 						size="sm"

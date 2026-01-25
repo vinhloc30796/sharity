@@ -7,6 +7,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Id } from "@/convex/_generated/dataModel";
 import {
 	FileUpload,
@@ -36,6 +37,16 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export type ItemCategory =
 	| "kitchen"
@@ -75,6 +86,7 @@ interface ItemFormProps {
 		imageUrls?: string[]; // Fallback
 		category?: ItemCategory;
 		location?: Location;
+		giveaway?: boolean;
 	};
 	onSubmit: (values: {
 		name: string;
@@ -82,19 +94,25 @@ interface ItemFormProps {
 		imageStorageIds?: Id<"_storage">[];
 		category?: ItemCategory;
 		location?: Location;
+		giveaway?: boolean;
 	}) => Promise<void>;
 	submitLabel?: string;
+	enableModeSwitch?: boolean;
 }
 
 export function ItemForm({
 	initialValues,
 	onSubmit,
 	submitLabel = "Submit",
+	enableModeSwitch = false,
 }: ItemFormProps) {
 	const [name, setName] = useState(initialValues?.name || "");
 	const [description, setDescription] = useState(
 		initialValues?.description || "",
 	);
+	const [giveaway, setGiveaway] = useState(Boolean(initialValues?.giveaway));
+	const [pendingGiveaway, setPendingGiveaway] = useState<boolean | null>(null);
+	const [isModeConfirmOpen, setIsModeConfirmOpen] = useState(false);
 	const [category, setCategory] = useState<ItemCategory | undefined>(
 		initialValues?.category,
 	);
@@ -222,6 +240,7 @@ export function ItemForm({
 					finalStorageIds.length > 0 ? finalStorageIds : undefined,
 				category,
 				location: finalLocation,
+				giveaway: enableModeSwitch ? giveaway : undefined,
 			});
 
 			if (!initialValues) {
@@ -236,7 +255,8 @@ export function ItemForm({
 			}
 		} catch (error) {
 			console.error("Error submitting form:", error);
-			toast.error("Failed to submit item: " + (error as Error).message);
+			const message = error instanceof Error ? error.message : String(error);
+			toast.error(message);
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -246,6 +266,58 @@ export function ItemForm({
 
 	return (
 		<form onSubmit={handleSubmit} className="flex flex-col gap-4 min-w-0">
+			{enableModeSwitch ? (
+				<>
+					<div className="flex items-center justify-between gap-3">
+						<div className="space-y-1">
+							<Label htmlFor="giveaway-mode">Giveaway</Label>
+							<div className="text-xs text-muted-foreground">
+								No return. Ownership transfers after pickup.
+							</div>
+						</div>
+						<Switch
+							id="giveaway-mode"
+							checked={giveaway}
+							disabled={isSubmitting}
+							onCheckedChange={(next) => {
+								setPendingGiveaway(next);
+								setIsModeConfirmOpen(true);
+							}}
+						/>
+					</div>
+
+					<AlertDialog
+						open={isModeConfirmOpen}
+						onOpenChange={(open) => {
+							setIsModeConfirmOpen(open);
+							if (!open) setPendingGiveaway(null);
+						}}
+					>
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle>Switch mode?</AlertDialogTitle>
+								<AlertDialogDescription>
+									This will reject all current pending requests
+								</AlertDialogDescription>
+							</AlertDialogHeader>
+							<AlertDialogFooter>
+								<AlertDialogCancel>Cancel</AlertDialogCancel>
+								<AlertDialogAction
+									onClick={() => {
+										if (pendingGiveaway === null) return;
+										setGiveaway(pendingGiveaway);
+										setPendingGiveaway(null);
+										setIsModeConfirmOpen(false);
+									}}
+								>
+									Switch
+								</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
+				</>
+			) : null}
+
 			<div className="flex flex-col gap-2">
 				<Label htmlFor="name">Item Name</Label>
 				<Input

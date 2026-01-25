@@ -179,6 +179,7 @@ export function ItemCard({
 											density === "compact" ? "mb-1.5" : "mb-2",
 										)}
 									>
+										{item.giveaway ? <Badge>Giveaway</Badge> : null}
 										{item.category && (
 											<Badge variant="secondary">
 												{CATEGORY_LABELS[item.category]}

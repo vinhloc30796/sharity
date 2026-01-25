@@ -64,7 +64,7 @@ function primaryStatusForOwnerClaims(
 
 	const activeApproved = list.filter((c) => {
 		if (c.status !== "approved") return false;
-		return !c.returnedAt && !c.expiredAt && !c.missingAt;
+		return !c.returnedAt && !c.transferredAt && !c.expiredAt && !c.missingAt;
 	});
 
 	// Prefer lifecycle states of an active approved lease.
@@ -137,6 +137,7 @@ export function MyItemCard({
 	isOwner?: boolean;
 }) {
 	const updateItem = useMutation(api.items.update);
+	const switchItemMode = useMutation(api.items.switchItemMode);
 	const deleteItem = useMutation(api.items.deleteItem);
 	const approveClaim = useMutation(api.items.approveClaim);
 	const rejectClaim = useMutation(api.items.rejectClaim);
@@ -162,22 +163,38 @@ export function MyItemCard({
 	);
 
 	const rightHeader = !isOwner ? (
-		<span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-indigo-100 text-indigo-800 hover:bg-indigo-100/80">
-			Borrowed
-		</span>
-	) : (
-		<span
-			className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${classNameForOwnerStatus(status)}`}
-		>
-			{labelForOwnerStatus(status)}
-			{activeApprovedClaim ? (
-				<span className="ml-2 hidden sm:inline text-xs text-muted-foreground">
-					to {formatActor(activeApprovedClaim.claimerId)} (
-					{format(activeApprovedClaim.startDate, "MMM d")} -{" "}
-					{format(activeApprovedClaim.endDate, "MMM d")})
+		<div className="flex items-center gap-2">
+			{item.giveaway ? (
+				<span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-amber-100 text-amber-900 hover:bg-amber-100/80">
+					Giveaway
 				</span>
 			) : null}
-		</span>
+			{item.giveaway ? null : (
+				<span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-indigo-100 text-indigo-800 hover:bg-indigo-100/80">
+					Borrowed
+				</span>
+			)}
+		</div>
+	) : (
+		<div className="flex items-center gap-2">
+			{item.giveaway ? (
+				<span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-amber-100 text-amber-900 hover:bg-amber-100/80">
+					Giveaway
+				</span>
+			) : null}
+			<span
+				className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${classNameForOwnerStatus(status)}`}
+			>
+				{labelForOwnerStatus(status)}
+				{activeApprovedClaim ? (
+					<span className="ml-2 hidden sm:inline text-xs text-muted-foreground">
+						to {formatActor(activeApprovedClaim.claimerId)} (
+						{format(activeApprovedClaim.startDate, "MMM d")} -{" "}
+						{format(activeApprovedClaim.endDate, "MMM d")})
+					</span>
+				) : null}
+			</span>
+		</div>
 	);
 
 	return (
@@ -221,8 +238,19 @@ export function MyItemCard({
 										imageStorageIds: item.imageStorageIds,
 										imageUrls: item.imageUrls,
 										images: item.images,
+										giveaway: Boolean(item.giveaway),
 									}}
+									enableModeSwitch
 									onSubmit={async (values) => {
+										if (
+											typeof values.giveaway === "boolean" &&
+											values.giveaway !== Boolean(item.giveaway)
+										) {
+											await switchItemMode({
+												id: item._id,
+												giveaway: values.giveaway,
+											});
+										}
 										await updateItem({
 											id: item._id,
 											name: values.name,

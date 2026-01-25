@@ -51,6 +51,7 @@ export function ItemList({
 		[],
 	);
 	const [viewMode, setViewMode] = useState<ViewMode>("list");
+	const [giveawayOnly, setGiveawayOnly] = useState(false);
 
 	const filteredItems = items?.filter((item) => {
 		const needle = search.trim().toLowerCase();
@@ -65,7 +66,9 @@ export function ItemList({
 			(item.category !== undefined &&
 				selectedCategories.includes(item.category));
 
-		return matchesSearch && matchesCategory;
+		const matchesGiveaway = !giveawayOnly || Boolean(item.giveaway);
+
+		return matchesSearch && matchesCategory && matchesGiveaway;
 	});
 
 	return (
@@ -104,6 +107,19 @@ export function ItemList({
 					selected={selectedCategories}
 					onChange={setSelectedCategories}
 				/>
+				<div className="flex flex-wrap gap-2">
+					<Button
+						variant={giveawayOnly ? "default" : "outline"}
+						size="sm"
+						onClick={() => setGiveawayOnly((v) => !v)}
+						className={cn(
+							"h-8 text-xs",
+							giveawayOnly && "bg-primary text-primary-foreground",
+						)}
+					>
+						Giveaway
+					</Button>
+				</div>
 			</div>
 
 			{viewMode === "map" ? (
