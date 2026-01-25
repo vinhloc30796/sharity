@@ -27,7 +27,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
-import type { CloudinaryRef } from "@/lib/cloudinary-ref";
+import { toCloudinaryRef, type CloudinaryRef } from "@/lib/cloudinary-ref";
 
 import type { MutationResult } from "./lease-claim-types";
 
@@ -202,13 +202,8 @@ export function LeaseActionDialog(props: LeaseActionDialogProps) {
 										const result = (await uploadToCloudinary(file, {
 											folder: props.photoConfig.folder,
 											tags: ["leases"],
-										})) as unknown as CloudinaryRef;
-										if (!result?.publicId || !result?.secureUrl) {
-											throw new Error(
-												"Cloudinary upload failed: missing publicId/secureUrl",
-											);
-										}
-										uploaded.push(result);
+										})) as unknown;
+										uploaded.push(toCloudinaryRef(result));
 									}
 									photoCloudinary = uploaded;
 								}

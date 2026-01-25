@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/file-upload";
 import { UploadCloudIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import type { CloudinaryRef } from "@/lib/cloudinary-ref";
+import { toCloudinaryRef, type CloudinaryRef } from "@/lib/cloudinary-ref";
 
 interface RatingFormProps {
 	claimId: Id<"claims">;
@@ -63,14 +63,8 @@ export function RatingForm({
 				const result = (await uploadToCloudinary(file, {
 					folder: "ratings",
 					tags: ["ratings"],
-				})) as unknown as CloudinaryRef;
-
-				if (!result?.publicId || !result?.secureUrl) {
-					throw new Error(
-						"Cloudinary upload failed: missing publicId/secureUrl",
-					);
-				}
-				photoCloudinary.push(result);
+				})) as unknown;
+				photoCloudinary.push(toCloudinaryRef(result));
 			}
 
 			await createRating({

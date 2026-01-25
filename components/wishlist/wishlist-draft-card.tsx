@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 import { useCloudinaryUpload } from "@imaxis/cloudinary-convex/react";
-import type { CloudinaryRef } from "@/lib/cloudinary-ref";
+import { toCloudinaryRef, type CloudinaryRef } from "@/lib/cloudinary-ref";
 import { useMutation, useQuery } from "convex/react";
 import { CheckCircle2, Plus, UploadCloudIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -104,13 +104,8 @@ export function WishlistDraftCard({
 				const result = (await uploadToCloudinary(file, {
 					folder: "wishlist",
 					tags: ["wishlist"],
-				})) as unknown as CloudinaryRef;
-				if (!result?.publicId || !result?.secureUrl) {
-					throw new Error(
-						"Cloudinary upload failed: missing publicId/secureUrl",
-					);
-				}
-				imageCloudinary.push(result);
+				})) as unknown;
+				imageCloudinary.push(toCloudinaryRef(result));
 			}
 
 			await createWishlist({

@@ -30,7 +30,7 @@ import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { useCloudinaryUpload } from "@imaxis/cloudinary-convex/react";
-import type { CloudinaryRef } from "@/lib/cloudinary-ref";
+import { toCloudinaryRef, type CloudinaryRef } from "@/lib/cloudinary-ref";
 import { useMutation } from "convex/react";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -128,13 +128,8 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 				const result = (await uploadToCloudinary(file, {
 					folder: "wishlist",
 					tags: ["wishlist"],
-				})) as unknown as CloudinaryRef;
-				if (!result?.publicId || !result?.secureUrl) {
-					throw new Error(
-						"Cloudinary upload failed: missing publicId/secureUrl",
-					);
-				}
-				newCloudinary.push(result);
+				})) as unknown;
+				newCloudinary.push(toCloudinaryRef(result));
 			}
 
 			const existingCloudinary = existingImages.map((img) => ({

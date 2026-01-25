@@ -76,7 +76,7 @@ export interface Location {
 	ward?: string;
 }
 import { toast } from "sonner";
-import type { CloudinaryRef } from "@/lib/cloudinary-ref";
+import { toCloudinaryRef, type CloudinaryRef } from "@/lib/cloudinary-ref";
 
 export type MediaImage =
 	| { source: "cloudinary"; publicId: string; url: string }
@@ -249,14 +249,8 @@ export function ItemForm({
 				const result = (await uploadToCloudinary(file, {
 					folder: "items",
 					tags: ["items"],
-				})) as unknown as CloudinaryRef;
-
-				if (!result?.publicId || !result?.secureUrl) {
-					throw new Error(
-						"Cloudinary upload failed: missing publicId/secureUrl",
-					);
-				}
-				newCloudinary.push(result);
+				})) as unknown;
+				newCloudinary.push(toCloudinaryRef(result));
 			}
 
 			// 2. Keep existing Cloudinary images

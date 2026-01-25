@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Camera, Loader2, User } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import type { CloudinaryRef } from "@/lib/cloudinary-ref";
+import { toCloudinaryRef, type CloudinaryRef } from "@/lib/cloudinary-ref";
 import { CloudinaryImage } from "@/components/cloudinary-image";
 
 interface AvatarUploadProps {
@@ -63,13 +63,8 @@ export function AvatarUpload({
 			const result = (await uploadToCloudinary(file, {
 				folder: "avatars",
 				tags: ["avatars"],
-			})) as unknown as CloudinaryRef;
-
-			if (!result?.publicId || !result?.secureUrl) {
-				throw new Error("Cloudinary upload failed: missing publicId/secureUrl");
-			}
-
-			onUpload(result);
+			})) as unknown;
+			onUpload(toCloudinaryRef(result));
 			toast.success("Avatar uploaded");
 		} catch (error) {
 			console.error("Error uploading avatar:", error);
