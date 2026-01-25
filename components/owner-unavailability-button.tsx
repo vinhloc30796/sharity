@@ -10,6 +10,7 @@ import type { ComponentProps } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
 	Dialog,
@@ -44,6 +45,12 @@ export function OwnerUnavailabilityButton(
 	const ranges = useQuery(api.items.getOwnerUnavailability);
 	const addRange = useMutation(api.items.addOwnerUnavailabilityRange);
 	const deleteRange = useMutation(api.items.deleteOwnerUnavailabilityRange);
+
+	const isOnVacationNow = React.useMemo(() => {
+		if (!ranges) return false;
+		const now = Date.now();
+		return ranges.some((r) => r.startDate <= now && now <= r.endDate);
+	}, [ranges]);
 
 	const [internalOpen, setInternalOpen] = React.useState(false);
 	const open = props.open ?? internalOpen;
@@ -90,6 +97,7 @@ export function OwnerUnavailabilityButton(
 				>
 					<CalendarDays className="h-4 w-4" />
 					Vacation
+					{isOnVacationNow ? <Badge variant="secondary">On</Badge> : null}
 				</Button>
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-xl">
