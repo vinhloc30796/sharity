@@ -5,6 +5,7 @@ import Link from "next/link";
 import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
 import { ArrowLeft } from "lucide-react";
 
+import { AddItemForm } from "@/components/add-item-form";
 import { MyItemsList } from "@/components/my-items-list";
 import { Button } from "@/components/ui/button";
 
@@ -24,7 +25,10 @@ export default function MyItemsPage() {
 				</div>
 
 				<SignedIn>
-					<MyItemsList />
+					<div className="grid gap-4">
+						<MyItemsList />
+						<AddItemForm />
+					</div>
 				</SignedIn>
 
 				<SignedOut>

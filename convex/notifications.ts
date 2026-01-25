@@ -16,7 +16,8 @@ export const get = query({
 		return Promise.all(
 			notifications.map(async (n) => {
 				const item = await ctx.db.get(n.itemId);
-				return { ...n, item };
+				const claim = n.requestId ? await ctx.db.get(n.requestId) : null;
+				return { ...n, item, claim };
 			}),
 		);
 	},
