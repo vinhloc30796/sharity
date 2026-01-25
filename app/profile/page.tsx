@@ -18,6 +18,7 @@ import { RatingsList } from "@/components/ratings-list";
 import { UserHistory } from "@/components/user-history";
 import { PendingRatings } from "@/components/pending-ratings";
 import { ContactInfo } from "@/components/contact-info";
+import { CloudinaryImage } from "@/components/cloudinary-image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, MapPin, Settings, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -105,13 +106,26 @@ export default function ProfilePage() {
 				<Card className="py-4 gap-4">
 					<CardContent className="px-4 md:px-6">
 						<div className="flex items-start gap-4">
-							<div className="relative h-20 w-20 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200 flex-shrink-0">
+							<div className="relative h-20 w-20 rounded-full overflow-hidden bg-gray-100 border-2 border-gray-200 shrink-0">
 								{avatarUrl ? (
-									<img
-										src={avatarUrl}
-										alt={displayName}
-										className="w-full h-full object-cover"
-									/>
+									avatarUrl.includes("res.cloudinary.com") &&
+									avatarUrl.includes("/image/upload/") ? (
+										<CloudinaryImage
+											src={avatarUrl}
+											alt={displayName}
+											fill
+											sizes="80px"
+											className="object-cover"
+										/>
+									) : (
+										// Clerk (or other) avatar URL - not Cloudinary.
+										// eslint-disable-next-line @next/next/no-img-element
+										<img
+											src={avatarUrl}
+											alt={displayName}
+											className="w-full h-full object-cover"
+										/>
+									)
 								) : (
 									<div className="w-full h-full flex items-center justify-center">
 										<User className="h-10 w-10 text-gray-400" />

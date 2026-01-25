@@ -8,6 +8,7 @@ import { Camera, Loader2, User } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { CloudinaryRef } from "@/lib/cloudinary-ref";
+import { CloudinaryImage } from "@/components/cloudinary-image";
 
 interface AvatarUploadProps {
 	currentUrl?: string | null;
@@ -80,6 +81,10 @@ export function AvatarUpload({
 	};
 
 	const displayUrl = previewUrl || currentUrl;
+	const isCloudinaryUrl = displayUrl
+		? displayUrl.includes("res.cloudinary.com") &&
+			displayUrl.includes("/image/upload/")
+		: false;
 
 	return (
 		<div className="flex flex-col items-center gap-2">
@@ -90,11 +95,23 @@ export function AvatarUpload({
 				)}
 			>
 				{displayUrl ? (
-					<img
-						src={displayUrl}
-						alt="Avatar"
-						className="w-full h-full object-cover"
-					/>
+					previewUrl || !isCloudinaryUrl ? (
+						// Local preview URLs (blob:) and non-Cloudinary URLs.
+						// eslint-disable-next-line @next/next/no-img-element
+						<img
+							src={displayUrl}
+							alt="Avatar"
+							className="w-full h-full object-cover"
+						/>
+					) : (
+						<CloudinaryImage
+							src={displayUrl}
+							alt="Avatar"
+							fill
+							sizes="128px"
+							className="object-cover"
+						/>
+					)
 				) : (
 					<div className="w-full h-full flex items-center justify-center">
 						<User className="h-1/2 w-1/2 text-gray-400" />

@@ -27,6 +27,10 @@ import {
 	useEffect,
 } from "react";
 import { cn } from "@/lib/utils";
+import {
+	CloudinaryImage,
+	isCloudinaryImageUrl,
+} from "@/components/cloudinary-image";
 
 interface ItemCardContextType {
 	isFlipped: boolean;
@@ -75,6 +79,7 @@ export function ItemCard({
 	hideMetaRow = false,
 }: ItemCardProps) {
 	const [isFlipped, setIsFlipped] = useState(false);
+	const imageUrls = (item.imageUrls ?? []).filter(isCloudinaryImageUrl);
 
 	const toggleFlip = useCallback(() => setIsFlipped((prev) => !prev), []);
 	const flipToFront = useCallback(() => setIsFlipped(false), []);
@@ -121,7 +126,7 @@ export function ItemCard({
 					<div className="relative w-full backface-hidden" ref={frontRef}>
 						<Card>
 							<CardHeader>
-								{item.imageUrls && item.imageUrls.length > 0 && (
+								{imageUrls.length > 0 && (
 									<div
 										className={cn(
 											"w-full relative rounded-md overflow-hidden bg-gray-100 group",
@@ -130,7 +135,7 @@ export function ItemCard({
 									>
 										<Carousel className="w-full h-full">
 											<CarouselContent>
-												{item.imageUrls.map((url, index) => (
+												{imageUrls.map((url, index) => (
 													<CarouselItem key={index}>
 														<div
 															className={cn(
@@ -140,16 +145,18 @@ export function ItemCard({
 																	: "aspect-video",
 															)}
 														>
-															<img
+															<CloudinaryImage
 																src={url}
 																alt={`${item.name} - Image ${index + 1}`}
-																className="object-cover w-full h-full"
+																fill
+																sizes="(max-width: 768px) 100vw, 672px"
+																className="object-cover"
 															/>
 														</div>
 													</CarouselItem>
 												))}
 											</CarouselContent>
-											{item.imageUrls.length > 1 && (
+											{imageUrls.length > 1 && (
 												<>
 													<CarouselPrevious className="left-2" />
 													<CarouselNext className="right-2" />

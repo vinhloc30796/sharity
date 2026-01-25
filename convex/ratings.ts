@@ -87,6 +87,10 @@ export const createRating = mutation({
 			throw new Error("Unauthenticated");
 		}
 
+		if ((args.photoStorageIds?.length ?? 0) > 0) {
+			throw new Error("Convex storage photos are disabled; use Cloudinary");
+		}
+
 		// Validate stars
 		if (args.stars < 1 || args.stars > 5 || !Number.isInteger(args.stars)) {
 			throw new Error("Stars must be an integer between 1 and 5");
@@ -136,7 +140,7 @@ export const createRating = mutation({
 			role: targetRole,
 			stars: args.stars,
 			comment: args.comment,
-			photoStorageIds: args.photoStorageIds,
+			photoStorageIds: undefined,
 			photoCloudinary: args.photoCloudinary,
 			createdAt: Date.now(),
 		});
@@ -171,10 +175,7 @@ export const getRatingsForUser = query({
 				const cloudUrls = (rating.photoCloudinary ?? []).map(
 					(p) => p.secureUrl,
 				);
-				const ids = rating.photoStorageIds ?? [];
-				const urls = await Promise.all(ids.map((id) => ctx.storage.getUrl(id)));
-				const storageUrls = urls.filter((url): url is string => url !== null);
-				const photoUrls = [...cloudUrls, ...storageUrls];
+				const photoUrls = cloudUrls;
 
 				return {
 					...rating,
@@ -292,8 +293,6 @@ export const getMyPendingRatings = query({
 			let imageUrl: string | null = null;
 			if (item.imageCloudinary?.[0]) {
 				imageUrl = item.imageCloudinary[0].secureUrl;
-			} else if (item.imageStorageIds?.[0]) {
-				imageUrl = await ctx.storage.getUrl(item.imageStorageIds[0]);
 			}
 
 			pendingRatings.push({
@@ -322,6 +321,6 @@ export const generateRatingPhotoUploadUrl = mutation({
 		if (!identity) {
 			throw new Error("Unauthenticated");
 		}
-		return await ctx.storage.generateUploadUrl();
+		throw new Error("Convex storage uploads are disabled; use Cloudinary");
 	},
 });

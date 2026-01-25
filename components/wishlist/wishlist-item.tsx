@@ -2,10 +2,8 @@
 
 import {
 	AlertDialog,
-	AlertDialogAction,
 	AlertDialogCancel,
 	AlertDialogContent,
-	AlertDialogDescription,
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
@@ -30,7 +28,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/convex/_generated/api";
-import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { Doc } from "@/convex/_generated/dataModel";
 import { useCloudinaryUpload } from "@imaxis/cloudinary-convex/react";
 import type { CloudinaryRef } from "@/lib/cloudinary-ref";
 import { useMutation } from "convex/react";
@@ -44,8 +42,9 @@ import {
 	X,
 } from "lucide-react";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
+import { CloudinaryImage } from "@/components/cloudinary-image";
 
 interface WishlistItemProps {
 	item: Doc<"wishlist"> & {
@@ -71,15 +70,21 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 	const [isEditOpen, setIsEditOpen] = useState(false);
 	const [editText, setEditText] = useState(item.text);
 	const [editFiles, setEditFiles] = useState<File[]>([]);
-	const [existingImages, setExistingImages] = useState(item.images);
+	const [existingImages, setExistingImages] = useState(
+		item.images.filter(
+			(
+				img,
+			): img is Extract<
+				(typeof item.images)[number],
+				{ source: "cloudinary" }
+			> => img.source === "cloudinary",
+		),
+	);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-	const imageKey = (
-		img:
-			| { source: "cloudinary"; publicId: string; url: string }
-			| { source: "storage"; storageId: string; url: string },
-	): string => (img.source === "cloudinary" ? img.publicId : img.storageId);
+	const imageKey = (img: { source: "cloudinary"; publicId: string }): string =>
+		img.publicId;
 
 	const handleVote = async () => {
 		try {
@@ -91,7 +96,16 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 
 	const handleEditOpen = () => {
 		setEditText(item.text);
-		setExistingImages(item.images);
+		setExistingImages(
+			item.images.filter(
+				(
+					img,
+				): img is Extract<
+					(typeof item.images)[number],
+					{ source: "cloudinary" }
+				> => img.source === "cloudinary",
+			),
+		);
 		setEditFiles([]);
 		setIsEditOpen(true);
 	};
@@ -117,35 +131,16 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 				newCloudinary.push(result);
 			}
 
-			const existingStorageIds = existingImages
-				.filter(
-					(
-						img,
-					): img is Extract<
-						(typeof existingImages)[number],
-						{ source: "storage" }
-					> => img.source === "storage",
-				)
-				.map((img) => img.storageId as Id<"_storage">);
-
-			const existingCloudinary = existingImages
-				.filter(
-					(
-						img,
-					): img is Extract<
-						(typeof existingImages)[number],
-						{ source: "cloudinary" }
-					> => img.source === "cloudinary",
-				)
-				.map((img) => ({ publicId: img.publicId, secureUrl: img.url }));
+			const existingCloudinary = existingImages.map((img) => ({
+				publicId: img.publicId,
+				secureUrl: img.url,
+			}));
 
 			const imageCloudinary = [...existingCloudinary, ...newCloudinary];
 
 			await updateWishlist({
 				id: item._id,
 				text: trimmed,
-				imageStorageIds:
-					existingStorageIds.length > 0 ? existingStorageIds : undefined,
 				imageCloudinary:
 					imageCloudinary.length > 0 ? imageCloudinary : undefined,
 			});
@@ -176,10 +171,12 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 							onClick={() => setPreviewImage(item.images[0].url)}
 							className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border bg-gray-100 hover:opacity-80 transition-opacity"
 						>
-							<img
+							<CloudinaryImage
 								src={item.images[0].url}
 								alt=""
-								className="absolute inset-0 h-full w-full object-cover"
+								fill
+								sizes="40px"
+								className="object-cover"
 							/>
 							{item.images.length > 1 && (
 								<span className="absolute bottom-0 right-0 bg-black/60 text-white text-[10px] px-1 rounded-tl">
@@ -266,10 +263,12 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 											key={imageKey(img)}
 											className="group relative h-16 w-16 rounded-md overflow-hidden border"
 										>
-											<img
+											<CloudinaryImage
 												src={img.url}
 												alt=""
-												className="absolute inset-0 h-full w-full object-cover"
+												fill
+												sizes="64px"
+												className="object-cover"
 											/>
 											<button
 												type="button"
@@ -349,10 +348,12 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 								key={imageKey(img)}
 								className="relative aspect-square rounded-md overflow-hidden border"
 							>
-								<img
+								<CloudinaryImage
 									src={img.url}
 									alt=""
-									className="absolute inset-0 h-full w-full object-cover"
+									fill
+									sizes="(max-width: 768px) 50vw, 300px"
+									className="object-cover"
 								/>
 							</div>
 						))}

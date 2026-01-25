@@ -16,6 +16,7 @@ import { RatingForm } from "@/components/rating-form";
 import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
 import { format } from "date-fns";
+import { CloudinaryImage } from "@/components/cloudinary-image";
 
 export function PendingRatings() {
 	const pendingRatings = useQuery(api.ratings.getMyPendingRatings);
@@ -55,10 +56,13 @@ export function PendingRatings() {
 							>
 								<div className="flex items-center gap-3 min-w-0">
 									{pending.itemImageUrl && (
-										<img
+										<CloudinaryImage
 											src={pending.itemImageUrl}
 											alt={pending.itemName}
-											className="w-10 h-10 object-cover rounded"
+											width={40}
+											height={40}
+											sizes="40px"
+											className="rounded"
 										/>
 									)}
 									<div className="min-w-0">

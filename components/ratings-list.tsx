@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { formatDistanceToNow } from "date-fns";
 
 import { api } from "@/convex/_generated/api";
+import { CloudinaryImage } from "@/components/cloudinary-image";
 import { StarRating } from "@/components/star-rating";
 import { UserLink } from "@/components/user-link";
 import { Badge } from "@/components/ui/badge";
@@ -109,11 +110,14 @@ function RatingCard({ rating }: { rating: Rating }) {
 						{rating.photoUrls.length > 0 && (
 							<div className="flex gap-2 mt-2">
 								{rating.photoUrls.map((url, index) => (
-									<img
+									<CloudinaryImage
 										key={index}
 										src={url}
 										alt={`Rating photo ${index + 1}`}
-										className="w-16 h-16 object-cover rounded-md border"
+										width={64}
+										height={64}
+										sizes="64px"
+										className="rounded-md border"
 									/>
 								))}
 							</div>

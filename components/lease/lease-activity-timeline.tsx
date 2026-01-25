@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { UserLink } from "@/components/user-link";
 import { cn } from "@/lib/utils";
+import { CloudinaryImage } from "@/components/cloudinary-image";
 
 export type LeaseActivityEvent = Doc<"lease_activity"> & {
 	photoUrls?: string[];
@@ -116,9 +117,12 @@ export function LeaseActivityTimeline({
 											rel="noopener noreferrer"
 											className="block"
 										>
-											<img
+											<CloudinaryImage
 												src={url}
 												alt="Lease photo"
+												width={64}
+												height={64}
+												sizes="64px"
 												className="h-16 w-16 rounded-md border object-cover"
 											/>
 										</a>

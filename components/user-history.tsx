@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Package, ArrowRight, ArrowLeft } from "lucide-react";
+import { CloudinaryImage } from "@/components/cloudinary-image";
 
 interface UserHistoryProps {
 	userId: string;
@@ -106,10 +107,13 @@ function HistoryList({
 					<CardContent className="px-4 md:px-6">
 						<div className="flex items-center gap-3">
 							{item.itemImageUrl ? (
-								<img
+								<CloudinaryImage
 									src={item.itemImageUrl}
 									alt={item.itemName}
-									className="w-12 h-12 object-cover rounded"
+									width={48}
+									height={48}
+									sizes="48px"
+									className="rounded"
 								/>
 							) : (
 								<div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">

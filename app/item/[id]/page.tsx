@@ -32,6 +32,10 @@ import {
 } from "@/components/ui/carousel";
 import { Toggle } from "@/components/ui/toggle";
 import { ItemCalendar } from "@/components/item-calendar";
+import {
+	CloudinaryImage,
+	isCloudinaryImageUrl,
+} from "@/components/cloudinary-image";
 import { cn } from "@/lib/utils";
 import { useItemCalendar } from "@/hooks/use-item-calendar";
 import { api } from "../../../convex/_generated/api";
@@ -130,6 +134,8 @@ export default function ItemDetailPage({
 		return <div className="p-8 text-center">Item not found</div>;
 	}
 
+	const imageUrls = (item.imageUrls ?? []).filter(isCloudinaryImageUrl);
+
 	const ownerCalendar = item.isOwner ? (
 		<div className="bg-white border rounded-lg p-4 w-full">
 			<div className="flex justify-center w-full max-w-full">
@@ -139,23 +145,25 @@ export default function ItemDetailPage({
 	) : null;
 
 	const imageSection =
-		item.imageUrls && item.imageUrls.length > 0 ? (
+		imageUrls.length > 0 ? (
 			<div className="relative rounded-lg overflow-hidden bg-gray-100 border">
 				<Carousel className="w-full">
 					<CarouselContent>
-						{item.imageUrls.map((url, index) => (
+						{imageUrls.map((url, index) => (
 							<CarouselItem key={index}>
 								<div className="aspect-square relative">
-									<img
+									<CloudinaryImage
 										src={url}
 										alt={`${item.name} - Image ${index + 1}`}
-										className="object-cover w-full h-full"
+										fill
+										sizes="(max-width: 1024px) 100vw, 560px"
+										className="object-cover"
 									/>
 								</div>
 							</CarouselItem>
 						))}
 					</CarouselContent>
-					{item.imageUrls.length > 1 && (
+					{imageUrls.length > 1 && (
 						<>
 							<CarouselPrevious className="left-2" />
 							<CarouselNext className="right-2" />
@@ -290,7 +298,6 @@ export default function ItemDetailPage({
 										id: item._id,
 										name: values.name,
 										description: values.description,
-										imageStorageIds: values.imageStorageIds,
 										imageCloudinary: values.imageCloudinary,
 										category: values.category,
 										location: values.location,

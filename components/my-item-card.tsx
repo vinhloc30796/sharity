@@ -254,7 +254,6 @@ export function MyItemCard({
 											id: item._id,
 											name: values.name,
 											description: values.description,
-											imageStorageIds: values.imageStorageIds,
 											imageCloudinary: values.imageCloudinary,
 										});
 										setEditingId(null);

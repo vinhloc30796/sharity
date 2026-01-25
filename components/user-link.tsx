@@ -6,6 +6,7 @@ import Link from "next/link";
 
 import { api } from "@/convex/_generated/api";
 import { cn } from "@/lib/utils";
+import { CloudinaryImage } from "@/components/cloudinary-image";
 
 interface UserLinkProps {
 	userId: string;
@@ -71,16 +72,20 @@ export function UserLink({
 			{showAvatar && (
 				<span
 					className={cn(
-						"rounded-full bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center",
+						"rounded-full bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center",
 						styles.avatar,
 					)}
 				>
 					{userInfo.avatarUrl ? (
-						<img
-							src={userInfo.avatarUrl}
-							alt={displayName}
-							className="w-full h-full object-cover"
-						/>
+						<div className="relative h-full w-full">
+							<CloudinaryImage
+								src={userInfo.avatarUrl}
+								alt={displayName}
+								fill
+								sizes="32px"
+								className="object-cover"
+							/>
+						</div>
 					) : (
 						<User className={cn("text-gray-400", styles.icon)} />
 					)}

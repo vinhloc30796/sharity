@@ -54,8 +54,6 @@ export const getMyProfile = query({
 		let avatarUrl: string | null = null;
 		if (profile.avatarCloudinary) {
 			avatarUrl = profile.avatarCloudinary.secureUrl;
-		} else if (profile.avatarStorageId) {
-			avatarUrl = await ctx.storage.getUrl(profile.avatarStorageId);
 		} else if (identity.pictureUrl) {
 			// Fallback to Clerk avatar
 			avatarUrl = identity.pictureUrl;
@@ -94,8 +92,6 @@ export const getBasicInfo = query({
 		let avatarUrl: string | null = null;
 		if (profile.avatarCloudinary) {
 			avatarUrl = profile.avatarCloudinary.secureUrl;
-		} else if (profile.avatarStorageId) {
-			avatarUrl = await ctx.storage.getUrl(profile.avatarStorageId);
 		}
 
 		return {
@@ -125,8 +121,6 @@ export const getProfile = query({
 		let avatarUrl: string | null = null;
 		if (profile.avatarCloudinary) {
 			avatarUrl = profile.avatarCloudinary.secureUrl;
-		} else if (profile.avatarStorageId) {
-			avatarUrl = await ctx.storage.getUrl(profile.avatarStorageId);
 		}
 
 		// Don't expose full contact details to other users - just show what's available
@@ -203,8 +197,6 @@ export const getProfileWithContacts = query({
 		let avatarUrl: string | null = null;
 		if (profile.avatarCloudinary) {
 			avatarUrl = profile.avatarCloudinary.secureUrl;
-		} else if (profile.avatarStorageId) {
-			avatarUrl = await ctx.storage.getUrl(profile.avatarStorageId);
 		}
 
 		return {
@@ -230,6 +222,10 @@ export const updateProfile = mutation({
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) {
 			throw new Error("Unauthenticated");
+		}
+
+		if (args.avatarStorageId) {
+			throw new Error("Convex storage avatars are disabled; use Cloudinary");
 		}
 
 		// Validate bio length
@@ -260,7 +256,8 @@ export const updateProfile = mutation({
 			address: args.address,
 			bio: args.bio,
 			contacts: args.contacts,
-			avatarStorageId: args.avatarStorageId,
+			avatarStorageId: undefined,
+			avatarCloudinary: args.avatarCloudinary,
 			createdAt: now,
 			updatedAt: now,
 		});
@@ -279,7 +276,7 @@ export const generateAvatarUploadUrl = mutation({
 		if (!identity) {
 			throw new Error("Unauthenticated");
 		}
-		return await ctx.storage.generateUploadUrl();
+		throw new Error("Convex storage uploads are disabled; use Cloudinary");
 	},
 });
 
@@ -321,8 +318,6 @@ export const getUserHistory = query({
 				let imageUrl: string | null = null;
 				if (item?.imageCloudinary?.[0]) {
 					imageUrl = item.imageCloudinary[0].secureUrl;
-				} else if (item?.imageStorageIds?.[0]) {
-					imageUrl = await ctx.storage.getUrl(item.imageStorageIds[0]);
 				}
 				return {
 					claimId: claim._id,
@@ -344,8 +339,6 @@ export const getUserHistory = query({
 				let imageUrl: string | null = null;
 				if (item?.imageCloudinary?.[0]) {
 					imageUrl = item.imageCloudinary[0].secureUrl;
-				} else if (item?.imageStorageIds?.[0]) {
-					imageUrl = await ctx.storage.getUrl(item.imageStorageIds[0]);
 				}
 				return {
 					claimId: claim._id,

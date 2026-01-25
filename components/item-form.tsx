@@ -27,6 +27,7 @@ import {
 	Map,
 	ListChecks,
 } from "lucide-react";
+import { CloudinaryImage } from "@/components/cloudinary-image";
 import {
 	LocationPickerDialog,
 	type LocationPickerValue,
@@ -145,7 +146,10 @@ export function ItemForm({
 	const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
 
 	const [existingImages, setExistingImages] = useState<MediaImage[]>(
-		initialValues?.images ?? [],
+		(initialValues?.images ?? []).filter(
+			(img): img is Extract<MediaImage, { source: "cloudinary" }> =>
+				img.source === "cloudinary",
+		),
 	);
 
 	const [files, setFiles] = useState<File[]>([]);
@@ -255,20 +259,11 @@ export function ItemForm({
 				newCloudinary.push(result);
 			}
 
-			// 2. Keep existing images, split by storage vs Cloudinary
-			const existingStorageIds = existingImages
-				.filter(
-					(img): img is Extract<MediaImage, { source: "storage" }> =>
-						img.source === "storage",
-				)
-				.map((img) => img.storageId);
-
-			const existingCloudinary = existingImages
-				.filter(
-					(img): img is Extract<MediaImage, { source: "cloudinary" }> =>
-						img.source === "cloudinary",
-				)
-				.map((img) => ({ publicId: img.publicId, secureUrl: img.url }));
+			// 2. Keep existing Cloudinary images
+			const existingCloudinary = existingImages.map((img) => ({
+				publicId: img.publicId,
+				secureUrl: img.url,
+			}));
 
 			const finalCloudinary = [...existingCloudinary, ...newCloudinary];
 
@@ -280,8 +275,6 @@ export function ItemForm({
 			await onSubmit({
 				name,
 				description,
-				imageStorageIds:
-					existingStorageIds.length > 0 ? existingStorageIds : undefined,
 				imageCloudinary:
 					finalCloudinary.length > 0 ? finalCloudinary : undefined,
 				category,
@@ -516,11 +509,15 @@ export function ItemForm({
 					<div className="grid grid-cols-5 gap-2 mb-2">
 						{existingImages.map((img) => (
 							<div key={imageKey(img)} className="relative group aspect-square">
-								<img
-									src={img.url}
-									alt="Item"
-									className="w-full h-full object-cover rounded-md border"
-								/>
+								<div className="relative w-full h-full">
+									<CloudinaryImage
+										src={img.url}
+										alt="Item"
+										fill
+										sizes="96px"
+										className="rounded-md border object-cover"
+									/>
+								</div>
 								<button
 									type="button"
 									onClick={() =>

@@ -18,35 +18,21 @@ async function resolveImages(args: {
 	imageCloudinary?: { publicId: string; secureUrl: string }[];
 	imageStorageIds?: Id<"_storage">[];
 }): Promise<{ images: MediaImage[]; imageUrls: string[] }> {
-	const cloud = (args.imageCloudinary ?? []).map((img) => ({
-		source: "cloudinary" as const,
-		publicId: img.publicId,
-		url: img.secureUrl,
-	}));
-
-	const storageIds = args.imageStorageIds ?? [];
-	if (storageIds.length === 0) {
-		return { images: cloud, imageUrls: cloud.map((i) => i.url) };
-	}
-
-	const storageUrls = await Promise.all(
-		storageIds.map((id) => args.ctx.storage.getUrl(id)),
-	);
-	const storage = storageIds
-		.map((storageId, idx) => {
-			const url = storageUrls[idx];
-			if (!url) return null;
-			return { source: "storage" as const, storageId, url };
-		})
+	const cloud = (args.imageCloudinary ?? [])
 		.filter(
-			(
-				img,
-			): img is { source: "storage"; storageId: Id<"_storage">; url: string } =>
-				img !== null,
-		);
+			(img) =>
+				img.secureUrl.includes("res.cloudinary.com") &&
+				img.secureUrl.includes("/image/upload/"),
+		)
+		.map((img) => ({
+			source: "cloudinary" as const,
+			publicId: img.publicId,
+			url: img.secureUrl,
+		}));
 
-	const images = [...cloud, ...storage];
-	return { images, imageUrls: images.map((i) => i.url) };
+	// Cloudinary-only: Convex Storage images are intentionally ignored to avoid
+	// ever returning large raw Convex image URLs to the client.
+	return { images: cloud, imageUrls: cloud.map((i) => i.url) };
 }
 
 function assertValidLeaseDaysLimits(args: {
@@ -495,6 +481,10 @@ export const create = mutation({
 		}
 		const ownerId = identity.subject;
 
+		if ((args.imageStorageIds?.length ?? 0) > 0) {
+			throw new Error("Convex storage images are disabled; use Cloudinary");
+		}
+
 		assertValidLeaseDaysLimits({
 			giveaway: Boolean(args.giveaway),
 			minLeaseDays: args.minLeaseDays,
@@ -508,7 +498,7 @@ export const create = mutation({
 			giveaway: args.giveaway,
 			minLeaseDays: args.minLeaseDays,
 			maxLeaseDays: args.maxLeaseDays,
-			imageStorageIds: args.imageStorageIds,
+			imageStorageIds: undefined,
 			imageCloudinary: args.imageCloudinary,
 			category: args.category,
 			location: args.location,
@@ -541,6 +531,13 @@ export const update = mutation({
 			throw new Error("Unauthenticated call to mutation");
 		}
 		const { id, ...fields } = args;
+
+		if ((fields.imageStorageIds?.length ?? 0) > 0) {
+			throw new Error("Convex storage images are disabled; use Cloudinary");
+		}
+		if ("imageStorageIds" in fields) {
+			fields.imageStorageIds = undefined;
+		}
 
 		const item = await ctx.db.get(id);
 		if (!item) {
@@ -1014,13 +1011,7 @@ export const getLeaseActivity = query({
 
 		const eventsWithPhotos = await Promise.all(
 			events.map(async (event) => {
-				const cloudUrls = (event.photoCloudinary ?? []).map((p) => p.secureUrl);
-				const ids = event.photoStorageIds ?? [];
-				const urls = await Promise.all(ids.map((id) => ctx.storage.getUrl(id)));
-				const storageUrls = urls.filter(
-					(u): u is string => typeof u === "string",
-				);
-				const photoUrls = [...cloudUrls, ...storageUrls];
+				const photoUrls = (event.photoCloudinary ?? []).map((p) => p.secureUrl);
 				return { ...event, photoUrls };
 			}),
 		);
@@ -1409,6 +1400,10 @@ export const markPickedUp = mutation({
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
 
+		if ((args.photoStorageIds?.length ?? 0) > 0) {
+			throw new Error("Convex storage photos are disabled; use Cloudinary");
+		}
+
 		const createdAt = Date.now();
 		const claim = await ctx.db.get(args.claimId);
 		if (!claim) throw new Error("Claim not found");
@@ -1489,7 +1484,7 @@ export const markPickedUp = mutation({
 			actorId: userId,
 			createdAt,
 			note: args.note,
-			photoStorageIds: args.photoStorageIds,
+			photoStorageIds: undefined,
 			photoCloudinary: args.photoCloudinary,
 			proposalId: latestProposal.proposalId,
 			windowStartAt: latestProposal.windowStartAt,
@@ -1506,7 +1501,7 @@ export const markPickedUp = mutation({
 				actorId: userId,
 				createdAt,
 				note: args.note,
-				photoStorageIds: args.photoStorageIds,
+				photoStorageIds: undefined,
 				photoCloudinary: args.photoCloudinary,
 				proposalId: latestProposal.proposalId,
 				windowStartAt: latestProposal.windowStartAt,
@@ -1543,6 +1538,10 @@ export const markReturned = mutation({
 	handler: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
+
+		if ((args.photoStorageIds?.length ?? 0) > 0) {
+			throw new Error("Convex storage photos are disabled; use Cloudinary");
+		}
 
 		const createdAt = Date.now();
 		const claim = await ctx.db.get(args.claimId);
@@ -1635,7 +1634,7 @@ export const markReturned = mutation({
 			actorId: userId,
 			createdAt,
 			note: args.note,
-			photoStorageIds: args.photoStorageIds,
+			photoStorageIds: undefined,
 			photoCloudinary: args.photoCloudinary,
 			proposalId: latestProposal.proposalId,
 			windowStartAt: latestProposal.windowStartAt,
@@ -2033,7 +2032,9 @@ export const resolveOverdueProposals = internalMutation({
 });
 
 export const generateUploadUrl = mutation(async (ctx) => {
-	return await ctx.storage.generateUploadUrl();
+	const identity = await ctx.auth.getUserIdentity();
+	if (!identity) throw new Error("Unauthenticated");
+	throw new Error("Convex storage uploads are disabled; use Cloudinary");
 });
 
 // Internal mutation for seed script (no auth required)

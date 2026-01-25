@@ -45,13 +45,6 @@ export const list = query({
 					})),
 				];
 
-				for (const storageId of wishlistItem.imageStorageIds ?? []) {
-					const url = await ctx.storage.getUrl(storageId);
-					if (url) {
-						images.push({ source: "storage", storageId, url });
-					}
-				}
-
 				return {
 					...wishlistItem,
 					matchCount,
@@ -76,12 +69,16 @@ export const create = mutation({
 		const identity = await ctx.auth.getUserIdentity();
 		if (!identity) throw new Error("Unauthenticated");
 
+		if ((args.imageStorageIds?.length ?? 0) > 0) {
+			throw new Error("Convex storage images are disabled; use Cloudinary");
+		}
+
 		await ctx.db.insert("wishlist", {
 			text: args.text,
 			userId: identity.subject,
 			votes: [],
 			createdAt: Date.now(),
-			imageStorageIds: args.imageStorageIds,
+			imageStorageIds: undefined,
 			imageCloudinary: args.imageCloudinary,
 		});
 	},
@@ -121,9 +118,13 @@ export const update = mutation({
 		if (!item) throw new Error("Item not found");
 		if (item.userId !== identity.subject) throw new Error("Not authorized");
 
+		if ((args.imageStorageIds?.length ?? 0) > 0) {
+			throw new Error("Convex storage images are disabled; use Cloudinary");
+		}
+
 		await ctx.db.patch(args.id, {
 			text: args.text,
-			imageStorageIds: args.imageStorageIds,
+			imageStorageIds: undefined,
 			imageCloudinary: args.imageCloudinary,
 		});
 	},

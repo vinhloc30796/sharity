@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 import { Doc } from "../convex/_generated/dataModel";
 import { CATEGORY_LABELS, type ItemCategory } from "./item-form";
 import { createMarkerIcon } from "./item-marker";
+import {
+	CloudinaryImage,
+	isCloudinaryImageUrl,
+} from "@/components/cloudinary-image";
 
 // Da Lat coordinates
 const DEFAULT_CENTER: [number, number] = [11.9404, 108.4583];
@@ -145,13 +149,19 @@ export function ItemsMap({ items, onItemClick }: ItemsMapProps) {
 						>
 							<Popup>
 								<div className="min-w-[150px]">
-									{item.imageUrls && item.imageUrls[0] && (
-										<img
-											src={item.imageUrls[0]}
-											alt={item.name}
-											className="w-full h-20 object-cover rounded mb-2"
-										/>
-									)}
+									{item.imageUrls &&
+										item.imageUrls[0] &&
+										isCloudinaryImageUrl(item.imageUrls[0]) && (
+											<div className="relative w-full h-20 rounded mb-2 overflow-hidden bg-gray-100">
+												<CloudinaryImage
+													src={item.imageUrls[0]}
+													alt={item.name}
+													fill
+													sizes="200px"
+													className="object-cover"
+												/>
+											</div>
+										)}
 									<Link
 										href={`/item/${item._id}`}
 										className="font-semibold text-sm hover:underline"
