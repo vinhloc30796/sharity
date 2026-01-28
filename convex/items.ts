@@ -2238,3 +2238,83 @@ export const updateLocationWard = internalMutation({
 		});
 	},
 });
+
+/**
+ * Get items currently borrowed by the authenticated user.
+ * Returns items where the user has an approved claim that has been picked up
+ * but not yet returned/transferred/expired/marked as missing.
+ */
+export const getMyBorrowedItems = query({
+	args: {},
+	handler: async (ctx) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			return [];
+		}
+
+		// Get approved claims by the user
+		const myClaims = await ctx.db
+			.query("claims")
+			.withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
+			.filter((q) => q.eq(q.field("status"), "approved"))
+			.collect();
+
+		// Filter to active borrowed items (picked up but not closed)
+		const activeBorrowedClaims = myClaims.filter(
+			(c) =>
+				!!c.pickedUpAt &&
+				!c.returnedAt &&
+				!c.transferredAt &&
+				!c.expiredAt &&
+				!c.missingAt,
+		);
+
+		// Build result with item details, claim info, and owner info
+		const result = await Promise.all(
+			activeBorrowedClaims.map(async (claim) => {
+				const item = await ctx.db.get(claim.itemId);
+				if (!item) return null;
+
+				// Get owner profile
+				const ownerProfile = await ctx.db
+					.query("users")
+					.withIndex("by_clerk_id", (q) => q.eq("clerkId", item.ownerId))
+					.first();
+
+				let ownerAvatarUrl: string | null = null;
+				if (ownerProfile?.avatarCloudinary) {
+					ownerAvatarUrl = ownerProfile.avatarCloudinary.secureUrl;
+				}
+
+				// Resolve item images
+				const { images, imageUrls } = await resolveImages({
+					ctx,
+					imageCloudinary: item.imageCloudinary,
+					imageStorageIds: item.imageStorageIds,
+				});
+
+				return {
+					...item,
+					images,
+					imageUrls,
+					claim: {
+						_id: claim._id,
+						startDate: claim.startDate,
+						endDate: claim.endDate,
+						pickedUpAt: claim.pickedUpAt,
+					},
+					owner: {
+						id: item.ownerId,
+						name: ownerProfile?.name || null,
+						avatarUrl: ownerAvatarUrl,
+					},
+				};
+			}),
+		);
+
+		// Filter out any nulls and return
+		return result.filter(
+			(item): item is NonNullable<typeof item> => item !== null,
+		);
+	},
+});
