@@ -111,10 +111,25 @@ function assertOnDay(
 	referenceAt: number,
 	label: string,
 ): void {
-	const dayStart = new Date(referenceAt);
-	dayStart.setHours(0, 0, 0, 0);
-	const dayStartAt = dayStart.getTime();
-	if (windowStartAt < dayStartAt || windowStartAt >= dayStartAt + ONE_DAY_MS) {
+	// Compare UTC day components directly, allowing ±1 day tolerance
+	// to handle timezone differences when claim.startDate was stored as local midnight
+	const refDate = new Date(referenceAt);
+	const refYear = refDate.getUTCFullYear();
+	const refMonth = refDate.getUTCMonth();
+	const refDay = refDate.getUTCDate();
+
+	const windowDate = new Date(windowStartAt);
+	const windowYear = windowDate.getUTCFullYear();
+	const windowMonth = windowDate.getUTCMonth();
+	const windowDay = windowDate.getUTCDate();
+
+	// Check if same year/month/day, or adjacent day (to handle timezone differences)
+	const sameDay =
+		windowYear === refYear &&
+		windowMonth === refMonth &&
+		Math.abs(windowDay - refDay) <= 1;
+
+	if (!sameDay) {
 		throw new Error(`Time must be on the ${label} day`);
 	}
 }
@@ -262,10 +277,7 @@ export const get = query({
 					if (c.status === "pending") return true;
 					if (c.status === "approved") {
 						return (
-							!c.returnedAt &&
-							!c.transferredAt &&
-							!c.expiredAt &&
-							!c.missingAt
+							!c.returnedAt && !c.transferredAt && !c.expiredAt && !c.missingAt
 						);
 					}
 					return false;
