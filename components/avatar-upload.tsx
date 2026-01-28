@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { toCloudinaryRef, type CloudinaryRef } from "@/lib/cloudinary-ref";
 import { CloudinaryImage } from "@/components/cloudinary-image";
+import { MAX_IMAGE_SIZE_BYTES } from "@/lib/image-constants";
 
 interface AvatarUploadProps {
 	currentUrl?: string | null;
@@ -47,9 +48,10 @@ export function AvatarUpload({
 			return;
 		}
 
-		// Validate file size (max 5MB)
-		if (file.size > 5 * 1024 * 1024) {
-			toast.error("Image must be less than 5MB");
+		// Validate file size against global image limit
+		if (file.size > MAX_IMAGE_SIZE_BYTES) {
+			const maxMb = Math.round(MAX_IMAGE_SIZE_BYTES / (1024 * 1024));
+			toast.error(`Image is too large (max ${maxMb} MB)`);
 			return;
 		}
 

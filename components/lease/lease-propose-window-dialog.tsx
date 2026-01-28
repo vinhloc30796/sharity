@@ -102,9 +102,16 @@ export function LeaseProposeWindowDialog(props: LeaseProposeWindowDialogProps) {
 	const windowLabel = useMemo(() => formatHourWindowLabel(hour), [hour]);
 
 	const windowStartAt = useMemo(() => {
+		// Use local date components to match what the user sees on the calendar
+		// This ensures "today" at hour 23 creates a timestamp for today 23:00 local,
+		// not yesterday 23:00 UTC
 		const d = new Date(fixedDate);
-		d.setHours(hour, 0, 0, 0);
-		return d.getTime();
+		const year = d.getFullYear();
+		const month = d.getMonth();
+		const day = d.getDate();
+		// Create a date in local timezone with the selected hour, then get timestamp
+		const localDate = new Date(year, month, day, hour, 0, 0, 0);
+		return localDate.getTime();
 	}, [fixedDate, hour]);
 
 	return (

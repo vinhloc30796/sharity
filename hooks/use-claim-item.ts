@@ -95,12 +95,6 @@ export function useClaimItem(itemId: Id<"items">) {
 			return;
 		}
 
-		const now = Date.now();
-		if (isSameLocalDay(startAt, endAt) && startAt < now) {
-			toast.error("Start time must be in the future");
-			return;
-		}
-
 		const todayStart = new Date();
 		todayStart.setHours(0, 0, 0, 0);
 		if (startAt < todayStart.getTime()) {

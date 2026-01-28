@@ -1,14 +1,15 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { ArrowLeft, MapPin } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { use, useRef, useState } from "react";
+import { ArrowLeft, MapPin, Star } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { use, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ItemActivityTimeline } from "@/components/item-activity-timeline";
 import { BorrowerRequestPanel } from "@/components/lease/borrower-request-panel";
 import { LeaseClaimCard } from "@/components/lease/lease-claim-card";
 import { CATEGORY_LABELS, ItemForm } from "@/components/item-form";
+import { RatingForm } from "@/components/rating-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	AlertDialog,
@@ -21,6 +22,12 @@ import {
 	AlertDialogTitle,
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,9 +55,11 @@ export default function ItemDetailPage({
 }) {
 	const { id } = use(params);
 	const router = useRouter();
+	const searchParams = useSearchParams();
 
 	const item = useQuery(api.items.getById, { id });
 	const activity = useQuery(api.items.getItemActivity, { itemId: id });
+	const pendingRatings = useQuery(api.ratings.getMyPendingRatings);
 
 	// Mutations for Owner
 	const updateItem = useMutation(api.items.update);
@@ -66,6 +75,11 @@ export default function ItemDetailPage({
 	// UI State
 	const [isEditing, setIsEditing] = useState(false);
 	const [showInactive, setShowInactive] = useState(false);
+	const [selectedRatingClaim, setSelectedRatingClaim] = useState<{
+		claimId: Id<"claims">;
+		targetRole: "lender" | "borrower";
+		itemName: string;
+	} | null>(null);
 	const claimCardRefs = useRef<Map<Id<"claims">, HTMLDivElement>>(new Map());
 
 	const focusClaimCard = (claimId: Id<"claims">) => {
@@ -74,6 +88,35 @@ export default function ItemDetailPage({
 		el.scrollIntoView({ block: "nearest", behavior: "smooth" });
 		el.focus();
 	};
+
+	// Auto-open rating dialog if rateClaimId is in URL params
+	useEffect(() => {
+		const rateClaimId = searchParams.get("rateClaimId");
+		const targetRoleParam = searchParams.get("targetRole");
+		const targetRole: "lender" | "borrower" | null =
+			targetRoleParam === "lender" || targetRoleParam === "borrower"
+				? targetRoleParam
+				: null;
+
+		if (rateClaimId && targetRole && pendingRatings && item) {
+			const pendingRating = pendingRatings.find(
+				(p) => p.claimId === rateClaimId && p.targetRole === targetRole,
+			);
+
+			if (pendingRating && !selectedRatingClaim) {
+				setSelectedRatingClaim({
+					claimId: rateClaimId as Id<"claims">,
+					targetRole,
+					itemName: pendingRating.itemName,
+				});
+				// Clean up URL params
+				const newUrl = new URL(window.location.href);
+				newUrl.searchParams.delete("rateClaimId");
+				newUrl.searchParams.delete("targetRole");
+				router.replace(newUrl.pathname + newUrl.search, { scroll: false });
+			}
+		}
+	}, [searchParams, pendingRatings, item, selectedRatingClaim, router]);
 
 	const ownerRequests = ((item?.requests ?? []) as Doc<"claims">[]) ?? [];
 	const ownerCalendarState = useItemCalendar({
@@ -135,6 +178,89 @@ export default function ItemDetailPage({
 	}
 
 	const imageUrls = (item.imageUrls ?? []).filter(isCloudinaryImageUrl);
+
+	const pendingRatingsForItem =
+		pendingRatings?.filter((pending) => pending.itemId === id) ?? [];
+
+	const getRatingPrompt = (
+		isGiveaway: boolean,
+		targetRole: "lender" | "borrower",
+		targetUserName: string | null,
+	): string => {
+		if (isGiveaway) {
+			if (targetUserName) {
+				return targetRole === "lender"
+					? `Share your experience receiving this item from ${targetUserName}`
+					: `Share your experience giving this item to ${targetUserName}`;
+			}
+			return targetRole === "lender"
+				? "Share your experience receiving this item"
+				: "Share your experience giving this item";
+		}
+		if (targetUserName) {
+			return targetRole === "lender"
+				? `Share your experience borrowing from ${targetUserName}`
+				: `Share your experience lending to ${targetUserName}`;
+		}
+		return targetRole === "lender"
+			? "Share your experience borrowing this item"
+			: "Share your experience lending this item";
+	};
+
+	const rateTransactionSection =
+		pendingRatingsForItem.length > 0 && !selectedRatingClaim ? (
+			<Card className="border-yellow-200 bg-yellow-50/60">
+				<CardContent className="py-3 px-4 space-y-3">
+					<div className="flex items-center gap-2">
+						<Star className="h-4 w-4 text-yellow-500" />
+						<p className="text-sm font-medium">
+							Rate{" "}
+							{pendingRatingsForItem.length > 1
+								? "transactions"
+								: "transaction"}
+						</p>
+					</div>
+					<div className="space-y-2">
+						{pendingRatingsForItem.map((pending) => {
+							const targetName =
+								pending.targetUserName ||
+								(pending.targetRole === "lender" ? "lender" : "borrower");
+							const ratingPrompt = getRatingPrompt(
+								item.giveaway ?? false,
+								pending.targetRole,
+								pending.targetUserName,
+							);
+							return (
+								<div
+									key={pending.claimId}
+									className="flex items-center justify-between gap-3 p-2 bg-white rounded-md border"
+								>
+									<div className="min-w-0">
+										<p className="text-xs font-medium">Review transaction</p>
+										<p className="text-xs text-muted-foreground">
+											{ratingPrompt}
+										</p>
+									</div>
+									<Button
+										size="sm"
+										variant="outline"
+										onClick={() =>
+											setSelectedRatingClaim({
+												claimId: pending.claimId as Id<"claims">,
+												targetRole: pending.targetRole,
+												itemName: pending.itemName,
+											})
+										}
+									>
+										Rate
+									</Button>
+								</div>
+							);
+						})}
+					</div>
+				</CardContent>
+			</Card>
+		) : null;
 
 	const ownerCalendar = item.isOwner ? (
 		<div className="bg-white border rounded-lg p-4 w-full">
@@ -317,12 +443,34 @@ export default function ItemDetailPage({
 	);
 
 	const leftColumn = (
-		<div className="space-y-6">
-			{viewSection}
-			{!isEditing ? ownerItemActions : null}
-			{editSection}
-			{isEditing ? ownerItemActions : null}
-		</div>
+		<>
+			<div className="space-y-6">
+				{viewSection}
+				{rateTransactionSection}
+				{!isEditing ? ownerItemActions : null}
+				{editSection}
+				{isEditing ? ownerItemActions : null}
+			</div>
+			<Dialog
+				open={selectedRatingClaim !== null}
+				onOpenChange={() => setSelectedRatingClaim(null)}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Leave a Rating</DialogTitle>
+					</DialogHeader>
+					{selectedRatingClaim && (
+						<RatingForm
+							claimId={selectedRatingClaim.claimId}
+							targetRole={selectedRatingClaim.targetRole}
+							itemName={selectedRatingClaim.itemName}
+							onSuccess={() => setSelectedRatingClaim(null)}
+							onCancel={() => setSelectedRatingClaim(null)}
+						/>
+					)}
+				</DialogContent>
+			</Dialog>
+		</>
 	);
 
 	const ownerActionsSection = (

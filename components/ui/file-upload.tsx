@@ -557,7 +557,7 @@ function FileUpload(props: FileUploadProps) {
 				}
 
 				if (maxSize && file.size > maxSize) {
-					rejectionMessage = "File too large";
+					rejectionMessage = `File too large (max ${formatBytes(maxSize)})`;
 					propsRef.current.onFileReject?.(file, rejectionMessage);
 					rejected = true;
 					invalid = true;

@@ -339,7 +339,16 @@ function LoanBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 							onBusyChange={setIsIntradayBusy}
 							onConfirm={async (startAt, endAt) => {
 								const now = Date.now();
-								if (startAt < now) {
+								const HOUR_MS = 60 * 60 * 1000;
+								const currentHourStart = Math.floor(now / HOUR_MS) * HOUR_MS;
+								// Mirror backend: intraday window is valid as long as
+								// it hasn't fully passed yet (end must be in the future)
+								// and the start hour is not earlier than the current hour.
+								if (endAt <= now) {
+									toast.error("Start time must be in the future");
+									throw new Error("Start time must be in the future");
+								}
+								if (startAt < currentHourStart) {
 									toast.error("Start time must be in the future");
 									throw new Error("Start time must be in the future");
 								}

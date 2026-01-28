@@ -28,6 +28,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
 import { toCloudinaryRef, type CloudinaryRef } from "@/lib/cloudinary-ref";
+import { toast } from "sonner";
+import { MAX_IMAGE_SIZE_BYTES } from "@/lib/image-constants";
 
 import type { MutationResult } from "./lease-claim-types";
 
@@ -152,6 +154,10 @@ export function LeaseActionDialog(props: LeaseActionDialogProps) {
 								value={files}
 								onValueChange={setFiles}
 								multiple
+								maxSize={MAX_IMAGE_SIZE_BYTES}
+								onFileReject={(file, message) => {
+									toast.error(`${message} (${file.name})`);
+								}}
 							>
 								<FileUploadDropzone className="h-32 bg-gray-50/50 border-dashed transition-colors hover:bg-gray-50/80 hover:border-primary/20">
 									<div className="flex flex-col items-center gap-2 text-muted-foreground text-sm">

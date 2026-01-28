@@ -36,9 +36,12 @@ import type { MediaImage } from "./item-form";
 
 // Badge not available, using span
 
-function formatActor(actorId: string): string {
-	if (actorId.length <= 16) return actorId;
-	return `${actorId.slice(0, 8)}…${actorId.slice(-6)}`;
+function UserName({ userId }: { userId: string }) {
+	const userInfo = useQuery(api.users.getBasicInfo, { userId });
+	if (userInfo === undefined) {
+		return <span className="animate-pulse">...</span>;
+	}
+	return <span>{userInfo.name || "Anonymous"}</span>;
 }
 
 function FlipToBackButton(props: { label: string }) {
@@ -189,7 +192,7 @@ export function MyItemCard({
 				{labelForOwnerStatus(status)}
 				{activeApprovedClaim ? (
 					<span className="ml-2 hidden sm:inline text-xs text-muted-foreground">
-						to {formatActor(activeApprovedClaim.claimerId)} (
+						by <UserName userId={activeApprovedClaim.claimerId} /> (
 						{format(activeApprovedClaim.startDate, "MMM d")} -{" "}
 						{format(activeApprovedClaim.endDate, "MMM d")})
 					</span>
@@ -307,7 +310,7 @@ export function MyItemCard({
 			<div className="space-y-3">
 				{!isOwner ? (
 					<div className="text-xs text-muted-foreground">
-						Received from {formatActor(item.ownerId)}
+						Received from <UserName userId={item.ownerId} />
 					</div>
 				) : null}
 
