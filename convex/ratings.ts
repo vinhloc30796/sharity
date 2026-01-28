@@ -43,6 +43,25 @@ export const canRate = query({
 			return { canRate: false, reason: "You are not part of this transaction" };
 		}
 
+		// Only allow rating after transaction is completed
+		// For loan items: must be returned
+		// For giveaway items: must be transferred
+		if (item.giveaway) {
+			if (!claim.transferredAt) {
+				return {
+					canRate: false,
+					reason: "Transaction not completed yet (item not transferred)",
+				};
+			}
+		} else {
+			if (!claim.returnedAt) {
+				return {
+					canRate: false,
+					reason: "Transaction not completed yet (item not returned)",
+				};
+			}
+		}
+
 		// Check if already rated
 		const existingRating = await ctx.db
 			.query("ratings")
@@ -333,6 +352,7 @@ export const getMyPendingRatings = query({
 				targetUserName,
 				startDate: claim.startDate,
 				endDate: claim.endDate,
+				isGiveaway: item.giveaway ?? false,
 			});
 		}
 

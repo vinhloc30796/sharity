@@ -55,7 +55,6 @@ export function NotificationFeed() {
 	) => {
 		const { itemId } = context;
 
-		// For rating_received notifications, navigate to profile/ratings page
 		if (n.type === "rating_received") {
 			router.push("/profile");
 			if (!n.isRead) {
@@ -64,8 +63,6 @@ export function NotificationFeed() {
 			return;
 		}
 
-		// For any notification related to an item/request, navigate to the
-		// item detail / request page so the user can review context.
 		navigateToItem(itemId);
 
 		if (!n.isRead) {
@@ -178,7 +175,6 @@ export function NotificationFeed() {
 				const isApproved = n.claim?.status === "approved";
 				const isRejected = n.claim?.status === "rejected";
 
-				// If already handled, show status instead of buttons
 				if (!isPending && (isApproved || isRejected)) {
 					return (
 						<span
@@ -244,7 +240,6 @@ export function NotificationFeed() {
 			}
 
 			if (n.type === "pickup_proposed") {
-				// Check if action is still valid
 				const canApprove =
 					claimId &&
 					isClaimApproved &&
@@ -309,7 +304,6 @@ export function NotificationFeed() {
 					);
 				}
 
-				// Check if action is still valid
 				const canApprove =
 					claimId &&
 					isClaimApproved &&
@@ -361,7 +355,6 @@ export function NotificationFeed() {
 			}
 
 			if (n.type === "pickup_approved") {
-				// Check if action is still valid
 				const canConfirm =
 					claimId &&
 					isClaimApproved &&
@@ -500,33 +493,25 @@ export function NotificationFeed() {
 			}
 
 			if (n.type === "rate_transaction") {
-				// Check if there's actually a pending rating for this claim
-				const hasPendingRating = pendingRatings?.some(
-					(pending) => pending.claimId === claimId,
-				);
-
-				if (!hasPendingRating) {
-					return (
-						<span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-500">
-							Already rated
-						</span>
-					);
+				if (pendingRatings === undefined) {
+					return null;
 				}
 
-				const pendingRating = pendingRatings?.find(
+				const pendingRating = pendingRatings.find(
 					(pending) => pending.claimId === claimId,
 				);
+
+				if (!pendingRating) {
+					return null;
+				}
 
 				return (
 					<Button
 						size="sm"
 						className="h-7"
-						disabled={!hasPendingRating}
 						onClick={(e) => {
 							e.preventDefault();
 							e.stopPropagation();
-							if (!hasPendingRating || !pendingRating) return;
-							// Navigate to item page with claimId in URL to auto-open rating dialog
 							router.push(
 								`/item/${itemId}?rateClaimId=${claimId}&targetRole=${pendingRating.targetRole}`,
 							);

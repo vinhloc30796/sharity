@@ -182,6 +182,31 @@ export default function ItemDetailPage({
 	const pendingRatingsForItem =
 		pendingRatings?.filter((pending) => pending.itemId === id) ?? [];
 
+	const getRatingPrompt = (
+		isGiveaway: boolean,
+		targetRole: "lender" | "borrower",
+		targetUserName: string | null,
+	): string => {
+		if (isGiveaway) {
+			if (targetUserName) {
+				return targetRole === "lender"
+					? `Share your experience receiving this item from ${targetUserName}`
+					: `Share your experience giving this item to ${targetUserName}`;
+			}
+			return targetRole === "lender"
+				? "Share your experience receiving this item"
+				: "Share your experience giving this item";
+		}
+		if (targetUserName) {
+			return targetRole === "lender"
+				? `Share your experience borrowing from ${targetUserName}`
+				: `Share your experience lending to ${targetUserName}`;
+		}
+		return targetRole === "lender"
+			? "Share your experience borrowing this item"
+			: "Share your experience lending this item";
+	};
+
 	const rateTransactionSection =
 		pendingRatingsForItem.length > 0 && !selectedRatingClaim ? (
 			<Card className="border-yellow-200 bg-yellow-50/60">
@@ -200,6 +225,11 @@ export default function ItemDetailPage({
 							const targetName =
 								pending.targetUserName ||
 								(pending.targetRole === "lender" ? "lender" : "borrower");
+							const ratingPrompt = getRatingPrompt(
+								item.giveaway ?? false,
+								pending.targetRole,
+								pending.targetUserName,
+							);
 							return (
 								<div
 									key={pending.claimId}
@@ -208,11 +238,7 @@ export default function ItemDetailPage({
 									<div className="min-w-0">
 										<p className="text-xs font-medium">Review transaction</p>
 										<p className="text-xs text-muted-foreground">
-											{pending.targetUserName
-												? `Share your experience${pending.targetRole === "lender" ? " borrowing from" : " lending to"} ${pending.targetUserName}`
-												: pending.targetRole === "lender"
-													? "Share your experience borrowing this item"
-													: "Share your experience lending this item"}
+											{ratingPrompt}
 										</p>
 									</div>
 									<Button
