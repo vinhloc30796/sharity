@@ -256,7 +256,22 @@ export const get = query({
 			.withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
 			.collect();
 
-		const myClaimedItemIds = new Set(myClaims.map((c) => c.itemId));
+		const myClaimedItemIds = new Set(
+			myClaims
+				.filter((c) => {
+					if (c.status === "pending") return true;
+					if (c.status === "approved") {
+						return (
+							!c.returnedAt &&
+							!c.transferredAt &&
+							!c.expiredAt &&
+							!c.missingAt
+						);
+					}
+					return false;
+				})
+				.map((c) => c.itemId),
+		);
 
 		const itemsWithUrls = await Promise.all(
 			items
