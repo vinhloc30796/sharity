@@ -218,19 +218,30 @@ export function LeaseClaimCard(props: {
 		if (eventTimes.expiredAt) return "expired";
 		if (eventTimes.pickedUpAt) return "picked_up";
 		if (eventTimes.approvedAt) return "approved";
-		// Check if pending request has a start date before today (local time).
+		// Check if pending request has a start date before today.
+		// Uses UTC day components with ±1 day tolerance to match backend logic
+		// and handle timezone differences when claim.startDate was stored as local midnight.
 		// Requests that start earlier *today* should still be approvable.
 		if (claim.status === "pending") {
-			const now = new Date();
-			const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-			const start = new Date(claim.startDate);
-			const startDay = new Date(
-				start.getFullYear(),
-				start.getMonth(),
-				start.getDate(),
-			);
+			const now = Date.now();
+			const nowDate = new Date(now);
+			const nowYear = nowDate.getUTCFullYear();
+			const nowMonth = nowDate.getUTCMonth();
+			const nowDay = nowDate.getUTCDate();
 
-			if (startDay < today) {
+			const startDate = new Date(claim.startDate);
+			const startYear = startDate.getUTCFullYear();
+			const startMonth = startDate.getUTCMonth();
+			const startDay = startDate.getUTCDate();
+
+			// Check if start date is before today (allowing ±1 day tolerance for timezone differences)
+			const isBeforeToday =
+				startYear < nowYear ||
+				(startYear === nowYear &&
+					(startMonth < nowMonth ||
+						(startMonth === nowMonth && startDay < nowDay - 1)));
+
+			if (isBeforeToday) {
 				return "past_due";
 			}
 		}
