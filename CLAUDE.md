@@ -334,6 +334,24 @@ style(items): relayout the item detail page
 docs(todos): check off location
 ```
 
+### Git Workflow
+
+**IMPORTANT: Check formatting after committing!**
+
+The project uses Biome formatter with a pre-commit hook. After committing:
+1. Formatter automatically runs and may modify files
+2. Check `git status` — if there are changes, add them and run `git commit --amend --no-edit`
+3. Repeat until `git status` shows "working tree clean"
+
+```bash
+# After committing
+git status
+# If there are changes from formatter:
+git add <modified_files>
+git commit --amend --no-edit
+# Repeat until working tree clean
+```
+
 ---
 
 ## MVP Features
