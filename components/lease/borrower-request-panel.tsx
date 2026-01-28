@@ -264,6 +264,18 @@ export function BorrowerRequestActions() {
 	const markReturned = useMutation(api.items.markReturned);
 	const [showInactive, setShowInactive] = React.useState(false);
 
+	const hasActiveBorrow = React.useMemo(() => {
+		return (myRequests ?? []).some(
+			(req) =>
+				req.status === "approved" &&
+				req.pickedUpAt &&
+				!req.returnedAt &&
+				!req.transferredAt &&
+				!req.expiredAt &&
+				!req.missingAt,
+		);
+	}, [myRequests]);
+
 	return (
 		<>
 			<div className="flex flex-col gap-3">
@@ -287,7 +299,7 @@ export function BorrowerRequestActions() {
 							"Request to Borrow"
 						)}
 					</Button>
-					<AvailabilityToggle id={item._id} />
+					{!hasActiveBorrow && <AvailabilityToggle id={item._id} />}
 				</div>
 				{!isAuthenticated && (
 					<span className="text-sm text-muted-foreground">
@@ -414,6 +426,18 @@ export function GiveawayBorrowerRequestPanel({
 	const [pickupDay, setPickupDay] = React.useState<Date | undefined>(undefined);
 	const [showInactive, setShowInactive] = React.useState(false);
 
+	const hasActiveBorrow = React.useMemo(() => {
+		return (myRequests ?? []).some(
+			(req) =>
+				req.status === "approved" &&
+				req.pickedUpAt &&
+				!req.returnedAt &&
+				!req.transferredAt &&
+				!req.expiredAt &&
+				!req.missingAt,
+		);
+	}, [myRequests]);
+
 	const disabledDayRanges = React.useMemo(() => {
 		const startOfLocalDayAt = (at: number): number => {
 			const d = new Date(at);
@@ -474,7 +498,7 @@ export function GiveawayBorrowerRequestPanel({
 					/>
 				</div>
 				<div className="mt-4 flex items-center justify-between gap-2">
-					<AvailabilityToggle id={item._id} />
+					{!hasActiveBorrow && <AvailabilityToggle id={item._id} />}
 					<Button
 						size="sm"
 						disabled={requestDisabled}
