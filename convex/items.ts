@@ -782,7 +782,7 @@ export const requestItem = mutation({
 			// This allows a request like 21:00–23:00 at 21:05, but disallows
 			// 20:00–23:00 at 21:05.
 			if (args.endDate <= now) {
-				throw new Error("Start time must be in the future");
+				throw new Error("The requested time window must end in the future");
 			}
 			const currentHourStart = Math.floor(now / ONE_HOUR_MS) * ONE_HOUR_MS;
 			if (args.startDate < currentHourStart) {
