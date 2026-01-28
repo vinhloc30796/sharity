@@ -19,7 +19,9 @@ import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
+	SelectGroup,
 	SelectItem,
+	SelectLabel,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
@@ -57,6 +59,14 @@ function formatHourLabel(hour: number): string {
 	return `${pad2(hour)}:00`;
 }
 
+/** Hour groups for better UX */
+const HOUR_GROUPS = [
+	{ label: "Morning (6-11)", hours: [6, 7, 8, 9, 10, 11] },
+	{ label: "Afternoon (12-17)", hours: [12, 13, 14, 15, 16, 17] },
+	{ label: "Evening (18-23)", hours: [18, 19, 20, 21, 22, 23] },
+	{ label: "Night (0-5)", hours: [0, 1, 2, 3, 4, 5] },
+] as const;
+
 /**
  * Dialog that lets user pick start and end hour on a fixed date (no minutes).
  */
@@ -89,10 +99,10 @@ export function LeaseProposeIntradayDialog(
 	const open = controlledOpen ?? uncontrolledOpen;
 	const setOpen = onOpenChange ?? setUncontrolledOpen;
 	const [startHourValue, setStartHourValue] = useState<string>(
-		defaultStartHour !== undefined ? String(defaultStartHour) : "9",
+		defaultStartHour !== undefined ? String(defaultStartHour) : "18",
 	);
 	const [endHourValue, setEndHourValue] = useState<string>(
-		defaultEndHour !== undefined ? String(defaultEndHour) : "17",
+		defaultEndHour !== undefined ? String(defaultEndHour) : "20",
 	);
 	const [isSaving, setIsSaving] = useState(false);
 
@@ -151,10 +161,15 @@ export function LeaseProposeIntradayDialog(
 								<SelectValue placeholder="Select a start hour" />
 							</SelectTrigger>
 							<SelectContent>
-								{Array.from({ length: 24 }, (_, i) => (
-									<SelectItem key={i} value={String(i)}>
-										{formatHourLabel(i)}
-									</SelectItem>
+								{HOUR_GROUPS.map((group) => (
+									<SelectGroup key={group.label}>
+										<SelectLabel>{group.label}</SelectLabel>
+										{group.hours.map((hour) => (
+											<SelectItem key={hour} value={String(hour)}>
+												{formatHourLabel(hour)}
+											</SelectItem>
+										))}
+									</SelectGroup>
 								))}
 							</SelectContent>
 						</Select>
@@ -167,10 +182,15 @@ export function LeaseProposeIntradayDialog(
 								<SelectValue placeholder="Select an end hour" />
 							</SelectTrigger>
 							<SelectContent>
-								{Array.from({ length: 24 }, (_, i) => (
-									<SelectItem key={i} value={String(i)}>
-										{formatHourLabel(i)}
-									</SelectItem>
+								{HOUR_GROUPS.map((group) => (
+									<SelectGroup key={group.label}>
+										<SelectLabel>{group.label}</SelectLabel>
+										{group.hours.map((hour) => (
+											<SelectItem key={hour} value={String(hour)}>
+												{formatHourLabel(hour)}
+											</SelectItem>
+										))}
+									</SelectGroup>
 								))}
 							</SelectContent>
 						</Select>

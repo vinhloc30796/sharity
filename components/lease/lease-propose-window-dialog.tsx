@@ -19,7 +19,9 @@ import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
+	SelectGroup,
 	SelectItem,
+	SelectLabel,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
@@ -56,6 +58,14 @@ function formatHourWindowLabel(hour: number): string {
 	return `${start}–${end}`;
 }
 
+/** Hour groups for better UX */
+const HOUR_GROUPS = [
+	{ label: "Morning (6-11)", hours: [6, 7, 8, 9, 10, 11] },
+	{ label: "Afternoon (12-17)", hours: [12, 13, 14, 15, 16, 17] },
+	{ label: "Evening (18-23)", hours: [18, 19, 20, 21, 22, 23] },
+	{ label: "Night (0-5)", hours: [0, 1, 2, 3, 4, 5] },
+] as const;
+
 /**
  * Dialog that lets user pick a 1-hour window on a fixed date.
  */
@@ -80,7 +90,7 @@ export function LeaseProposeWindowDialog(props: LeaseProposeWindowDialogProps) {
 
 	const [open, setOpen] = useState(false);
 	const [hourValue, setHourValue] = useState<string>(
-		defaultHour !== undefined ? String(defaultHour) : "9",
+		defaultHour !== undefined ? String(defaultHour) : "18",
 	);
 	const [isSaving, setIsSaving] = useState(false);
 
@@ -125,10 +135,15 @@ export function LeaseProposeWindowDialog(props: LeaseProposeWindowDialogProps) {
 							<SelectValue placeholder="Select an hour" />
 						</SelectTrigger>
 						<SelectContent>
-							{Array.from({ length: 24 }, (_, i) => (
-								<SelectItem key={i} value={String(i)}>
-									{formatHourWindowLabel(i)}
-								</SelectItem>
+							{HOUR_GROUPS.map((group) => (
+								<SelectGroup key={group.label}>
+									<SelectLabel>{group.label}</SelectLabel>
+									{group.hours.map((hour) => (
+										<SelectItem key={hour} value={String(hour)}>
+											{formatHourWindowLabel(hour)}
+										</SelectItem>
+									))}
+								</SelectGroup>
 							))}
 						</SelectContent>
 					</Select>
