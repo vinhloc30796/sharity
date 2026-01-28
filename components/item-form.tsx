@@ -77,6 +77,7 @@ export interface Location {
 }
 import { toast } from "sonner";
 import { toCloudinaryRef, type CloudinaryRef } from "@/lib/cloudinary-ref";
+import { MAX_IMAGE_SIZE_BYTES } from "@/lib/image-constants";
 
 export type MediaImage =
 	| { source: "cloudinary"; publicId: string; url: string }
@@ -536,6 +537,10 @@ export function ItemForm({
 						value={files}
 						onValueChange={setFiles}
 						multiple={remainingSlots > 1}
+						maxSize={MAX_IMAGE_SIZE_BYTES}
+						onFileReject={(file, message) => {
+							toast.error(`${message} (${file.name})`);
+						}}
 						// Removed onUpload to disable auto-upload
 					>
 						<FileUploadDropzone className="h-32 bg-gray-50/50 border-dashed transition-colors hover:bg-gray-50/80 hover:border-primary/20">

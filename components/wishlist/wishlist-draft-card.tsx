@@ -31,6 +31,7 @@ import { CheckCircle2, Plus, UploadCloudIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { MAX_IMAGE_SIZE_BYTES } from "@/lib/image-constants";
 
 type WishlistDraftCardProps = {
 	autoFocus?: boolean;
@@ -167,6 +168,10 @@ export function WishlistDraftCard({
 								value={files}
 								onValueChange={setFiles}
 								multiple
+								maxSize={MAX_IMAGE_SIZE_BYTES}
+								onFileReject={(file, message) => {
+									toast.error(`${message} (${file.name})`);
+								}}
 							>
 								<FileUploadDropzone className="h-32 bg-gray-50/50 border-dashed transition-colors hover:bg-gray-50/80 hover:border-primary/20">
 									<div className="flex flex-col items-center gap-2 text-muted-foreground text-sm">

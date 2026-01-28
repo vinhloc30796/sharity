@@ -21,6 +21,7 @@ import {
 import { UploadCloudIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { toCloudinaryRef, type CloudinaryRef } from "@/lib/cloudinary-ref";
+import { MAX_IMAGE_SIZE_BYTES } from "@/lib/image-constants";
 
 interface RatingFormProps {
 	claimId: Id<"claims">;
@@ -116,6 +117,10 @@ export function RatingForm({
 					value={files}
 					onValueChange={setFiles}
 					multiple
+					maxSize={MAX_IMAGE_SIZE_BYTES}
+					onFileReject={(file, message) => {
+						toast.error(`${message} (${file.name})`);
+					}}
 				>
 					<FileUploadDropzone className="h-24 bg-gray-50/50 border-dashed">
 						<div className="flex flex-col items-center gap-1 text-muted-foreground text-xs">
