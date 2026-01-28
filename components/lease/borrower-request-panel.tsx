@@ -354,6 +354,7 @@ export function BorrowerRequestActions() {
 										claim={claim}
 										viewerRole="borrower"
 										isGiveaway={false}
+										ownerId={item.ownerId}
 										cancelClaim={async ({ claimId }) =>
 											await cancelRequest(claimId)
 										}
@@ -556,6 +557,7 @@ export function GiveawayBorrowerRequestPanel({
 										claim={claim}
 										viewerRole="borrower"
 										isGiveaway
+										ownerId={item.ownerId}
 										cancelClaim={async ({ claimId }) =>
 											await cancelRequest(claimId)
 										}

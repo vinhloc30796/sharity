@@ -119,6 +119,7 @@ export function LeaseClaimCard(props: {
 	claim: Doc<"claims">;
 	viewerRole: ViewerRole;
 	isGiveaway: boolean;
+	ownerId?: string;
 	layout?: "card" | "embedded";
 	approveClaim?: (args: ApproveClaimArgs) => MutationResult;
 	rejectClaim?: (args: RejectClaimArgs) => MutationResult;
@@ -133,6 +134,7 @@ export function LeaseClaimCard(props: {
 		claim,
 		viewerRole,
 		isGiveaway,
+		ownerId,
 		layout = "card",
 		approveClaim,
 		rejectClaim,
@@ -374,6 +376,8 @@ export function LeaseClaimCard(props: {
 					stateLabel={labelForState(derivedState)}
 					stateVariant={badgeVariantForState(derivedState)}
 					StateIcon={StateIcon}
+					viewerRole={viewerRole}
+					ownerId={ownerId}
 				/>
 			</CardHeader>
 
