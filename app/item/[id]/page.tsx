@@ -92,10 +92,11 @@ export default function ItemDetailPage({
 	// Auto-open rating dialog if rateClaimId is in URL params
 	useEffect(() => {
 		const rateClaimId = searchParams.get("rateClaimId");
-		const targetRole = searchParams.get("targetRole") as
-			| "lender"
-			| "borrower"
-			| null;
+		const targetRoleParam = searchParams.get("targetRole");
+		const targetRole: "lender" | "borrower" | null =
+			targetRoleParam === "lender" || targetRoleParam === "borrower"
+				? targetRoleParam
+				: null;
 
 		if (rateClaimId && targetRole && pendingRatings && item) {
 			const pendingRating = pendingRatings.find(
