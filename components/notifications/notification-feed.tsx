@@ -61,7 +61,7 @@ export function NotificationFeed() {
 				message = `New request for "${n.item?.name}"`;
 				break;
 			case "request_approved":
-				message = `Request approved for "${n.item?.name}"`;
+				message = `Request approved for "${n.item?.name}"! You can now view the owner's contact details.`;
 				break;
 			case "request_rejected":
 				message = `Request rejected for "${n.item?.name}"`;
@@ -128,7 +128,26 @@ export function NotificationFeed() {
 			const commonDisabled = !claimId;
 
 			if (n.type === "new_request") {
-				const canAct = !!claimId && n.claim?.status === "pending";
+				const isPending = n.claim?.status === "pending";
+				const isApproved = n.claim?.status === "approved";
+				const isRejected = n.claim?.status === "rejected";
+
+				// If already handled, show status instead of buttons
+				if (!isPending && (isApproved || isRejected)) {
+					return (
+						<span
+							className={`text-xs px-2 py-1 rounded ${
+								isApproved
+									? "bg-green-100 text-green-700"
+									: "bg-red-100 text-red-700"
+							}`}
+						>
+							{isApproved ? "Approved" : "Rejected"}
+						</span>
+					);
+				}
+
+				const canAct = !!claimId && isPending;
 				return (
 					<div className="flex items-center gap-2">
 						<Button
@@ -332,6 +351,23 @@ export function NotificationFeed() {
 						}}
 					>
 						View
+					</Button>
+				);
+			}
+
+			if (n.type === "request_approved" && n.item?.ownerId) {
+				return (
+					<Button
+						size="sm"
+						variant="outline"
+						className="h-7"
+						onClick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							router.push(`/user/${n.item?.ownerId}`);
+						}}
+					>
+						View Profile
 					</Button>
 				);
 			}
