@@ -7,6 +7,9 @@ import { vCloudinaryRef } from "./mediaTypes";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
+// Maximum time in the past that a window proposal can start (allows proposing windows
+// that have just started, e.g., proposing 21:00–22:00 at 21:05)
+const MAX_PAST_WINDOW_TOLERANCE_MS = ONE_HOUR_MS;
 const cloudinary = new CloudinaryClient(components.cloudinary);
 
 type MediaImage =
@@ -1014,7 +1017,10 @@ export const proposePickupWindow = mutation({
 		// Allow proposing a window that has already started but is still active,
 		// as long as it isn't too far in the past. This supports cases like
 		// proposing 21:00–22:00 at 21:05 local time.
-		if (windowEndAt <= now || args.windowStartAt < now - ONE_HOUR_MS) {
+		if (
+			windowEndAt <= now ||
+			args.windowStartAt < now - MAX_PAST_WINDOW_TOLERANCE_MS
+		) {
 			throw new Error("Pickup time must be in the future");
 		}
 
@@ -1104,7 +1110,10 @@ export const proposeReturnWindow = mutation({
 		const windowEndAt = args.windowStartAt + ONE_HOUR_MS;
 		// Allow proposing a window that has already started but is still active,
 		// similar to pickup windows.
-		if (windowEndAt <= now || args.windowStartAt < now - ONE_HOUR_MS) {
+		if (
+			windowEndAt <= now ||
+			args.windowStartAt < now - MAX_PAST_WINDOW_TOLERANCE_MS
+		) {
 			throw new Error("Return time must be in the future");
 		}
 
