@@ -71,7 +71,9 @@ export function PendingRatings() {
 										</p>
 										<div className="flex items-center gap-2">
 											<Badge variant="outline" className="text-xs">
-												{pending.targetRole === "lender" ? "As lender" : "As borrower"}
+												{pending.targetRole === "lender"
+													? "As lender"
+													: "As borrower"}
 											</Badge>
 											{pending.targetUserName && (
 												<span className="text-xs text-muted-foreground">

@@ -77,86 +77,98 @@ export function NotificationFeed() {
 		const { itemId, claimId, windowStartAt, windowEndAt } =
 			getNotificationActionContext(n);
 
-		const isGiveaway = Boolean(n.item?.giveaway);
-		const isTransferred = Boolean(n.claim?.transferredAt);
+		const now = Date.now();
+		const isWindowExpired =
+			typeof windowEndAt === "number" && windowEndAt < now;
 
-    let message = "";
-    switch (n.type) {
-      case "new_request":
-        message = `New request for "${n.item?.name}"`;
-        break;
-      case "request_approved":
-        message = `Request approved for "${n.item?.name}"! You can now view the owner's contact details.`;
-        break;
-      case "request_rejected":
-        message = `Request rejected for "${n.item?.name}"`;
-        break;
-      case "item_available":
-        message = `"${n.item?.name}" is now available!`;
-        break;
-      case "pickup_proposed":
-        message = `Pickup requested for "${n.item?.name}"`;
-        if (windowStartAt && windowEndAt) {
-          message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
-            new Date(windowEndAt),
-            "p",
-          )}`;
-        }
-        break;
-      case "pickup_approved":
-        message = `Pickup approved for "${n.item?.name}"`;
-        if (windowStartAt && windowEndAt) {
-          message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
-            new Date(windowEndAt),
-            "p",
-          )}`;
-        }
-        break;
-      case "pickup_confirmed":
-        message =
-          isGiveaway && isTransferred
-            ? `Transfer completed for "${n.item?.name}"`
-            : `Pickup confirmed for "${n.item?.name}"`;
-        break;
-      case "pickup_expired":
-        message = `Pickup expired for "${n.item?.name}"`;
-        break;
-      case "return_proposed":
-        message = `Return requested for "${n.item?.name}"`;
-        if (windowStartAt && windowEndAt) {
-          message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
-            new Date(windowEndAt),
-            "p",
-          )}`;
-        }
-        break;
-      case "return_approved":
-        message = `Return approved for "${n.item?.name}"`;
-        if (windowStartAt && windowEndAt) {
-          message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
-            new Date(windowEndAt),
-            "p",
-          )}`;
-        }
-        break;
-      case "return_confirmed":
-        message = `Return confirmed for "${n.item?.name}"`;
-        break;
-      case "return_missing":
-        message = `Return missing for "${n.item?.name}"`;
-        break;
-      case "rate_transaction":
-        message = `Rate your experience with "${n.item?.name}"`;
-        break;
+		const claim = n.claim;
+		const isClaimApproved = claim?.status === "approved";
+		const isClaimPickedUp = Boolean(claim?.pickedUpAt);
+		const isClaimReturned = Boolean(claim?.returnedAt);
+		const isClaimExpired = Boolean(claim?.expiredAt);
+		const isClaimMissing = Boolean(claim?.missingAt);
+		const isClaimTransferred = Boolean(claim?.transferredAt);
+
+		const isGiveaway = Boolean(n.item?.giveaway);
+		const isTransferred = isClaimTransferred;
+
+		let message = "";
+		switch (n.type) {
+			case "new_request":
+				message = `New request for "${n.item?.name}"`;
+				break;
+			case "request_approved":
+				message = `Request approved for "${n.item?.name}"! You can now view the owner's contact details.`;
+				break;
+			case "request_rejected":
+				message = `Request rejected for "${n.item?.name}"`;
+				break;
+			case "item_available":
+				message = `"${n.item?.name}" is now available!`;
+				break;
+			case "pickup_proposed":
+				message = `Pickup requested for "${n.item?.name}"`;
+				if (windowStartAt && windowEndAt) {
+					message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
+						new Date(windowEndAt),
+						"p",
+					)}`;
+				}
+				break;
+			case "pickup_approved":
+				message = `Pickup approved for "${n.item?.name}"`;
+				if (windowStartAt && windowEndAt) {
+					message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
+						new Date(windowEndAt),
+						"p",
+					)}`;
+				}
+				break;
+			case "pickup_confirmed":
+				message =
+					isGiveaway && isTransferred
+						? `Transfer completed for "${n.item?.name}"`
+						: `Pickup confirmed for "${n.item?.name}"`;
+				break;
+			case "pickup_expired":
+				message = `Pickup expired for "${n.item?.name}"`;
+				break;
+			case "return_proposed":
+				message = `Return requested for "${n.item?.name}"`;
+				if (windowStartAt && windowEndAt) {
+					message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
+						new Date(windowEndAt),
+						"p",
+					)}`;
+				}
+				break;
+			case "return_approved":
+				message = `Return approved for "${n.item?.name}"`;
+				if (windowStartAt && windowEndAt) {
+					message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
+						new Date(windowEndAt),
+						"p",
+					)}`;
+				}
+				break;
+			case "return_confirmed":
+				message = `Return confirmed for "${n.item?.name}"`;
+				break;
+			case "return_missing":
+				message = `Return missing for "${n.item?.name}"`;
+				break;
+			case "rate_transaction":
+				message = `Rate your experience with "${n.item?.name}"`;
+				break;
 			case "rating_received":
 				const raterName = (n as { raterName?: string | null }).raterName;
 				message = raterName
 					? `${raterName} left you a review for "${n.item?.name}"`
 					: `You received a new review for "${n.item?.name}"`;
 				break;
-      default:
-        message = "New notification";
-    }
+			default:
+				message = "New notification";
+		}
 
 		const renderAction = () => {
 			const commonDisabled = !claimId;
@@ -232,11 +244,33 @@ export function NotificationFeed() {
 			}
 
 			if (n.type === "pickup_proposed") {
+				// Check if action is still valid
+				const canApprove =
+					claimId &&
+					isClaimApproved &&
+					!isClaimPickedUp &&
+					!isClaimExpired &&
+					!isWindowExpired;
+
+				if (!canApprove) {
+					let reason = "Action unavailable";
+					if (!isClaimApproved) reason = "Request not approved";
+					else if (isClaimPickedUp) reason = "Already picked up";
+					else if (isClaimExpired) reason = "Lease expired";
+					else if (isWindowExpired) reason = "Pickup window expired";
+
+					return (
+						<span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-500">
+							{reason}
+						</span>
+					);
+				}
+
 				return (
 					<Button
 						size="sm"
 						className="h-7"
-						disabled={commonDisabled}
+						disabled={!canApprove}
 						onClick={async (e) => {
 							e.preventDefault();
 							e.stopPropagation();
@@ -274,11 +308,38 @@ export function NotificationFeed() {
 						</Button>
 					);
 				}
+
+				// Check if action is still valid
+				const canApprove =
+					claimId &&
+					isClaimApproved &&
+					isClaimPickedUp &&
+					!isClaimReturned &&
+					!isClaimExpired &&
+					!isClaimMissing &&
+					!isWindowExpired;
+
+				if (!canApprove) {
+					let reason = "Action unavailable";
+					if (!isClaimApproved) reason = "Request not approved";
+					else if (!isClaimPickedUp) reason = "Not picked up yet";
+					else if (isClaimReturned) reason = "Already returned";
+					else if (isClaimExpired) reason = "Lease expired";
+					else if (isClaimMissing) reason = "Item marked missing";
+					else if (isWindowExpired) reason = "Return window expired";
+
+					return (
+						<span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-500">
+							{reason}
+						</span>
+					);
+				}
+
 				return (
 					<Button
 						size="sm"
 						className="h-7"
-						disabled={commonDisabled}
+						disabled={!canApprove}
 						onClick={async (e) => {
 							e.preventDefault();
 							e.stopPropagation();
@@ -300,11 +361,33 @@ export function NotificationFeed() {
 			}
 
 			if (n.type === "pickup_approved") {
+				// Check if action is still valid
+				const canConfirm =
+					claimId &&
+					isClaimApproved &&
+					!isClaimPickedUp &&
+					!isClaimExpired &&
+					!isWindowExpired;
+
+				if (!canConfirm) {
+					let reason = "Action unavailable";
+					if (!isClaimApproved) reason = "Request not approved";
+					else if (isClaimPickedUp) reason = "Already picked up";
+					else if (isClaimExpired) reason = "Lease expired";
+					else if (isWindowExpired) reason = "Pickup window expired";
+
+					return (
+						<span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-500">
+							{reason}
+						</span>
+					);
+				}
+
 				return (
 					<Button
 						size="sm"
 						className="h-7"
-						disabled={commonDisabled}
+						disabled={!canConfirm}
 						onClick={async (e) => {
 							e.preventDefault();
 							e.stopPropagation();
@@ -342,11 +425,38 @@ export function NotificationFeed() {
 						</Button>
 					);
 				}
+
+				// Check if action is still valid
+				const canConfirm =
+					claimId &&
+					isClaimApproved &&
+					isClaimPickedUp &&
+					!isClaimReturned &&
+					!isClaimExpired &&
+					!isClaimMissing &&
+					!isWindowExpired;
+
+				if (!canConfirm) {
+					let reason = "Action unavailable";
+					if (!isClaimApproved) reason = "Request not approved";
+					else if (!isClaimPickedUp) reason = "Not picked up yet";
+					else if (isClaimReturned) reason = "Already returned";
+					else if (isClaimExpired) reason = "Lease expired";
+					else if (isClaimMissing) reason = "Item marked missing";
+					else if (isWindowExpired) reason = "Return window expired";
+
+					return (
+						<span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-500">
+							{reason}
+						</span>
+					);
+				}
+
 				return (
 					<Button
 						size="sm"
 						className="h-7"
-						disabled={commonDisabled}
+						disabled={!canConfirm}
 						onClick={async (e) => {
 							e.preventDefault();
 							e.stopPropagation();
@@ -367,12 +477,12 @@ export function NotificationFeed() {
 				);
 			}
 
-      if (
-        n.type === "pickup_confirmed" ||
-        n.type === "pickup_expired" ||
-        n.type === "return_confirmed" ||
-        n.type === "return_missing"
-      ) {
+			if (
+				n.type === "pickup_confirmed" ||
+				n.type === "pickup_expired" ||
+				n.type === "return_confirmed" ||
+				n.type === "return_missing"
+			) {
 				return (
 					<Button
 						size="sm"
@@ -389,55 +499,68 @@ export function NotificationFeed() {
 				);
 			}
 
-      if (n.type === "rate_transaction") {
-        // Check if there's actually a pending rating for this claim
-        const hasPendingRating = pendingRatings?.some(
-          (pending) => pending.claimId === claimId,
-        );
-        
-        return (
-          <Button
-            size="sm"
-            variant={hasPendingRating ? "default" : "outline"}
-            disabled={!hasPendingRating}
-            className="h-7"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (hasPendingRating) {
-                navigateToItem(itemId);
-                if (!n.isRead) {
-                  void handleMarkRead(n._id);
-                }
-              }
-            }}
-          >
-            Rate
-          </Button>
-        );
-      }
+			if (n.type === "rate_transaction") {
+				// Check if there's actually a pending rating for this claim
+				const hasPendingRating = pendingRatings?.some(
+					(pending) => pending.claimId === claimId,
+				);
 
-      if (n.type === "rating_received") {
-        return (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              router.push("/profile");
-              if (!n.isRead) {
-                void handleMarkRead(n._id);
-              }
-            }}
-          >
-            View
-          </Button>
-        );
-      }
+				if (!hasPendingRating) {
+					return (
+						<span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-500">
+							Already rated
+						</span>
+					);
+				}
 
-      if (n.type === "request_approved" && n.item?.ownerId) {
+				const pendingRating = pendingRatings?.find(
+					(pending) => pending.claimId === claimId,
+				);
+
+				return (
+					<Button
+						size="sm"
+						className="h-7"
+						disabled={!hasPendingRating}
+						onClick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							if (!hasPendingRating || !pendingRating) return;
+							// Navigate to item page with claimId in URL to auto-open rating dialog
+							router.push(
+								`/item/${itemId}?rateClaimId=${claimId}&targetRole=${pendingRating.targetRole}`,
+							);
+							if (!n.isRead) {
+								void handleMarkRead(n._id);
+							}
+						}}
+					>
+						Rate
+					</Button>
+				);
+			}
+
+			if (n.type === "rating_received") {
+				return (
+					<Button
+						size="sm"
+						variant="outline"
+						className="h-7"
+						onClick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							router.push("/profile");
+							if (!n.isRead) {
+								void handleMarkRead(n._id);
+							}
+						}}
+					>
+						View
+					</Button>
+				);
+			}
+
+			if (n.type === "request_approved" && n.item?.ownerId) {
 				return (
 					<Button
 						size="sm"

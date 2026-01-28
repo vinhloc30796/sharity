@@ -17,7 +17,7 @@ export const get = query({
 			notifications.map(async (n) => {
 				const item = await ctx.db.get(n.itemId);
 				const claim = n.requestId ? await ctx.db.get(n.requestId) : null;
-				
+
 				// For rating_received notifications, fetch the rater's name
 				let raterName: string | null = null;
 				if (n.type === "rating_received" && n.requestId) {
@@ -27,16 +27,18 @@ export const get = query({
 						.filter((q) => q.eq(q.field("toUserId"), identity.subject))
 						.order("desc")
 						.first();
-					
+
 					if (rating) {
 						const raterProfile = await ctx.db
 							.query("users")
-							.withIndex("by_clerk_id", (q) => q.eq("clerkId", rating.fromUserId))
+							.withIndex("by_clerk_id", (q) =>
+								q.eq("clerkId", rating.fromUserId),
+							)
 							.first();
 						raterName = raterProfile?.name || null;
 					}
 				}
-				
+
 				return { ...n, item, claim, raterName };
 			}),
 		);

@@ -2,8 +2,8 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { ArrowLeft, MapPin, Star } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { use, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { use, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ItemActivityTimeline } from "@/components/item-activity-timeline";
 import { BorrowerRequestPanel } from "@/components/lease/borrower-request-panel";
@@ -55,6 +55,7 @@ export default function ItemDetailPage({
 }) {
 	const { id } = use(params);
 	const router = useRouter();
+	const searchParams = useSearchParams();
 
 	const item = useQuery(api.items.getById, { id });
 	const activity = useQuery(api.items.getItemActivity, { itemId: id });
@@ -87,6 +88,34 @@ export default function ItemDetailPage({
 		el.scrollIntoView({ block: "nearest", behavior: "smooth" });
 		el.focus();
 	};
+
+	// Auto-open rating dialog if rateClaimId is in URL params
+	useEffect(() => {
+		const rateClaimId = searchParams.get("rateClaimId");
+		const targetRole = searchParams.get("targetRole") as
+			| "lender"
+			| "borrower"
+			| null;
+
+		if (rateClaimId && targetRole && pendingRatings && item) {
+			const pendingRating = pendingRatings.find(
+				(p) => p.claimId === rateClaimId && p.targetRole === targetRole,
+			);
+
+			if (pendingRating && !selectedRatingClaim) {
+				setSelectedRatingClaim({
+					claimId: rateClaimId as Id<"claims">,
+					targetRole,
+					itemName: pendingRating.itemName,
+				});
+				// Clean up URL params
+				const newUrl = new URL(window.location.href);
+				newUrl.searchParams.delete("rateClaimId");
+				newUrl.searchParams.delete("targetRole");
+				router.replace(newUrl.pathname + newUrl.search, { scroll: false });
+			}
+		}
+	}, [searchParams, pendingRatings, item, selectedRatingClaim, router]);
 
 	const ownerRequests = ((item?.requests ?? []) as Doc<"claims">[]) ?? [];
 	const ownerCalendarState = useItemCalendar({
@@ -159,7 +188,10 @@ export default function ItemDetailPage({
 					<div className="flex items-center gap-2">
 						<Star className="h-4 w-4 text-yellow-500" />
 						<p className="text-sm font-medium">
-							Rate {pendingRatingsForItem.length > 1 ? "transactions" : "transaction"}
+							Rate{" "}
+							{pendingRatingsForItem.length > 1
+								? "transactions"
+								: "transaction"}
 						</p>
 					</div>
 					<div className="space-y-2">
@@ -173,9 +205,7 @@ export default function ItemDetailPage({
 									className="flex items-center justify-between gap-3 p-2 bg-white rounded-md border"
 								>
 									<div className="min-w-0">
-										<p className="text-xs font-medium">
-											Review transaction
-										</p>
+										<p className="text-xs font-medium">Review transaction</p>
 										<p className="text-xs text-muted-foreground">
 											{pending.targetUserName
 												? `Share your experience${pending.targetRole === "lender" ? " borrowing from" : " lending to"} ${pending.targetUserName}`
