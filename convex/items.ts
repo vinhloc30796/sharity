@@ -1031,7 +1031,11 @@ export const proposePickupWindow = mutation({
 		if (!identity) throw new Error("Unauthenticated");
 
 		const now = Date.now();
-		if (args.windowStartAt < now) {
+		const windowEndAt = args.windowStartAt + ONE_HOUR_MS;
+		// Allow proposing a window that has already started but is still active,
+		// as long as it isn't too far in the past. This supports cases like
+		// proposing 21:00–22:00 at 21:05 local time.
+		if (windowEndAt <= now || args.windowStartAt < now - ONE_HOUR_MS) {
 			throw new Error("Pickup time must be in the future");
 		}
 
@@ -1077,7 +1081,6 @@ export const proposePickupWindow = mutation({
 			throw new Error("Cannot propose pickup for a rejected lease");
 		}
 
-		const windowEndAt = args.windowStartAt + ONE_HOUR_MS;
 		const proposalId = `${args.claimId}-${now}-${Math.random().toString(16).slice(2)}`;
 
 		await ctx.db.insert("lease_activity", {
@@ -1119,7 +1122,10 @@ export const proposeReturnWindow = mutation({
 		if (!identity) throw new Error("Unauthenticated");
 
 		const now = Date.now();
-		if (args.windowStartAt < now) {
+		const windowEndAt = args.windowStartAt + ONE_HOUR_MS;
+		// Allow proposing a window that has already started but is still active,
+		// similar to pickup windows.
+		if (windowEndAt <= now || args.windowStartAt < now - ONE_HOUR_MS) {
 			throw new Error("Return time must be in the future");
 		}
 
@@ -1173,7 +1179,6 @@ export const proposeReturnWindow = mutation({
 			throw new Error("Cannot propose return for a rejected lease");
 		}
 
-		const windowEndAt = args.windowStartAt + ONE_HOUR_MS;
 		const proposalId = `${args.claimId}-${now}-${Math.random().toString(16).slice(2)}`;
 
 		await ctx.db.insert("lease_activity", {
