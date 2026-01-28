@@ -108,9 +108,12 @@ function assertHourAligned(windowStartAt: number): void {
 
 function assertOnDay(
 	windowStartAt: number,
-	dayStartAt: number,
+	referenceAt: number,
 	label: string,
 ): void {
+	const dayStart = new Date(referenceAt);
+	dayStart.setHours(0, 0, 0, 0);
+	const dayStartAt = dayStart.getTime();
 	if (windowStartAt < dayStartAt || windowStartAt >= dayStartAt + ONE_DAY_MS) {
 		throw new Error(`Time must be on the ${label} day`);
 	}
@@ -745,7 +748,18 @@ export const requestItem = mutation({
 		}
 
 		if (isIntraday) {
-			if (args.startDate < now) {
+			// For intraday (hour-based) requests, require that:
+			// - the window hasn't fully passed yet (end must be in the future)
+			// - the start hour is not earlier than the current hour
+			//
+			// This allows a request like 21:00–23:00 at 21:05, but disallows
+			// 20:00–23:00 at 21:05.
+			if (args.endDate <= now) {
+				throw new Error("Start time must be in the future");
+			}
+			const currentHourStart =
+				Math.floor(now / ONE_HOUR_MS) * ONE_HOUR_MS;
+			if (args.startDate < currentHourStart) {
 				throw new Error("Start time must be in the future");
 			}
 			assertHourAligned(args.startDate);
@@ -903,67 +917,6 @@ export const approveClaim = mutation({
 			actorId: identity.subject,
 			createdAt: now,
 		});
-
-		const isHourAligned =
-			claim.startDate % ONE_HOUR_MS === 0 && claim.endDate % ONE_HOUR_MS === 0;
-		const isIntraday =
-			claim.endDate - claim.startDate < ONE_DAY_MS && isHourAligned;
-
-		if (isIntraday) {
-			const pickupProposalId = `auto-pickup-${args.claimId}`;
-			const pickupWindowStartAt = claim.startDate;
-			const pickupWindowEndAt = claim.startDate + ONE_HOUR_MS;
-
-			await ctx.db.insert("lease_activity", {
-				itemId: args.id,
-				claimId: args.claimId,
-				type: "lease_pickup_proposed",
-				actorId: claim.claimerId,
-				createdAt: now,
-				proposalId: pickupProposalId,
-				windowStartAt: pickupWindowStartAt,
-				windowEndAt: pickupWindowEndAt,
-			});
-
-			await ctx.db.insert("lease_activity", {
-				itemId: args.id,
-				claimId: args.claimId,
-				type: "lease_pickup_approved",
-				actorId: identity.subject,
-				createdAt: now,
-				proposalId: pickupProposalId,
-				windowStartAt: pickupWindowStartAt,
-				windowEndAt: pickupWindowEndAt,
-			});
-
-			if (!item.giveaway) {
-				const returnProposalId = `auto-return-${args.claimId}`;
-				const returnWindowStartAt = claim.endDate;
-				const returnWindowEndAt = claim.endDate + ONE_HOUR_MS;
-
-				await ctx.db.insert("lease_activity", {
-					itemId: args.id,
-					claimId: args.claimId,
-					type: "lease_return_proposed",
-					actorId: claim.claimerId,
-					createdAt: now,
-					proposalId: returnProposalId,
-					windowStartAt: returnWindowStartAt,
-					windowEndAt: returnWindowEndAt,
-				});
-
-				await ctx.db.insert("lease_activity", {
-					itemId: args.id,
-					claimId: args.claimId,
-					type: "lease_return_approved",
-					actorId: identity.subject,
-					createdAt: now,
-					proposalId: returnProposalId,
-					windowStartAt: returnWindowStartAt,
-					windowEndAt: returnWindowEndAt,
-				});
-			}
-		}
 
 		// Notify claimer
 		await ctx.db.insert("notifications", {

@@ -501,8 +501,9 @@ export function LeaseClaimCard(props: {
 						<div className="space-y-2">
 							{isIntradayLease ? (
 								<div className="text-xs text-muted-foreground">
-									Intraday lease: pickup &amp; return times are set
-									automatically from the selected hours.
+									Intraday lease: pickup &amp; return happen within the selected
+									hours. Use the pickup and return time proposals below to agree
+									on exact windows.
 								</div>
 							) : null}
 							{canRecordPickup && (
@@ -521,49 +522,47 @@ export function LeaseClaimCard(props: {
 										</div>
 									) : null}
 
-									{!isIntradayLease ? (
-										<LeaseProposeWindowDialog
-											title="Propose pickup time"
-											triggerLabel={
-												pickupProposal
-													? "Change pickup time"
-													: "Propose pickup time"
+									<LeaseProposeWindowDialog
+										title="Propose pickup time"
+										triggerLabel={
+											pickupProposal
+												? "Change pickup time"
+												: "Propose pickup time"
+										}
+										triggerIcon={Package}
+										triggerSize="sm"
+										triggerClassName="w-full h-8"
+										confirmLabel="Send proposal"
+										cancelLabel="Cancel"
+										fixedDate={new Date(claim.startDate)}
+										defaultHour={
+											pickupProposal
+												? new Date(pickupProposal.windowStartAt).getHours()
+												: undefined
+										}
+										disabled={
+											isApproving ||
+											isRejecting ||
+											isCancelling ||
+											isApprovingPickupTime ||
+											isApprovingReturnTime
+										}
+										onConfirm={async (windowStartAt) => {
+											try {
+												await proposePickupWindow({
+													itemId,
+													claimId: claim._id,
+													windowStartAt,
+												});
+												toast.success(
+													"Pickup request sent. Now please wait for approval from your counterpart. Nothing to do for now",
+												);
+											} catch (error: unknown) {
+												toast.error(toErrorMessage(error));
+												throw error;
 											}
-											triggerIcon={Package}
-											triggerSize="sm"
-											triggerClassName="w-full h-8"
-											confirmLabel="Send proposal"
-											cancelLabel="Cancel"
-											fixedDate={new Date(claim.startDate)}
-											defaultHour={
-												pickupProposal
-													? new Date(pickupProposal.windowStartAt).getHours()
-													: undefined
-											}
-											disabled={
-												isApproving ||
-												isRejecting ||
-												isCancelling ||
-												isApprovingPickupTime ||
-												isApprovingReturnTime
-											}
-											onConfirm={async (windowStartAt) => {
-												try {
-													await proposePickupWindow({
-														itemId,
-														claimId: claim._id,
-														windowStartAt,
-													});
-													toast.success(
-														"Pickup request sent. Now please wait for approval from your counterpart. Nothing to do for now",
-													);
-												} catch (error: unknown) {
-													toast.error(toErrorMessage(error));
-													throw error;
-												}
-											}}
-										/>
-									) : null}
+										}}
+									/>
 
 									{pickupProposal && pickupProposalActive ? (
 										pickupApproved ? (
@@ -682,50 +681,48 @@ export function LeaseClaimCard(props: {
 										</div>
 									) : null}
 
-									{!isIntradayLease ? (
-										<LeaseProposeWindowDialog
-											title="Propose return time"
-											triggerLabel={
-												returnProposal
-													? "Change return time"
-													: "Propose return time"
+									<LeaseProposeWindowDialog
+										title="Propose return time"
+										triggerLabel={
+											returnProposal
+												? "Change return time"
+												: "Propose return time"
+										}
+										triggerIcon={PackageCheck}
+										triggerSize="sm"
+										triggerClassName="w-full h-8"
+										confirmLabel="Send proposal"
+										cancelLabel="Cancel"
+										fixedDate={new Date(claim.endDate)}
+										defaultHour={
+											returnProposal
+												? new Date(returnProposal.windowStartAt).getHours()
+												: undefined
+										}
+										disabled={
+											isApproving ||
+											isRejecting ||
+											isCancelling ||
+											isApprovingPickupTime ||
+											isApprovingReturnTime
+										}
+										onConfirm={async (windowStartAt) => {
+											if (isGiveaway) return;
+											try {
+												await proposeReturnWindow({
+													itemId,
+													claimId: claim._id,
+													windowStartAt,
+												});
+												toast.success(
+													"Return request sent. Now please wait for approval from your counterpart. Nothing to do for now",
+												);
+											} catch (error: unknown) {
+												toast.error(toErrorMessage(error));
+												throw error;
 											}
-											triggerIcon={PackageCheck}
-											triggerSize="sm"
-											triggerClassName="w-full h-8"
-											confirmLabel="Send proposal"
-											cancelLabel="Cancel"
-											fixedDate={new Date(claim.endDate)}
-											defaultHour={
-												returnProposal
-													? new Date(returnProposal.windowStartAt).getHours()
-													: undefined
-											}
-											disabled={
-												isApproving ||
-												isRejecting ||
-												isCancelling ||
-												isApprovingPickupTime ||
-												isApprovingReturnTime
-											}
-											onConfirm={async (windowStartAt) => {
-												if (isGiveaway) return;
-												try {
-													await proposeReturnWindow({
-														itemId,
-														claimId: claim._id,
-														windowStartAt,
-													});
-													toast.success(
-														"Return request sent. Now please wait for approval from your counterpart. Nothing to do for now",
-													);
-												} catch (error: unknown) {
-													toast.error(toErrorMessage(error));
-													throw error;
-												}
-											}}
-										/>
-									) : null}
+										}}
+									/>
 
 									{returnProposal && returnProposalActive ? (
 										returnApproved ? (

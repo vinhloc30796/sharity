@@ -131,7 +131,17 @@ export function BorrowerRequestProvider(props: {
 		}
 
 		const now = Date.now();
-		if (startAt < now) {
+		const HOUR_MS = 60 * 60 * 1000;
+		const currentHourStart = Math.floor(now / HOUR_MS) * HOUR_MS;
+		// Mirror backend intraday rule: window is valid as long as it hasn't
+		// fully passed yet (end must be in the future) and the start hour is
+		// not earlier than the current hour. This allows 21–23 at 21:05, but
+		// disallows 20–23 at 21:05.
+		if (endAt <= now) {
+			toast.error("Start time must be in the future");
+			throw new Error("Start time must be in the future");
+		}
+		if (startAt < currentHourStart) {
 			toast.error("Start time must be in the future");
 			throw new Error("Start time must be in the future");
 		}
@@ -307,8 +317,8 @@ export function BorrowerRequestActions() {
 					</span>
 				)}
 				<span className="text-xs text-muted-foreground">
-					For intraday requests, pickup &amp; return time is set automatically
-					after approval.
+					For intraday requests, pickup &amp; return time is arranged via
+					proposed and approved hour windows after approval.
 				</span>
 			</div>
 
