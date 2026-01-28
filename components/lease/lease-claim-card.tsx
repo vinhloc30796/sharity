@@ -218,9 +218,25 @@ export function LeaseClaimCard(props: {
 		if (eventTimes.expiredAt) return "expired";
 		if (eventTimes.pickedUpAt) return "picked_up";
 		if (eventTimes.approvedAt) return "approved";
-		// Check if pending request has start date in the past
-		if (claim.status === "pending" && claim.startDate < Date.now()) {
-			return "past_due";
+		// Check if pending request has a start date before today (local time).
+		// Requests that start earlier *today* should still be approvable.
+		if (claim.status === "pending") {
+			const now = new Date();
+			const today = new Date(
+				now.getFullYear(),
+				now.getMonth(),
+				now.getDate(),
+			);
+			const start = new Date(claim.startDate);
+			const startDay = new Date(
+				start.getFullYear(),
+				start.getMonth(),
+				start.getDate(),
+			);
+
+			if (startDay < today) {
+				return "past_due";
+			}
 		}
 		if (eventTimes.requestedAt) return "requested";
 		return getLeaseState(claim);
