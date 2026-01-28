@@ -757,8 +757,7 @@ export const requestItem = mutation({
 			if (args.endDate <= now) {
 				throw new Error("Start time must be in the future");
 			}
-			const currentHourStart =
-				Math.floor(now / ONE_HOUR_MS) * ONE_HOUR_MS;
+			const currentHourStart = Math.floor(now / ONE_HOUR_MS) * ONE_HOUR_MS;
 			if (args.startDate < currentHourStart) {
 				throw new Error("Start time must be in the future");
 			}

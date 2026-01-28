@@ -340,8 +340,7 @@ function LoanBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 							onConfirm={async (startAt, endAt) => {
 								const now = Date.now();
 								const HOUR_MS = 60 * 60 * 1000;
-								const currentHourStart =
-									Math.floor(now / HOUR_MS) * HOUR_MS;
+								const currentHourStart = Math.floor(now / HOUR_MS) * HOUR_MS;
 								// Mirror backend: intraday window is valid as long as
 								// it hasn't fully passed yet (end must be in the future)
 								// and the start hour is not earlier than the current hour.
