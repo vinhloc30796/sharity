@@ -59,6 +59,8 @@ function badgeVariantForState(
 			return "outline";
 		case "expired":
 			return "destructive";
+		case "past_due":
+			return "destructive";
 		case "missing":
 			return "destructive";
 		case "rejected":
@@ -84,6 +86,8 @@ function labelForState(state: string): string {
 			return "Completed";
 		case "expired":
 			return "Expired";
+		case "past_due":
+			return "Past due";
 		case "missing":
 			return "Missing";
 		default:
@@ -106,6 +110,7 @@ function getStateIcon(state: string) {
 		case "returned":
 			return PackageCheck;
 		case "expired":
+		case "past_due":
 		case "missing":
 			return AlertTriangle;
 		default:
@@ -213,6 +218,10 @@ export function LeaseClaimCard(props: {
 		if (eventTimes.expiredAt) return "expired";
 		if (eventTimes.pickedUpAt) return "picked_up";
 		if (eventTimes.approvedAt) return "approved";
+		// Check if pending request has start date in the past
+		if (claim.status === "pending" && claim.startDate < Date.now()) {
+			return "past_due";
+		}
 		if (eventTimes.requestedAt) return "requested";
 		return getLeaseState(claim);
 	}, [claim, eventTimes]);
@@ -311,10 +320,12 @@ export function LeaseClaimCard(props: {
 		!eventTimes.missingAt &&
 		!eventTimes.rejectedAt;
 
+	const isPastDue = derivedState === "past_due";
 	const canBorrowerCancel =
 		!isOwner &&
 		!!cancelClaim &&
 		(claim.status === "pending" || claim.status === "approved") &&
+		!isPastDue &&
 		!eventTimes.pickedUpAt &&
 		!eventTimes.returnedAt &&
 		!eventTimes.expiredAt &&
@@ -382,6 +393,13 @@ export function LeaseClaimCard(props: {
 			</CardHeader>
 
 			<CardContent>
+				{isPastDue && (
+					<div className="pb-3 text-xs text-muted-foreground">
+						This request has passed its start date and can no longer be
+						approved.
+					</div>
+				)}
+
 				{canBorrowerCancel && (
 					<div className="pb-3">
 						<Button
@@ -404,7 +422,7 @@ export function LeaseClaimCard(props: {
 					</div>
 				)}
 
-				{isOwner && claim.status === "pending" && (
+				{isOwner && claim.status === "pending" && !isPastDue && (
 					<div className="flex gap-2">
 						<Button
 							size="sm"
