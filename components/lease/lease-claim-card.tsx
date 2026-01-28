@@ -222,11 +222,7 @@ export function LeaseClaimCard(props: {
 		// Requests that start earlier *today* should still be approvable.
 		if (claim.status === "pending") {
 			const now = new Date();
-			const today = new Date(
-				now.getFullYear(),
-				now.getMonth(),
-				now.getDate(),
-			);
+			const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 			const start = new Date(claim.startDate);
 			const startDay = new Date(
 				start.getFullYear(),
