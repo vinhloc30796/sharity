@@ -71,8 +71,13 @@ export function PendingRatings() {
 										</p>
 										<div className="flex items-center gap-2">
 											<Badge variant="outline" className="text-xs">
-												Rate {pending.targetRole}
+												{pending.targetRole === "lender" ? "As lender" : "As borrower"}
 											</Badge>
+											{pending.targetUserName && (
+												<span className="text-xs text-muted-foreground">
+													with {pending.targetUserName}
+												</span>
+											)}
 											<span className="text-xs text-muted-foreground">
 												{format(new Date(pending.startDate), "MMM d")} -{" "}
 												{format(new Date(pending.endDate), "MMM d")}

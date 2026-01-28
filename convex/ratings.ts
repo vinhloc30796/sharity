@@ -133,6 +133,8 @@ export const createRating = mutation({
 		const targetRole: "lender" | "borrower" = isLender ? "borrower" : "lender";
 		const toUserId = isLender ? claim.claimerId : item.ownerId;
 
+		const createdAt = Date.now();
+
 		const ratingId = await ctx.db.insert("ratings", {
 			claimId: args.claimId,
 			fromUserId: identity.subject,
@@ -142,7 +144,16 @@ export const createRating = mutation({
 			comment: args.comment,
 			photoStorageIds: undefined,
 			photoCloudinary: args.photoCloudinary,
-			createdAt: Date.now(),
+			createdAt,
+		});
+
+		await ctx.db.insert("notifications", {
+			recipientId: toUserId,
+			type: "rating_received",
+			itemId: claim.itemId,
+			requestId: args.claimId,
+			isRead: false,
+			createdAt,
 		});
 
 		return ratingId;
@@ -264,6 +275,10 @@ export const getMyPendingRatings = query({
 		const allItems = await ctx.db.query("items").collect();
 		const itemsMap = new Map(allItems.map((i) => [i._id, i]));
 
+		// Get all users to fetch names
+		const allUsers = await ctx.db.query("users").collect();
+		const usersMap = new Map(allUsers.map((u) => [u.clerkId, u]));
+
 		// Get ratings already given by this user
 		const myRatings = await ctx.db
 			.query("ratings")
@@ -285,6 +300,15 @@ export const getMyPendingRatings = query({
 			const item = itemsMap.get(claim.itemId);
 			if (!item) continue;
 
+			// Only allow rating after transaction is completed
+			// For loan items: must be returned
+			// For giveaway items: must be transferred
+			if (item.giveaway) {
+				if (!claim.transferredAt) continue;
+			} else {
+				if (!claim.returnedAt) continue;
+			}
+
 			const isLender = item.ownerId === identity.subject;
 			const isBorrower = claim.claimerId === identity.subject;
 
@@ -295,13 +319,18 @@ export const getMyPendingRatings = query({
 				imageUrl = item.imageCloudinary[0].secureUrl;
 			}
 
+			const targetUserId = isLender ? claim.claimerId : item.ownerId;
+			const targetUser = usersMap.get(targetUserId);
+			const targetUserName = targetUser?.name || null;
+
 			pendingRatings.push({
 				claimId: claim._id,
 				itemId: claim.itemId,
 				itemName: item.name,
 				itemImageUrl: imageUrl,
 				targetRole: isLender ? ("borrower" as const) : ("lender" as const),
-				targetUserId: isLender ? claim.claimerId : item.ownerId,
+				targetUserId,
+				targetUserName,
 				startDate: claim.startDate,
 				endDate: claim.endDate,
 			});

@@ -1496,6 +1496,27 @@ export const markPickedUp = mutation({
 			isRead: false,
 			createdAt,
 		});
+
+		// For giveaway items, notify both parties to rate each other after transfer
+		if (item.giveaway) {
+			await ctx.db.insert("notifications", {
+				recipientId: itemOwnerIdAtPickup,
+				type: "rate_transaction",
+				itemId: args.itemId,
+				requestId: args.claimId,
+				isRead: false,
+				createdAt,
+			});
+
+			await ctx.db.insert("notifications", {
+				recipientId: claim.claimerId,
+				type: "rate_transaction",
+				itemId: args.itemId,
+				requestId: args.claimId,
+				isRead: false,
+				createdAt,
+			});
+		}
 	},
 });
 
@@ -1622,6 +1643,25 @@ export const markReturned = mutation({
 				actorId: userId,
 			}),
 			type: "return_confirmed",
+			itemId: args.itemId,
+			requestId: args.claimId,
+			isRead: false,
+			createdAt,
+		});
+
+		// Notify both parties to rate each other
+		await ctx.db.insert("notifications", {
+			recipientId: item.ownerId,
+			type: "rate_transaction",
+			itemId: args.itemId,
+			requestId: args.claimId,
+			isRead: false,
+			createdAt,
+		});
+
+		await ctx.db.insert("notifications", {
+			recipientId: claim.claimerId,
+			type: "rate_transaction",
 			itemId: args.itemId,
 			requestId: args.claimId,
 			isRead: false,
