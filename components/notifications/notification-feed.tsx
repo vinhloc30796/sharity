@@ -48,6 +48,21 @@ export function NotificationFeed() {
 		return { itemId, claimId, windowStartAt, windowEndAt };
 	};
 
+	const handleNotificationClick = (
+		n: (typeof notifications)[number],
+		context: { itemId: Id<"items"> },
+	) => {
+		const { itemId } = context;
+
+		// For any notification related to an item/request, navigate to the
+		// item detail / request page so the user can review context.
+		navigateToItem(itemId);
+
+		if (!n.isRead) {
+			void handleMarkRead(n._id);
+		}
+	};
+
 	const renderedNotifications = notifications.map((n) => {
 		const { itemId, claimId, windowStartAt, windowEndAt } =
 			getNotificationActionContext(n);
@@ -381,7 +396,7 @@ export function NotificationFeed() {
 				className={`p-3 mb-2 flex justify-between items-start gap-2 ${
 					n.isRead ? "bg-gray-50" : "bg-white border-blue-200 shadow-sm"
 				}`}
-				onClick={() => !n.isRead && handleMarkRead(n._id)}
+				onClick={() => handleNotificationClick(n, { itemId })}
 			>
 				<div className="flex-1 cursor-pointer">
 					<p
