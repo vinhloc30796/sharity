@@ -789,7 +789,7 @@ export const requestItem = mutation({
 			}
 			const currentHourStart = Math.floor(now / ONE_HOUR_MS) * ONE_HOUR_MS;
 			if (args.startDate < currentHourStart) {
-				throw new Error("Start time must be in the future");
+				throw new Error("The requested time window must start in the future");
 			}
 			assertHourAligned(args.startDate);
 			assertHourAligned(args.endDate);
@@ -1021,7 +1021,7 @@ export const proposePickupWindow = mutation({
 			windowEndAt <= now ||
 			args.windowStartAt < now - MAX_PAST_WINDOW_TOLERANCE_MS
 		) {
-			throw new Error("Pickup time must be in the future");
+			throw new Error("The pickup window must be in the future");
 		}
 
 		assertHourAligned(args.windowStartAt);
@@ -1114,7 +1114,7 @@ export const proposeReturnWindow = mutation({
 			windowEndAt <= now ||
 			args.windowStartAt < now - MAX_PAST_WINDOW_TOLERANCE_MS
 		) {
-			throw new Error("Return time must be in the future");
+			throw new Error("The return window must be in the future");
 		}
 
 		assertHourAligned(args.windowStartAt);
