@@ -35,6 +35,8 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
     - [x] Manage queue of claimants (limit to 5)
     - [x] Provide rejection reasons (optional)
 - [ ] Block specific users from claiming items
+- [~] Manage borrowed items & owned items
+- [x] Show "Past Due" status for stale requests
 
 ### 🔍 Finding & Requesting Items
 - [x] Browse items for discovery
@@ -52,6 +54,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 ### 🤝 Exchange & Trust
 - [ ] Mark items as exchanged (hides from market)
 - [ ] Status badges for items (Available, Waitlist Open/Closed, Exchanged)
+- [x] Show contact details after exchange approval
     
 ## Deployment
 

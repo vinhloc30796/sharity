@@ -45,6 +45,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { CloudinaryImage } from "@/components/cloudinary-image";
+import { MAX_IMAGE_SIZE_BYTES } from "@/lib/image-constants";
 
 interface WishlistItemProps {
 	item: Doc<"wishlist"> & {
@@ -293,6 +294,10 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 								value={editFiles}
 								onValueChange={setEditFiles}
 								multiple
+								maxSize={MAX_IMAGE_SIZE_BYTES}
+								onFileReject={(file, message) => {
+									toast.error(`${message} (${file.name})`);
+								}}
 							>
 								<FileUploadDropzone className="h-24 bg-gray-50/50 border-dashed">
 									<div className="flex flex-col items-center gap-1 text-muted-foreground text-xs">

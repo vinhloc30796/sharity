@@ -19,7 +19,9 @@ import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
+	SelectGroup,
 	SelectItem,
+	SelectLabel,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
@@ -57,6 +59,14 @@ function formatHourLabel(hour: number): string {
 	return `${pad2(hour)}:00`;
 }
 
+/** Hour groups for better UX */
+const HOUR_GROUPS = [
+	{ label: "Morning (6-11)", hours: [6, 7, 8, 9, 10, 11] },
+	{ label: "Afternoon (12-17)", hours: [12, 13, 14, 15, 16, 17] },
+	{ label: "Evening (18-23)", hours: [18, 19, 20, 21, 22, 23] },
+	{ label: "Night (0-5)", hours: [0, 1, 2, 3, 4, 5] },
+] as const;
+
 /**
  * Dialog that lets user pick start and end hour on a fixed date (no minutes).
  */
@@ -89,10 +99,10 @@ export function LeaseProposeIntradayDialog(
 	const open = controlledOpen ?? uncontrolledOpen;
 	const setOpen = onOpenChange ?? setUncontrolledOpen;
 	const [startHourValue, setStartHourValue] = useState<string>(
-		defaultStartHour !== undefined ? String(defaultStartHour) : "9",
+		defaultStartHour !== undefined ? String(defaultStartHour) : "18",
 	);
 	const [endHourValue, setEndHourValue] = useState<string>(
-		defaultEndHour !== undefined ? String(defaultEndHour) : "17",
+		defaultEndHour !== undefined ? String(defaultEndHour) : "20",
 	);
 	const [isSaving, setIsSaving] = useState(false);
 
@@ -113,10 +123,19 @@ export function LeaseProposeIntradayDialog(
 	const endAt = useMemo(() => {
 		const d = new Date(fixedDate);
 		d.setHours(endHour, 0, 0, 0);
+		// If end hour is less than start hour, it means the window crosses midnight
+		// Only allow this if endHour is 0 (midnight) - otherwise it's not intraday
+		if (endHour < startHour && endHour === 0) {
+			d.setDate(d.getDate() + 1);
+		}
 		return d.getTime();
-	}, [fixedDate, endHour]);
+	}, [fixedDate, endHour, startHour]);
 
-	const isValid = endHour > startHour;
+	// Valid if:
+	// 1. End hour is after start hour (normal case), OR
+	// 2. End hour is 0 and start hour is > 0 (crosses midnight, still intraday)
+	// Invalid if start and end are the same, or if end < start but end !== 0
+	const isValid = endHour > startHour || (endHour === 0 && startHour > 0);
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
@@ -151,10 +170,15 @@ export function LeaseProposeIntradayDialog(
 								<SelectValue placeholder="Select a start hour" />
 							</SelectTrigger>
 							<SelectContent>
-								{Array.from({ length: 24 }, (_, i) => (
-									<SelectItem key={i} value={String(i)}>
-										{formatHourLabel(i)}
-									</SelectItem>
+								{HOUR_GROUPS.map((group) => (
+									<SelectGroup key={group.label}>
+										<SelectLabel>{group.label}</SelectLabel>
+										{group.hours.map((hour) => (
+											<SelectItem key={hour} value={String(hour)}>
+												{formatHourLabel(hour)}
+											</SelectItem>
+										))}
+									</SelectGroup>
 								))}
 							</SelectContent>
 						</Select>
@@ -167,23 +191,32 @@ export function LeaseProposeIntradayDialog(
 								<SelectValue placeholder="Select an end hour" />
 							</SelectTrigger>
 							<SelectContent>
-								{Array.from({ length: 24 }, (_, i) => (
-									<SelectItem key={i} value={String(i)}>
-										{formatHourLabel(i)}
-									</SelectItem>
+								{HOUR_GROUPS.map((group) => (
+									<SelectGroup key={group.label}>
+										<SelectLabel>{group.label}</SelectLabel>
+										{group.hours.map((hour) => (
+											<SelectItem key={hour} value={String(hour)}>
+												{formatHourLabel(hour)}
+											</SelectItem>
+										))}
+									</SelectGroup>
 								))}
 							</SelectContent>
 						</Select>
 						{!isValid ? (
 							<div className="text-xs text-destructive">
-								End hour must be after start hour.
+								{endHour === startHour
+									? "Start and end hours cannot be the same."
+									: "For multi-day requests, select a date range instead."}
 							</div>
 						) : null}
 					</div>
 
 					<div className="text-xs text-muted-foreground">
 						Proposed: {dateLabel} {formatHourLabel(startHour)}–
-						{formatHourLabel(endHour)}
+						{endHour <= startHour
+							? `${format(new Date(fixedDate.getTime() + 24 * 60 * 60 * 1000), "MMM d")} ${formatHourLabel(endHour)}`
+							: formatHourLabel(endHour)}
 					</div>
 				</div>
 

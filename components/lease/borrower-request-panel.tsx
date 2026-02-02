@@ -131,7 +131,17 @@ export function BorrowerRequestProvider(props: {
 		}
 
 		const now = Date.now();
-		if (startAt < now) {
+		const HOUR_MS = 60 * 60 * 1000;
+		const currentHourStart = Math.floor(now / HOUR_MS) * HOUR_MS;
+		// Mirror backend intraday rule: window is valid as long as it hasn't
+		// fully passed yet (end must be in the future) and the start hour is
+		// not earlier than the current hour. This allows 21–23 at 21:05, but
+		// disallows 20–23 at 21:05.
+		if (endAt <= now) {
+			toast.error("Start time must be in the future");
+			throw new Error("Start time must be in the future");
+		}
+		if (startAt < currentHourStart) {
 			toast.error("Start time must be in the future");
 			throw new Error("Start time must be in the future");
 		}
@@ -264,6 +274,18 @@ export function BorrowerRequestActions() {
 	const markReturned = useMutation(api.items.markReturned);
 	const [showInactive, setShowInactive] = React.useState(false);
 
+	const hasActiveBorrow = React.useMemo(() => {
+		return (myRequests ?? []).some(
+			(req) =>
+				req.status === "approved" &&
+				req.pickedUpAt &&
+				!req.returnedAt &&
+				!req.transferredAt &&
+				!req.expiredAt &&
+				!req.missingAt,
+		);
+	}, [myRequests]);
+
 	return (
 		<>
 			<div className="flex flex-col gap-3">
@@ -287,7 +309,7 @@ export function BorrowerRequestActions() {
 							"Request to Borrow"
 						)}
 					</Button>
-					<AvailabilityToggle id={item._id} />
+					{!hasActiveBorrow && <AvailabilityToggle id={item._id} />}
 				</div>
 				{!isAuthenticated && (
 					<span className="text-sm text-muted-foreground">
@@ -295,8 +317,8 @@ export function BorrowerRequestActions() {
 					</span>
 				)}
 				<span className="text-xs text-muted-foreground">
-					For intraday requests, pickup &amp; return time is set automatically
-					after approval.
+					For intraday requests, pickup &amp; return time is arranged via
+					proposed and approved hour windows after approval.
 				</span>
 			</div>
 
@@ -342,6 +364,7 @@ export function BorrowerRequestActions() {
 										claim={claim}
 										viewerRole="borrower"
 										isGiveaway={false}
+										ownerId={item.ownerId}
 										cancelClaim={async ({ claimId }) =>
 											await cancelRequest(claimId)
 										}
@@ -414,6 +437,18 @@ export function GiveawayBorrowerRequestPanel({
 	const [pickupDay, setPickupDay] = React.useState<Date | undefined>(undefined);
 	const [showInactive, setShowInactive] = React.useState(false);
 
+	const hasActiveBorrow = React.useMemo(() => {
+		return (myRequests ?? []).some(
+			(req) =>
+				req.status === "approved" &&
+				req.pickedUpAt &&
+				!req.returnedAt &&
+				!req.transferredAt &&
+				!req.expiredAt &&
+				!req.missingAt,
+		);
+	}, [myRequests]);
+
 	const disabledDayRanges = React.useMemo(() => {
 		const startOfLocalDayAt = (at: number): number => {
 			const d = new Date(at);
@@ -474,7 +509,7 @@ export function GiveawayBorrowerRequestPanel({
 					/>
 				</div>
 				<div className="mt-4 flex items-center justify-between gap-2">
-					<AvailabilityToggle id={item._id} />
+					{!hasActiveBorrow && <AvailabilityToggle id={item._id} />}
 					<Button
 						size="sm"
 						disabled={requestDisabled}
@@ -532,6 +567,7 @@ export function GiveawayBorrowerRequestPanel({
 										claim={claim}
 										viewerRole="borrower"
 										isGiveaway
+										ownerId={item.ownerId}
 										cancelClaim={async ({ claimId }) =>
 											await cancelRequest(claimId)
 										}

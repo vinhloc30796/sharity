@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 
 export function NotificationFeed() {
 	const notifications = useQuery(api.notifications.get);
+	const pendingRatings = useQuery(api.ratings.getMyPendingRatings);
 	const markAsRead = useMutation(api.notifications.markAsRead);
 	const markAllAsRead = useMutation(api.notifications.markAllAsRead);
 	const approveClaim = useMutation(api.items.approveClaim);
@@ -48,12 +49,45 @@ export function NotificationFeed() {
 		return { itemId, claimId, windowStartAt, windowEndAt };
 	};
 
+	const handleNotificationClick = (
+		n: (typeof notifications)[number],
+		context: { itemId: Id<"items"> },
+	) => {
+		const { itemId } = context;
+
+		if (n.type === "rating_received") {
+			router.push("/profile");
+			if (!n.isRead) {
+				void handleMarkRead(n._id);
+			}
+			return;
+		}
+
+		navigateToItem(itemId);
+
+		if (!n.isRead) {
+			void handleMarkRead(n._id);
+		}
+	};
+
 	const renderedNotifications = notifications.map((n) => {
 		const { itemId, claimId, windowStartAt, windowEndAt } =
 			getNotificationActionContext(n);
 
+		const now = Date.now();
+		const isWindowExpired =
+			typeof windowEndAt === "number" && windowEndAt < now;
+
+		const claim = n.claim;
+		const isClaimApproved = claim?.status === "approved";
+		const isClaimPickedUp = Boolean(claim?.pickedUpAt);
+		const isClaimReturned = Boolean(claim?.returnedAt);
+		const isClaimExpired = Boolean(claim?.expiredAt);
+		const isClaimMissing = Boolean(claim?.missingAt);
+		const isClaimTransferred = Boolean(claim?.transferredAt);
+
 		const isGiveaway = Boolean(n.item?.giveaway);
-		const isTransferred = Boolean(n.claim?.transferredAt);
+		const isTransferred = isClaimTransferred;
 
 		let message = "";
 		switch (n.type) {
@@ -61,7 +95,7 @@ export function NotificationFeed() {
 				message = `New request for "${n.item?.name}"`;
 				break;
 			case "request_approved":
-				message = `Request approved for "${n.item?.name}"`;
+				message = `Request approved for "${n.item?.name}"! You can now view the owner's contact details.`;
 				break;
 			case "request_rejected":
 				message = `Request rejected for "${n.item?.name}"`;
@@ -120,6 +154,15 @@ export function NotificationFeed() {
 			case "return_missing":
 				message = `Return missing for "${n.item?.name}"`;
 				break;
+			case "rate_transaction":
+				message = `Rate your experience with "${n.item?.name}"`;
+				break;
+			case "rating_received":
+				const raterName = (n as { raterName?: string | null }).raterName;
+				message = raterName
+					? `${raterName} left you a review for "${n.item?.name}"`
+					: `You received a new review for "${n.item?.name}"`;
+				break;
 			default:
 				message = "New notification";
 		}
@@ -128,7 +171,25 @@ export function NotificationFeed() {
 			const commonDisabled = !claimId;
 
 			if (n.type === "new_request") {
-				const canAct = !!claimId && n.claim?.status === "pending";
+				const isPending = n.claim?.status === "pending";
+				const isApproved = n.claim?.status === "approved";
+				const isRejected = n.claim?.status === "rejected";
+
+				if (!isPending && (isApproved || isRejected)) {
+					return (
+						<span
+							className={`text-xs px-2 py-1 rounded ${
+								isApproved
+									? "bg-green-100 text-green-700"
+									: "bg-red-100 text-red-700"
+							}`}
+						>
+							{isApproved ? "Approved" : "Rejected"}
+						</span>
+					);
+				}
+
+				const canAct = !!claimId && isPending;
 				return (
 					<div className="flex items-center gap-2">
 						<Button
@@ -179,11 +240,32 @@ export function NotificationFeed() {
 			}
 
 			if (n.type === "pickup_proposed") {
+				const canApprove =
+					claimId &&
+					isClaimApproved &&
+					!isClaimPickedUp &&
+					!isClaimExpired &&
+					!isWindowExpired;
+
+				if (!canApprove) {
+					let reason = "Action unavailable";
+					if (!isClaimApproved) reason = "Request not approved";
+					else if (isClaimPickedUp) reason = "Already picked up";
+					else if (isClaimExpired) reason = "Lease expired";
+					else if (isWindowExpired) reason = "Pickup window expired";
+
+					return (
+						<span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-500">
+							{reason}
+						</span>
+					);
+				}
+
 				return (
 					<Button
 						size="sm"
 						className="h-7"
-						disabled={commonDisabled}
+						disabled={!canApprove}
 						onClick={async (e) => {
 							e.preventDefault();
 							e.stopPropagation();
@@ -221,11 +303,37 @@ export function NotificationFeed() {
 						</Button>
 					);
 				}
+
+				const canApprove =
+					claimId &&
+					isClaimApproved &&
+					isClaimPickedUp &&
+					!isClaimReturned &&
+					!isClaimExpired &&
+					!isClaimMissing &&
+					!isWindowExpired;
+
+				if (!canApprove) {
+					let reason = "Action unavailable";
+					if (!isClaimApproved) reason = "Request not approved";
+					else if (!isClaimPickedUp) reason = "Not picked up yet";
+					else if (isClaimReturned) reason = "Already returned";
+					else if (isClaimExpired) reason = "Lease expired";
+					else if (isClaimMissing) reason = "Item marked missing";
+					else if (isWindowExpired) reason = "Return window expired";
+
+					return (
+						<span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-500">
+							{reason}
+						</span>
+					);
+				}
+
 				return (
 					<Button
 						size="sm"
 						className="h-7"
-						disabled={commonDisabled}
+						disabled={!canApprove}
 						onClick={async (e) => {
 							e.preventDefault();
 							e.stopPropagation();
@@ -247,11 +355,32 @@ export function NotificationFeed() {
 			}
 
 			if (n.type === "pickup_approved") {
+				const canConfirm =
+					claimId &&
+					isClaimApproved &&
+					!isClaimPickedUp &&
+					!isClaimExpired &&
+					!isWindowExpired;
+
+				if (!canConfirm) {
+					let reason = "Action unavailable";
+					if (!isClaimApproved) reason = "Request not approved";
+					else if (isClaimPickedUp) reason = "Already picked up";
+					else if (isClaimExpired) reason = "Lease expired";
+					else if (isWindowExpired) reason = "Pickup window expired";
+
+					return (
+						<span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-500">
+							{reason}
+						</span>
+					);
+				}
+
 				return (
 					<Button
 						size="sm"
 						className="h-7"
-						disabled={commonDisabled}
+						disabled={!canConfirm}
 						onClick={async (e) => {
 							e.preventDefault();
 							e.stopPropagation();
@@ -289,11 +418,38 @@ export function NotificationFeed() {
 						</Button>
 					);
 				}
+
+				// Check if action is still valid
+				const canConfirm =
+					claimId &&
+					isClaimApproved &&
+					isClaimPickedUp &&
+					!isClaimReturned &&
+					!isClaimExpired &&
+					!isClaimMissing &&
+					!isWindowExpired;
+
+				if (!canConfirm) {
+					let reason = "Action unavailable";
+					if (!isClaimApproved) reason = "Request not approved";
+					else if (!isClaimPickedUp) reason = "Not picked up yet";
+					else if (isClaimReturned) reason = "Already returned";
+					else if (isClaimExpired) reason = "Lease expired";
+					else if (isClaimMissing) reason = "Item marked missing";
+					else if (isWindowExpired) reason = "Return window expired";
+
+					return (
+						<span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-500">
+							{reason}
+						</span>
+					);
+				}
+
 				return (
 					<Button
 						size="sm"
 						className="h-7"
-						disabled={commonDisabled}
+						disabled={!canConfirm}
 						onClick={async (e) => {
 							e.preventDefault();
 							e.stopPropagation();
@@ -336,6 +492,76 @@ export function NotificationFeed() {
 				);
 			}
 
+			if (n.type === "rate_transaction") {
+				if (pendingRatings === undefined) {
+					return null;
+				}
+
+				const pendingRating = pendingRatings.find(
+					(pending) => pending.claimId === claimId,
+				);
+
+				if (!pendingRating) {
+					return null;
+				}
+
+				return (
+					<Button
+						size="sm"
+						className="h-7"
+						onClick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							router.push(
+								`/item/${itemId}?rateClaimId=${claimId}&targetRole=${pendingRating.targetRole}`,
+							);
+							if (!n.isRead) {
+								void handleMarkRead(n._id);
+							}
+						}}
+					>
+						Rate
+					</Button>
+				);
+			}
+
+			if (n.type === "rating_received") {
+				return (
+					<Button
+						size="sm"
+						variant="outline"
+						className="h-7"
+						onClick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							router.push("/profile");
+							if (!n.isRead) {
+								void handleMarkRead(n._id);
+							}
+						}}
+					>
+						View
+					</Button>
+				);
+			}
+
+			if (n.type === "request_approved" && n.item?.ownerId) {
+				return (
+					<Button
+						size="sm"
+						variant="outline"
+						className="h-7"
+						onClick={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							router.push(`/user/${n.item?.ownerId}`);
+						}}
+					>
+						View Profile
+					</Button>
+				);
+			}
+
 			return null;
 		};
 
@@ -345,7 +571,7 @@ export function NotificationFeed() {
 				className={`p-3 mb-2 flex justify-between items-start gap-2 ${
 					n.isRead ? "bg-gray-50" : "bg-white border-blue-200 shadow-sm"
 				}`}
-				onClick={() => !n.isRead && handleMarkRead(n._id)}
+				onClick={() => handleNotificationClick(n, { itemId })}
 			>
 				<div className="flex-1 cursor-pointer">
 					<p

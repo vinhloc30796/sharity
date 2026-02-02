@@ -116,6 +116,8 @@ export default defineSchema({
 			v.literal("return_approved"),
 			v.literal("return_confirmed"),
 			v.literal("return_missing"),
+			v.literal("rate_transaction"),
+			v.literal("rating_received"),
 		),
 		itemId: v.id("items"),
 		requestId: v.optional(v.id("claims")),

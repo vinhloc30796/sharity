@@ -19,7 +19,9 @@ import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
+	SelectGroup,
 	SelectItem,
+	SelectLabel,
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
@@ -56,6 +58,14 @@ function formatHourWindowLabel(hour: number): string {
 	return `${start}–${end}`;
 }
 
+/** Hour groups for better UX */
+const HOUR_GROUPS = [
+	{ label: "Morning (6-11)", hours: [6, 7, 8, 9, 10, 11] },
+	{ label: "Afternoon (12-17)", hours: [12, 13, 14, 15, 16, 17] },
+	{ label: "Evening (18-23)", hours: [18, 19, 20, 21, 22, 23] },
+	{ label: "Night (0-5)", hours: [0, 1, 2, 3, 4, 5] },
+] as const;
+
 /**
  * Dialog that lets user pick a 1-hour window on a fixed date.
  */
@@ -80,7 +90,7 @@ export function LeaseProposeWindowDialog(props: LeaseProposeWindowDialogProps) {
 
 	const [open, setOpen] = useState(false);
 	const [hourValue, setHourValue] = useState<string>(
-		defaultHour !== undefined ? String(defaultHour) : "9",
+		defaultHour !== undefined ? String(defaultHour) : "18",
 	);
 	const [isSaving, setIsSaving] = useState(false);
 
@@ -92,9 +102,16 @@ export function LeaseProposeWindowDialog(props: LeaseProposeWindowDialogProps) {
 	const windowLabel = useMemo(() => formatHourWindowLabel(hour), [hour]);
 
 	const windowStartAt = useMemo(() => {
+		// Use local date components to match what the user sees on the calendar
+		// This ensures "today" at hour 23 creates a timestamp for today 23:00 local,
+		// not yesterday 23:00 UTC
 		const d = new Date(fixedDate);
-		d.setHours(hour, 0, 0, 0);
-		return d.getTime();
+		const year = d.getFullYear();
+		const month = d.getMonth();
+		const day = d.getDate();
+		// Create a date in local timezone with the selected hour, then get timestamp
+		const localDate = new Date(year, month, day, hour, 0, 0, 0);
+		return localDate.getTime();
 	}, [fixedDate, hour]);
 
 	return (
@@ -125,10 +142,15 @@ export function LeaseProposeWindowDialog(props: LeaseProposeWindowDialogProps) {
 							<SelectValue placeholder="Select an hour" />
 						</SelectTrigger>
 						<SelectContent>
-							{Array.from({ length: 24 }, (_, i) => (
-								<SelectItem key={i} value={String(i)}>
-									{formatHourWindowLabel(i)}
-								</SelectItem>
+							{HOUR_GROUPS.map((group) => (
+								<SelectGroup key={group.label}>
+									<SelectLabel>{group.label}</SelectLabel>
+									{group.hours.map((hour) => (
+										<SelectItem key={hour} value={String(hour)}>
+											{formatHourWindowLabel(hour)}
+										</SelectItem>
+									))}
+								</SelectGroup>
 							))}
 						</SelectContent>
 					</Select>

@@ -7,6 +7,9 @@ import { vCloudinaryRef } from "./mediaTypes";
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
+// Maximum time in the past that a window proposal can start (allows proposing windows
+// that have just started, e.g., proposing 21:00–22:00 at 21:05)
+const MAX_PAST_WINDOW_TOLERANCE_MS = ONE_HOUR_MS;
 const cloudinary = new CloudinaryClient(components.cloudinary);
 
 type MediaImage =
@@ -108,10 +111,28 @@ function assertHourAligned(windowStartAt: number): void {
 
 function assertOnDay(
 	windowStartAt: number,
-	dayStartAt: number,
+	referenceAt: number,
 	label: string,
 ): void {
-	if (windowStartAt < dayStartAt || windowStartAt >= dayStartAt + ONE_DAY_MS) {
+	// Compare UTC day components directly, allowing ±1 day tolerance
+	// to handle timezone differences when claim.startDate was stored as local midnight
+	const refDate = new Date(referenceAt);
+	const refYear = refDate.getUTCFullYear();
+	const refMonth = refDate.getUTCMonth();
+	const refDay = refDate.getUTCDate();
+
+	const windowDate = new Date(windowStartAt);
+	const windowYear = windowDate.getUTCFullYear();
+	const windowMonth = windowDate.getUTCMonth();
+	const windowDay = windowDate.getUTCDate();
+
+	// Check if same year/month/day, or adjacent day (to handle timezone differences)
+	const sameDay =
+		windowYear === refYear &&
+		windowMonth === refMonth &&
+		Math.abs(windowDay - refDay) <= 1;
+
+	if (!sameDay) {
 		throw new Error(`Time must be on the ${label} day`);
 	}
 }
@@ -253,7 +274,19 @@ export const get = query({
 			.withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
 			.collect();
 
-		const myClaimedItemIds = new Set(myClaims.map((c) => c.itemId));
+		const myClaimedItemIds = new Set(
+			myClaims
+				.filter((c) => {
+					if (c.status === "pending") return true;
+					if (c.status === "approved") {
+						return (
+							!c.returnedAt && !c.transferredAt && !c.expiredAt && !c.missingAt
+						);
+					}
+					return false;
+				})
+				.map((c) => c.itemId),
+		);
 
 		const itemsWithUrls = await Promise.all(
 			items
@@ -745,8 +778,18 @@ export const requestItem = mutation({
 		}
 
 		if (isIntraday) {
-			if (args.startDate < now) {
-				throw new Error("Start time must be in the future");
+			// For intraday (hour-based) requests, require that:
+			// - the window hasn't fully passed yet (end must be in the future)
+			// - the start hour is not earlier than the current hour
+			//
+			// This allows a request like 21:00–23:00 at 21:05, but disallows
+			// 20:00–23:00 at 21:05.
+			if (args.endDate <= now) {
+				throw new Error("The requested time window must end in the future");
+			}
+			const currentHourStart = Math.floor(now / ONE_HOUR_MS) * ONE_HOUR_MS;
+			if (args.startDate < currentHourStart) {
+				throw new Error("The requested time window must start in the future");
 			}
 			assertHourAligned(args.startDate);
 			assertHourAligned(args.endDate);
@@ -904,67 +947,6 @@ export const approveClaim = mutation({
 			createdAt: now,
 		});
 
-		const isHourAligned =
-			claim.startDate % ONE_HOUR_MS === 0 && claim.endDate % ONE_HOUR_MS === 0;
-		const isIntraday =
-			claim.endDate - claim.startDate < ONE_DAY_MS && isHourAligned;
-
-		if (isIntraday) {
-			const pickupProposalId = `auto-pickup-${args.claimId}`;
-			const pickupWindowStartAt = claim.startDate;
-			const pickupWindowEndAt = claim.startDate + ONE_HOUR_MS;
-
-			await ctx.db.insert("lease_activity", {
-				itemId: args.id,
-				claimId: args.claimId,
-				type: "lease_pickup_proposed",
-				actorId: claim.claimerId,
-				createdAt: now,
-				proposalId: pickupProposalId,
-				windowStartAt: pickupWindowStartAt,
-				windowEndAt: pickupWindowEndAt,
-			});
-
-			await ctx.db.insert("lease_activity", {
-				itemId: args.id,
-				claimId: args.claimId,
-				type: "lease_pickup_approved",
-				actorId: identity.subject,
-				createdAt: now,
-				proposalId: pickupProposalId,
-				windowStartAt: pickupWindowStartAt,
-				windowEndAt: pickupWindowEndAt,
-			});
-
-			if (!item.giveaway) {
-				const returnProposalId = `auto-return-${args.claimId}`;
-				const returnWindowStartAt = claim.endDate;
-				const returnWindowEndAt = claim.endDate + ONE_HOUR_MS;
-
-				await ctx.db.insert("lease_activity", {
-					itemId: args.id,
-					claimId: args.claimId,
-					type: "lease_return_proposed",
-					actorId: claim.claimerId,
-					createdAt: now,
-					proposalId: returnProposalId,
-					windowStartAt: returnWindowStartAt,
-					windowEndAt: returnWindowEndAt,
-				});
-
-				await ctx.db.insert("lease_activity", {
-					itemId: args.id,
-					claimId: args.claimId,
-					type: "lease_return_approved",
-					actorId: identity.subject,
-					createdAt: now,
-					proposalId: returnProposalId,
-					windowStartAt: returnWindowStartAt,
-					windowEndAt: returnWindowEndAt,
-				});
-			}
-		}
-
 		// Notify claimer
 		await ctx.db.insert("notifications", {
 			recipientId: claim.claimerId,
@@ -1031,8 +1013,15 @@ export const proposePickupWindow = mutation({
 		if (!identity) throw new Error("Unauthenticated");
 
 		const now = Date.now();
-		if (args.windowStartAt < now) {
-			throw new Error("Pickup time must be in the future");
+		const windowEndAt = args.windowStartAt + ONE_HOUR_MS;
+		// Allow proposing a window that has already started but is still active,
+		// as long as it isn't too far in the past. This supports cases like
+		// proposing 21:00–22:00 at 21:05 local time.
+		if (
+			windowEndAt <= now ||
+			args.windowStartAt < now - MAX_PAST_WINDOW_TOLERANCE_MS
+		) {
+			throw new Error("The pickup window must be in the future");
 		}
 
 		assertHourAligned(args.windowStartAt);
@@ -1077,7 +1066,6 @@ export const proposePickupWindow = mutation({
 			throw new Error("Cannot propose pickup for a rejected lease");
 		}
 
-		const windowEndAt = args.windowStartAt + ONE_HOUR_MS;
 		const proposalId = `${args.claimId}-${now}-${Math.random().toString(16).slice(2)}`;
 
 		await ctx.db.insert("lease_activity", {
@@ -1119,8 +1107,14 @@ export const proposeReturnWindow = mutation({
 		if (!identity) throw new Error("Unauthenticated");
 
 		const now = Date.now();
-		if (args.windowStartAt < now) {
-			throw new Error("Return time must be in the future");
+		const windowEndAt = args.windowStartAt + ONE_HOUR_MS;
+		// Allow proposing a window that has already started but is still active,
+		// similar to pickup windows.
+		if (
+			windowEndAt <= now ||
+			args.windowStartAt < now - MAX_PAST_WINDOW_TOLERANCE_MS
+		) {
+			throw new Error("The return window must be in the future");
 		}
 
 		assertHourAligned(args.windowStartAt);
@@ -1173,7 +1167,6 @@ export const proposeReturnWindow = mutation({
 			throw new Error("Cannot propose return for a rejected lease");
 		}
 
-		const windowEndAt = args.windowStartAt + ONE_HOUR_MS;
 		const proposalId = `${args.claimId}-${now}-${Math.random().toString(16).slice(2)}`;
 
 		await ctx.db.insert("lease_activity", {
@@ -1524,6 +1517,27 @@ export const markPickedUp = mutation({
 			isRead: false,
 			createdAt,
 		});
+
+		// For giveaway items, notify both parties to rate each other after transfer
+		if (item.giveaway) {
+			await ctx.db.insert("notifications", {
+				recipientId: itemOwnerIdAtPickup,
+				type: "rate_transaction",
+				itemId: args.itemId,
+				requestId: args.claimId,
+				isRead: false,
+				createdAt,
+			});
+
+			await ctx.db.insert("notifications", {
+				recipientId: claim.claimerId,
+				type: "rate_transaction",
+				itemId: args.itemId,
+				requestId: args.claimId,
+				isRead: false,
+				createdAt,
+			});
+		}
 	},
 });
 
@@ -1650,6 +1664,25 @@ export const markReturned = mutation({
 				actorId: userId,
 			}),
 			type: "return_confirmed",
+			itemId: args.itemId,
+			requestId: args.claimId,
+			isRead: false,
+			createdAt,
+		});
+
+		// Notify both parties to rate each other
+		await ctx.db.insert("notifications", {
+			recipientId: item.ownerId,
+			type: "rate_transaction",
+			itemId: args.itemId,
+			requestId: args.claimId,
+			isRead: false,
+			createdAt,
+		});
+
+		await ctx.db.insert("notifications", {
+			recipientId: claim.claimerId,
+			type: "rate_transaction",
 			itemId: args.itemId,
 			requestId: args.claimId,
 			isRead: false,
@@ -2236,5 +2269,85 @@ export const updateLocationWard = internalMutation({
 				ward: args.ward,
 			},
 		});
+	},
+});
+
+/**
+ * Get items currently borrowed by the authenticated user.
+ * Returns items where the user has an approved claim that has been picked up
+ * but not yet returned/transferred/expired/marked as missing.
+ */
+export const getMyBorrowedItems = query({
+	args: {},
+	handler: async (ctx) => {
+		const identity = await ctx.auth.getUserIdentity();
+		if (!identity) {
+			return [];
+		}
+
+		// Get approved claims by the user
+		const myClaims = await ctx.db
+			.query("claims")
+			.withIndex("by_claimer", (q) => q.eq("claimerId", identity.subject))
+			.filter((q) => q.eq(q.field("status"), "approved"))
+			.collect();
+
+		// Filter to active borrowed items (picked up but not closed)
+		const activeBorrowedClaims = myClaims.filter(
+			(c) =>
+				!!c.pickedUpAt &&
+				!c.returnedAt &&
+				!c.transferredAt &&
+				!c.expiredAt &&
+				!c.missingAt,
+		);
+
+		// Build result with item details, claim info, and owner info
+		const result = await Promise.all(
+			activeBorrowedClaims.map(async (claim) => {
+				const item = await ctx.db.get(claim.itemId);
+				if (!item) return null;
+
+				// Get owner profile
+				const ownerProfile = await ctx.db
+					.query("users")
+					.withIndex("by_clerk_id", (q) => q.eq("clerkId", item.ownerId))
+					.first();
+
+				let ownerAvatarUrl: string | null = null;
+				if (ownerProfile?.avatarCloudinary) {
+					ownerAvatarUrl = ownerProfile.avatarCloudinary.secureUrl;
+				}
+
+				// Resolve item images
+				const { images, imageUrls } = await resolveImages({
+					ctx,
+					imageCloudinary: item.imageCloudinary,
+					imageStorageIds: item.imageStorageIds,
+				});
+
+				return {
+					...item,
+					images,
+					imageUrls,
+					claim: {
+						_id: claim._id,
+						startDate: claim.startDate,
+						endDate: claim.endDate,
+						pickedUpAt: claim.pickedUpAt,
+					},
+					owner: {
+						id: item.ownerId,
+						name: ownerProfile?.name || null,
+						avatarUrl: ownerAvatarUrl,
+					},
+				};
+			}),
+		);
+
+		// Filter out any nulls and return
+		return result.filter(
+			(item): item is NonNullable<typeof item> => item !== null,
+		);
 	},
 });
