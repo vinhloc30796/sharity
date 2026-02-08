@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { StarRating } from "@/components/star-rating";
 import { Card, CardContent } from "@/components/ui/card";
+import { useTranslations } from "next-intl";
 
 interface RatingSummaryProps {
 	userId: string;
@@ -12,18 +13,21 @@ interface RatingSummaryProps {
 
 export function RatingSummary({ userId, compact = false }: RatingSummaryProps) {
 	const summary = useQuery(api.ratings.getRatingSummary, { userId });
+	const t = useTranslations("RatingSummary");
 
 	if (summary === undefined) {
-		return <div className="text-sm text-muted-foreground">Loading...</div>;
+		return <div className="text-sm text-muted-foreground">{t("loading")}</div>;
 	}
 
 	if (summary.totalRatings === 0) {
 		if (compact) {
-			return <span className="text-sm text-muted-foreground">No ratings</span>;
+			return (
+				<span className="text-sm text-muted-foreground">{t("noRatings")}</span>
+			);
 		}
 		return (
 			<div className="text-sm text-muted-foreground text-center py-2">
-				No ratings yet
+				{t("noRatingsYet")}
 			</div>
 		);
 	}
@@ -48,14 +52,16 @@ export function RatingSummary({ userId, compact = false }: RatingSummaryProps) {
 						<span className="text-2xl font-bold">{summary.averageStars}</span>
 					</div>
 					<p className="text-sm text-muted-foreground">
-						{summary.totalRatings} rating{summary.totalRatings !== 1 ? "s" : ""}
+						{t("ratingCount", { count: summary.totalRatings })}
 					</p>
 				</div>
 
 				{(summary.asLender.count > 0 || summary.asBorrower.count > 0) && (
 					<div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
 						<div className="text-center">
-							<p className="text-sm text-muted-foreground mb-1">As Lender</p>
+							<p className="text-sm text-muted-foreground mb-1">
+								{t("asLender")}
+							</p>
 							{summary.asLender.count > 0 ? (
 								<>
 									<StarRating
@@ -72,7 +78,9 @@ export function RatingSummary({ userId, compact = false }: RatingSummaryProps) {
 							)}
 						</div>
 						<div className="text-center">
-							<p className="text-sm text-muted-foreground mb-1">As Borrower</p>
+							<p className="text-sm text-muted-foreground mb-1">
+								{t("asBorrower")}
+							</p>
 							{summary.asBorrower.count > 0 ? (
 								<>
 									<StarRating

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Package, ArrowRight, ArrowLeft } from "lucide-react";
 import { CloudinaryImage } from "@/components/cloudinary-image";
+import { useTranslations } from "next-intl";
 
 interface UserHistoryProps {
 	userId: string;
@@ -15,11 +16,10 @@ interface UserHistoryProps {
 
 export function UserHistory({ userId }: UserHistoryProps) {
 	const history = useQuery(api.users.getUserHistory, { userId });
+	const t = useTranslations("UserHistory");
 
 	if (history === undefined) {
-		return (
-			<div className="text-sm text-muted-foreground">Loading history...</div>
-		);
+		return <div className="text-sm text-muted-foreground">{t("loading")}</div>;
 	}
 
 	const { lending, borrowing, stats } = history;
@@ -27,7 +27,7 @@ export function UserHistory({ userId }: UserHistoryProps) {
 	if (stats.totalLent === 0 && stats.totalBorrowed === 0) {
 		return (
 			<div className="text-sm text-muted-foreground text-center py-4">
-				No transaction history yet.
+				{t("noHistory")}
 			</div>
 		);
 	}
@@ -39,7 +39,7 @@ export function UserHistory({ userId }: UserHistoryProps) {
 					<CardContent className="px-4 md:px-6 text-center">
 						<div className="flex items-center justify-center gap-2 text-muted-foreground">
 							<ArrowRight className="h-4 w-4" />
-							<span className="text-sm">Lent</span>
+							<span className="text-sm">{t("lent")}</span>
 						</div>
 						<div className="text-2xl font-bold">{stats.totalLent}</div>
 					</CardContent>
@@ -48,7 +48,7 @@ export function UserHistory({ userId }: UserHistoryProps) {
 					<CardContent className="px-4 md:px-6 text-center">
 						<div className="flex items-center justify-center gap-2 text-muted-foreground">
 							<ArrowLeft className="h-4 w-4" />
-							<span className="text-sm">Borrowed</span>
+							<span className="text-sm">{t("borrowed")}</span>
 						</div>
 						<div className="text-2xl font-bold">{stats.totalBorrowed}</div>
 					</CardContent>
@@ -57,9 +57,11 @@ export function UserHistory({ userId }: UserHistoryProps) {
 
 			<Tabs defaultValue="lending" className="w-full">
 				<TabsList className="w-full grid grid-cols-2">
-					<TabsTrigger value="lending">Lending ({lending.length})</TabsTrigger>
+					<TabsTrigger value="lending">
+						{t("tabs.lending", { count: lending.length })}
+					</TabsTrigger>
 					<TabsTrigger value="borrowing">
-						Borrowing ({borrowing.length})
+						{t("tabs.borrowing", { count: borrowing.length })}
 					</TabsTrigger>
 				</TabsList>
 
@@ -92,10 +94,11 @@ function HistoryList({
 	items: HistoryItem[];
 	type: "lending" | "borrowing";
 }) {
+	const t = useTranslations("UserHistory");
 	if (items.length === 0) {
 		return (
 			<div className="text-sm text-muted-foreground text-center py-4">
-				No {type} history.
+				{type === "lending" ? t("noLending") : t("noBorrowing")}
 			</div>
 		);
 	}

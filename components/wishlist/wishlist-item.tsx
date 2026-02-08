@@ -46,6 +46,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { CloudinaryImage } from "@/components/cloudinary-image";
 import { MAX_IMAGE_SIZE_BYTES } from "@/lib/image-constants";
+import { useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
+import { enUS, vi } from "date-fns/locale";
 
 interface WishlistItemProps {
 	item: Doc<"wishlist"> & {
@@ -73,6 +76,9 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 		): img is Extract<(typeof item.images)[number], { source: "cloudinary" }> =>
 			img.source === "cloudinary",
 	);
+	const t = useTranslations("Wishlist");
+	const locale = useLocale();
+	const dateLocale = locale === "vi" ? vi : enUS;
 
 	const [isEditOpen, setIsEditOpen] = useState(false);
 	const [editText, setEditText] = useState(item.text);
@@ -97,7 +103,7 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 		try {
 			await toggleVote({ id: item._id });
 		} catch {
-			toast.error("Failed to vote");
+			toast.error(t("item.failedVote"));
 		}
 	};
 
@@ -148,9 +154,9 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 			});
 
 			setIsEditOpen(false);
-			toast.success("Request updated!");
+			toast.success(t("item.updated"));
 		} catch (error) {
-			toast.error("Failed to update: " + (error as Error).message);
+			toast.error(t("item.failedUpdate", { error: (error as Error).message }));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -187,11 +193,9 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 							)}
 						</button>
 					)}
-
 					<div className="min-w-0 flex-1">
 						<div className="truncate text-sm font-medium">{item.text}</div>
 					</div>
-
 					{item.matchCount > 0 && (
 						<Link
 							href={`/?q=${query}`}
@@ -199,11 +203,10 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 						>
 							<CheckCircle2 className="h-3.5 w-3.5" />
 							<span className="whitespace-nowrap">
-								{item.matchCount} {item.matchCount === 1 ? "match" : "matches"}
+								{t("item.matches", { count: item.matchCount })}
 							</span>
 						</Link>
 					)}
-
 					{item.isOwner && (
 						<Button
 							variant="ghost"
@@ -214,7 +217,6 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 							<Pencil className="h-4 w-4" />
 						</Button>
 					)}
-
 					<Button
 						variant={item.isLiked ? "secondary" : "ghost"}
 						size="sm"
@@ -230,10 +232,12 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 						/>
 						<span className="text-xs">{item.votes.length}</span>
 					</Button>
-
 					{!compact && (
 						<span className="text-xs text-muted-foreground whitespace-nowrap">
-							{formatDistanceToNow(item.createdAt, { addSuffix: true })}
+							{formatDistanceToNow(item.createdAt, {
+								addSuffix: true,
+								locale: dateLocale,
+							})}
 						</span>
 					)}
 				</div>
@@ -243,11 +247,11 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 			<Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle>Edit Request</DialogTitle>
+						<DialogTitle>{t("item.editTitle")}</DialogTitle>
 					</DialogHeader>
 					<div className="space-y-4">
 						<div className="space-y-2">
-							<Label>What do you need?</Label>
+							<Label>{t("draftCard.label")}</Label>
 							<Input
 								value={editText}
 								onChange={(e) => setEditText(e.target.value)}
@@ -258,7 +262,7 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 						{/* Existing images */}
 						{existingImages.length > 0 && (
 							<div className="space-y-2">
-								<Label>Current photos</Label>
+								<Label>{t("item.currentPhotos")}</Label>
 								<div className="flex flex-wrap gap-2">
 									{existingImages.map((img) => (
 										<div
@@ -287,7 +291,7 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 
 						{/* Add new images */}
 						<div className="space-y-2">
-							<Label>Add more photos</Label>
+							<Label>{t("item.addMorePhotos")}</Label>
 							<FileUpload
 								maxFiles={5 - existingImages.length}
 								accept="image/*"
@@ -302,7 +306,7 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 								<FileUploadDropzone className="h-24 bg-gray-50/50 border-dashed">
 									<div className="flex flex-col items-center gap-1 text-muted-foreground text-xs">
 										<UploadCloudIcon className="size-6 text-muted-foreground/50" />
-										<span>Click or drag to add</span>
+										<span>{t("draftCard.clickToUpload")}</span>
 									</div>
 								</FileUploadDropzone>
 								<FileUploadList>
@@ -323,13 +327,13 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 								onClick={() => setIsEditOpen(false)}
 								disabled={isSubmitting}
 							>
-								Cancel
+								{t("item.cancel")}
 							</Button>
 							<Button
 								onClick={handleEditSave}
 								disabled={isSubmitting || !editText.trim()}
 							>
-								{isSubmitting ? "Saving..." : "Save"}
+								{isSubmitting ? t("item.saving") : t("item.save")}
 							</Button>
 						</div>
 					</div>
@@ -365,7 +369,7 @@ export function WishlistItem({ item, compact }: WishlistItemProps) {
 						))}
 					</div>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Close</AlertDialogCancel>
+						<AlertDialogCancel>{t("item.close")}</AlertDialogCancel>
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>

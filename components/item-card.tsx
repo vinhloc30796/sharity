@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/carousel";
 import { Doc } from "../convex/_generated/dataModel";
 import { Badge } from "@/components/ui/badge";
-import { CATEGORY_LABELS, type ItemCategory } from "./item-form";
+import { type ItemCategory } from "@/lib/constants";
 import { MapPin } from "lucide-react";
 import {
 	ReactNode,
@@ -27,6 +27,7 @@ import {
 	useEffect,
 } from "react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import {
 	CloudinaryImage,
 	isCloudinaryImageUrl,
@@ -78,6 +79,8 @@ export function ItemCard({
 	descriptionLines = 2,
 	hideMetaRow = false,
 }: ItemCardProps) {
+	const t = useTranslations("ItemCard");
+	const tCategories = useTranslations("Categories");
 	const [isFlipped, setIsFlipped] = useState(false);
 	const imageUrls = (item.imageUrls ?? []).filter(isCloudinaryImageUrl);
 
@@ -186,16 +189,16 @@ export function ItemCard({
 											density === "compact" ? "mb-1.5" : "mb-2",
 										)}
 									>
-										{item.giveaway ? <Badge>Giveaway</Badge> : null}
+										{item.giveaway ? <Badge>{t("giveaway")}</Badge> : null}
 										{item.category && (
 											<Badge variant="secondary">
-												{CATEGORY_LABELS[item.category]}
+												{tCategories(item.category)}
 											</Badge>
 										)}
 										{item.location && (
 											<span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
 												<MapPin className="h-3 w-3" />
-												{item.location.ward || "Location available"}
+												{item.location.ward || t("locationAvailable")}
 											</span>
 										)}
 									</div>

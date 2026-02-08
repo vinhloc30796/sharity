@@ -5,6 +5,7 @@ import type { Doc } from "@/convex/_generated/dataModel";
 import { UserLink } from "@/components/user-link";
 import { cn } from "@/lib/utils";
 import { CloudinaryImage } from "@/components/cloudinary-image";
+import { useTranslations } from "next-intl";
 
 export type LeaseActivityEvent = Doc<"lease_activity"> & {
 	photoUrls?: string[];
@@ -17,32 +18,33 @@ function Actor({ actorId }: { actorId: string }) {
 	return <UserLink userId={actorId} size="sm" showAvatar={false} />;
 }
 
-function formatEventTitle(event: LeaseActivityEvent): string {
+function FormatEventTitle({ event }: { event: LeaseActivityEvent }) {
+	const t = useTranslations("LeaseActivity.eventTitles");
 	switch (event.type) {
 		case "lease_requested":
-			return "Requested";
+			return t("requested");
 		case "lease_approved":
-			return "Approved";
+			return t("approved");
 		case "lease_rejected":
-			return "Rejected";
+			return t("rejected");
 		case "lease_expired":
-			return "Expired";
+			return t("expired");
 		case "lease_missing":
-			return "Missing";
+			return t("missing");
 		case "lease_pickup_proposed":
-			return "Pickup proposed";
+			return t("pickup_proposed");
 		case "lease_pickup_approved":
-			return "Pickup time approved";
+			return t("pickup_approved");
 		case "lease_return_proposed":
-			return "Return proposed";
+			return t("return_proposed");
 		case "lease_return_approved":
-			return "Return time approved";
+			return t("return_approved");
 		case "lease_picked_up":
-			return "Picked up";
+			return t("picked_up");
 		case "lease_returned":
-			return "Returned";
+			return t("returned");
 		default:
-			return "Lease activity";
+			return t("default");
 	}
 }
 
@@ -54,10 +56,11 @@ export function LeaseActivityTimeline({
 	events: LeaseActivityEvent[] | undefined;
 	className?: string;
 }) {
+	const t = useTranslations("LeaseActivity");
 	if (events === undefined) {
 		return (
 			<div className={cn("text-sm text-muted-foreground", className)}>
-				Loading lease activity...
+				{t("loading")}
 			</div>
 		);
 	}
@@ -65,7 +68,7 @@ export function LeaseActivityTimeline({
 	if (events.length === 0) {
 		return (
 			<div className={cn("text-sm text-muted-foreground", className)}>
-				No lease activity yet.
+				{t("empty")}
 			</div>
 		);
 	}
@@ -73,19 +76,20 @@ export function LeaseActivityTimeline({
 	return (
 		<div className={cn("space-y-3", className)}>
 			{events.map((event) => {
-				const title = formatEventTitle(event);
 				const photoUrls = event.photoUrls ?? [];
 				return (
 					<div key={event._id} className="flex gap-3">
 						<div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-muted-foreground" />
 						<div className="min-w-0">
 							<div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-								<span className="text-sm font-medium">{title}</span>
+								<span className="text-sm font-medium">
+									<FormatEventTitle event={event} />
+								</span>
 								<span className="text-xs text-muted-foreground">
 									{format(new Date(event.createdAt), "MMM d, yyyy p")}
 								</span>
 								<span className="text-xs text-muted-foreground flex items-center gap-1">
-									by <Actor actorId={event.actorId} />
+									{t("by")} <Actor actorId={event.actorId} />
 								</span>
 							</div>
 
@@ -102,8 +106,10 @@ export function LeaseActivityTimeline({
 								typeof event.windowStartAt === "number" &&
 								typeof event.windowEndAt === "number" && (
 									<div className="text-xs text-muted-foreground">
-										Window: {format(new Date(event.windowStartAt), "MMM d p")}–
-										{format(new Date(event.windowEndAt), "p")}
+										{t("window", {
+											start: format(new Date(event.windowStartAt), "MMM d p"),
+											end: format(new Date(event.windowEndAt), "p"),
+										})}
 									</div>
 								)}
 

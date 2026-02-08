@@ -49,25 +49,9 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useTranslations } from "next-intl";
 
-export type ItemCategory =
-	| "kitchen"
-	| "furniture"
-	| "electronics"
-	| "clothing"
-	| "books"
-	| "sports"
-	| "other";
-
-export const CATEGORY_LABELS: Record<ItemCategory, string> = {
-	kitchen: "Kitchen",
-	furniture: "Furniture",
-	electronics: "Electronics",
-	clothing: "Clothing",
-	books: "Books",
-	sports: "Sports",
-	other: "Other",
-};
+import { type ItemCategory, ITEM_CATEGORIES } from "@/lib/constants";
 
 export interface Location {
 	lat: number;
@@ -117,6 +101,8 @@ export function ItemForm({
 	submitLabel = "Submit",
 	enableModeSwitch = false,
 }: ItemFormProps) {
+	const t = useTranslations("ItemForm");
+	const tCategories = useTranslations("Categories");
 	const [name, setName] = useState(initialValues?.name || "");
 	const [description, setDescription] = useState(
 		initialValues?.description || "",
@@ -170,7 +156,7 @@ export function ItemForm({
 
 	const handleGetLocation = () => {
 		if (!navigator.geolocation) {
-			toast.error("Geolocation is not supported by your browser");
+			toast.error(t("validation.geolocationNotSupported"));
 			return;
 		}
 
@@ -183,11 +169,11 @@ export function ItemForm({
 					address: address || undefined,
 				});
 				setIsGettingLocation(false);
-				toast.success("Location captured successfully");
+				toast.success(t("validation.locationCaptured"));
 			},
 			(error) => {
 				setIsGettingLocation(false);
-				toast.error(`Failed to get location: ${error.message}`);
+				toast.error(t("validation.locationError", { error: error.message }));
 			},
 		);
 	};
@@ -200,7 +186,7 @@ export function ItemForm({
 			ward: loc.ward,
 		});
 		setAddress(loc.address || "");
-		toast.success("Location selected");
+		toast.success(t("validation.locationSelected"));
 	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -219,10 +205,10 @@ export function ItemForm({
 
 				const n = Number(trimmed);
 				if (!Number.isFinite(n) || !Number.isInteger(n)) {
-					throw new Error(`${label} must be an integer number of days`);
+					throw new Error(t("validation.mustBeInteger", { label }));
 				}
 				if (n < 1) {
-					throw new Error(`${label} must be at least 1 day`);
+					throw new Error(t("validation.mustBeAtLeastOne", { label }));
 				}
 				return n;
 			};
@@ -239,9 +225,7 @@ export function ItemForm({
 				maxLeaseDaysValue !== undefined &&
 				minLeaseDaysValue > maxLeaseDaysValue
 			) {
-				throw new Error(
-					"Min lease length must be less than or equal to max lease length",
-				);
+				throw new Error(t("validation.minMaxError"));
 			}
 
 			// 1. Upload new files to Cloudinary
@@ -307,9 +291,9 @@ export function ItemForm({
 				<>
 					<div className="flex items-center justify-between gap-3">
 						<div className="space-y-1">
-							<Label htmlFor="giveaway-mode">Giveaway</Label>
+							<Label htmlFor="giveaway-mode">{t("giveawayMode")}</Label>
 							<div className="text-xs text-muted-foreground">
-								No return. Ownership transfers after pickup.
+								{t("giveawayDesc")}
 							</div>
 						</div>
 						<Switch
@@ -332,13 +316,13 @@ export function ItemForm({
 					>
 						<AlertDialogContent>
 							<AlertDialogHeader>
-								<AlertDialogTitle>Switch mode?</AlertDialogTitle>
+								<AlertDialogTitle>{t("switchMode.title")}</AlertDialogTitle>
 								<AlertDialogDescription>
-									This will reject all current pending requests
+									{t("switchMode.description")}
 								</AlertDialogDescription>
 							</AlertDialogHeader>
 							<AlertDialogFooter>
-								<AlertDialogCancel>Cancel</AlertDialogCancel>
+								<AlertDialogCancel>{t("switchMode.cancel")}</AlertDialogCancel>
 								<AlertDialogAction
 									onClick={() => {
 										if (pendingGiveaway === null) return;
@@ -351,7 +335,7 @@ export function ItemForm({
 										setIsModeConfirmOpen(false);
 									}}
 								>
-									Switch
+									{t("switchMode.confirm")}
 								</AlertDialogAction>
 							</AlertDialogFooter>
 						</AlertDialogContent>
@@ -360,22 +344,22 @@ export function ItemForm({
 			) : null}
 
 			<div className="flex flex-col gap-2">
-				<Label htmlFor="name">Item Name</Label>
+				<Label htmlFor="name">{t("itemName")}</Label>
 				<Input
 					id="name"
 					type="text"
-					placeholder="e.g., Camping Tent"
+					placeholder={t("itemNamePlaceholder")}
 					value={name}
 					onChange={(e) => setName(e.target.value)}
 					disabled={isSubmitting}
 				/>
 			</div>
 			<div className="flex flex-col gap-2">
-				<Label htmlFor="desc">Description</Label>
+				<Label htmlFor="desc">{t("description")}</Label>
 				<Input
 					id="desc"
 					type="text"
-					placeholder="Optional description"
+					placeholder={t("descriptionPlaceholder")}
 					value={description}
 					onChange={(e) => setDescription(e.target.value)}
 					disabled={isSubmitting}
@@ -384,22 +368,22 @@ export function ItemForm({
 
 			{giveaway ? (
 				<div className="text-xs text-muted-foreground">
-					Lease length limits are disabled for giveaway items.
+					{t("giveawaylimitDesc")}
 				</div>
 			) : (
 				<div className="flex flex-col gap-2">
-					<Label>Lease length limits (days)</Label>
+					<Label>{t("leaseLengthLimits")}</Label>
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 						<div className="flex flex-col gap-2">
 							<Label htmlFor="min-lease-days" className="text-xs">
-								Min days (optional)
+								{t("minLeaseDays")}
 							</Label>
 							<Input
 								id="min-lease-days"
 								type="number"
 								step={1}
 								min={1}
-								placeholder="e.g., 1"
+								placeholder={t("minLeaseDaysPlaceholder")}
 								value={minLeaseDays}
 								onChange={(e) => setMinLeaseDays(e.target.value)}
 								disabled={isSubmitting}
@@ -408,14 +392,14 @@ export function ItemForm({
 						</div>
 						<div className="flex flex-col gap-2">
 							<Label htmlFor="max-lease-days" className="text-xs">
-								Max days (optional)
+								{t("maxLeaseDays")}
 							</Label>
 							<Input
 								id="max-lease-days"
 								type="number"
 								step={1}
 								min={1}
-								placeholder="e.g., 14"
+								placeholder={t("maxLeaseDaysPlaceholder")}
 								value={maxLeaseDays}
 								onChange={(e) => setMaxLeaseDays(e.target.value)}
 								disabled={isSubmitting}
@@ -424,25 +408,25 @@ export function ItemForm({
 						</div>
 					</div>
 					<div className="text-xs text-muted-foreground">
-						Same-day requests count as a fraction of a day.
+						{t("sameDayNote")}
 					</div>
 				</div>
 			)}
 
 			<div className="flex flex-col gap-2">
-				<Label htmlFor="category">Category</Label>
+				<Label htmlFor="category">{t("category")}</Label>
 				<Select
 					value={category}
 					onValueChange={(value) => setCategory(value as ItemCategory)}
 					disabled={isSubmitting}
 				>
 					<SelectTrigger id="category">
-						<SelectValue placeholder="Select a category" />
+						<SelectValue placeholder={t("selectCategory")} />
 					</SelectTrigger>
 					<SelectContent>
-						{(Object.keys(CATEGORY_LABELS) as ItemCategory[]).map((cat) => (
+						{ITEM_CATEGORIES.map((cat) => (
 							<SelectItem key={cat} value={cat}>
-								{CATEGORY_LABELS[cat]}
+								{tCategories(cat)}
 							</SelectItem>
 						))}
 					</SelectContent>
@@ -450,11 +434,11 @@ export function ItemForm({
 			</div>
 
 			<div className="flex flex-col gap-2">
-				<Label>Location</Label>
+				<Label>{t("location")}</Label>
 				<div className="flex gap-2">
 					<Input
 						type="text"
-						placeholder="Address (auto-filled from map)"
+						placeholder={t("addressPlaceholder")}
 						value={address}
 						onChange={(e) => setAddress(e.target.value)}
 						disabled={isSubmitting}
@@ -465,7 +449,7 @@ export function ItemForm({
 						variant="outline"
 						onClick={() => setIsLocationDialogOpen(true)}
 						disabled={isSubmitting}
-						title="Pick on map"
+						title={t("pickOnMap")}
 					>
 						<Map className="h-4 w-4" />
 					</Button>
@@ -474,7 +458,7 @@ export function ItemForm({
 						variant="outline"
 						onClick={handleGetLocation}
 						disabled={isSubmitting || isGettingLocation}
-						title="Get current location"
+						title={t("getCurrentLocation")}
 					>
 						{isGettingLocation ? (
 							<Loader2 className="h-4 w-4 animate-spin" />
@@ -497,7 +481,7 @@ export function ItemForm({
 			</div>
 
 			<div className="flex flex-col gap-2">
-				<Label>Images (Max 5)</Label>
+				<Label>{t("imagesLabel")}</Label>
 
 				{/* Existing Images List */}
 				{existingImages.length > 0 && (
@@ -539,7 +523,9 @@ export function ItemForm({
 						multiple={remainingSlots > 1}
 						maxSize={MAX_IMAGE_SIZE_BYTES}
 						onFileReject={(file, message) => {
-							toast.error(`${message} (${file.name})`);
+							toast.error(
+								t("validation.fileReject", { message, fileName: file.name }),
+							);
 						}}
 						// Removed onUpload to disable auto-upload
 					>
@@ -548,13 +534,16 @@ export function ItemForm({
 								<UploadCloudIcon className="size-8 text-muted-foreground/50" />
 								<div className="flex flex-col items-center">
 									<span className="font-semibold text-foreground">
-										Click to upload
+										{t("clickToUpload")}
 									</span>
-									<span>or drag and drop</span>
+									<span>{t("dragAndDrop")}</span>
 									<span className="text-xs text-muted-foreground/75">
 										{existingImages.length > 0
-											? `You can add ${remainingSlots} more image${remainingSlots !== 1 ? "s" : ""}`
-											: "Up to 5 images"}
+											? t("uploadingExample", {
+													count: remainingSlots,
+													s: remainingSlots !== 1 ? "s" : "",
+												})
+											: t("uploadLimit")}
 									</span>
 								</div>
 							</div>
@@ -571,7 +560,7 @@ export function ItemForm({
 					</FileUpload>
 				) : (
 					<div className="p-4 border border-dashed rounded-md bg-gray-50 text-center text-sm text-gray-500">
-						Limit of 5 images reached. Remove some to add new ones.
+						{t("uploadLimitReached")}
 					</div>
 				)}
 			</div>
@@ -582,7 +571,7 @@ export function ItemForm({
 					disabled={isSubmitting}
 					className="w-full sm:w-auto"
 				>
-					{isSubmitting ? "Uploading & Saving..." : submitLabel}
+					{isSubmitting ? t("uploadingSaving") : submitLabel}
 				</Button>
 				<Button
 					asChild
@@ -592,7 +581,7 @@ export function ItemForm({
 				>
 					<Link href="/my-items" className="relative">
 						<ListChecks className="h-4 w-4" />
-						My Items
+						{t("myItems")}
 						{hasMyItemsStatus ? (
 							<span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-background" />
 						) : null}

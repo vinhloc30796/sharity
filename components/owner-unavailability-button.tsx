@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import type { DateRange } from "react-day-picker";
-import { format } from "date-fns";
 import { useMutation, useQuery } from "convex/react";
 import { CalendarDays, Plus, Trash2 } from "lucide-react";
 import type { ComponentProps } from "react";
+import { useTranslations, useFormatter } from "next-intl";
 
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -23,10 +23,6 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 
-function formatRange(startDate: number, endDate: number): string {
-	return `${format(new Date(startDate), "MMM d, yyyy")} – ${format(new Date(endDate), "MMM d, yyyy")}`;
-}
-
 interface OwnerUnavailabilityButtonProps {
 	className?: string;
 	variant?: ComponentProps<typeof Button>["variant"];
@@ -38,6 +34,9 @@ interface OwnerUnavailabilityButtonProps {
 export function OwnerUnavailabilityButton(
 	props: OwnerUnavailabilityButtonProps,
 ) {
+	const t = useTranslations("OwnerUnavailability");
+	const format = useFormatter();
+
 	const className = props.className;
 	const variant = props.variant ?? "outline";
 	const size = props.size ?? "sm";
@@ -87,6 +86,18 @@ export function OwnerUnavailabilityButton(
 		}
 	};
 
+	const formatRange = (startDate: number, endDate: number) => {
+		return `${format.dateTime(new Date(startDate), {
+			year: "numeric",
+			month: "short",
+			day: "numeric",
+		})} – ${format.dateTime(new Date(endDate), {
+			year: "numeric",
+			month: "short",
+			day: "numeric",
+		})}`;
+	};
+
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
@@ -96,27 +107,28 @@ export function OwnerUnavailabilityButton(
 					className={cn("gap-2", className)}
 				>
 					<CalendarDays className="h-4 w-4" />
-					Vacation
-					{isOnVacationNow ? <Badge variant="secondary">On</Badge> : null}
+					{t("button")}
+					{isOnVacationNow ? (
+						<Badge variant="secondary">{t("badgeOn")}</Badge>
+					) : null}
 				</Button>
 			</DialogTrigger>
 			<DialogContent className="sm:max-w-xl">
 				<DialogHeader>
-					<DialogTitle>Vacation / Unavailability</DialogTitle>
-					<DialogDescription>
-						When a range is active, your items are hidden from Browse and cannot
-						be requested.
-					</DialogDescription>
+					<DialogTitle>{t("title")}</DialogTitle>
+					<DialogDescription>{t("description")}</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-4">
 					<div className="space-y-2">
-						<div className="text-sm font-medium">Your ranges</div>
+						<div className="text-sm font-medium">{t("yourRanges")}</div>
 						{ranges === undefined ? (
-							<div className="text-sm text-muted-foreground">Loading…</div>
+							<div className="text-sm text-muted-foreground">
+								{t("loading")}
+							</div>
 						) : ranges.length === 0 ? (
 							<div className="text-sm text-muted-foreground">
-								No ranges yet.
+								{t("noRanges")}
 							</div>
 						) : (
 							<div className="space-y-2">
@@ -145,7 +157,7 @@ export function OwnerUnavailabilityButton(
 											}
 										>
 											<Trash2 className="h-4 w-4" />
-											<span className="sr-only">Delete</span>
+											<span className="sr-only">{t("delete")}</span>
 										</Button>
 									</div>
 								))}
@@ -154,7 +166,7 @@ export function OwnerUnavailabilityButton(
 					</div>
 
 					<div className="border-t pt-4 space-y-3">
-						<div className="text-sm font-medium">Add a range</div>
+						<div className="text-sm font-medium">{t("addRange")}</div>
 						<Calendar
 							mode="range"
 							selected={date}
@@ -162,14 +174,14 @@ export function OwnerUnavailabilityButton(
 							numberOfMonths={2}
 						/>
 						<Input
-							placeholder="Note (optional)"
+							placeholder={t("notePlaceholder")}
 							value={note}
 							onChange={(e) => setNote(e.target.value)}
 						/>
 						<div className="flex justify-end">
 							<Button className="gap-2" disabled={!canAdd} onClick={onAdd}>
 								<Plus className="h-4 w-4" />
-								{isSaving ? "Saving…" : "Add"}
+								{isSaving ? t("saving") : t("save")}
 							</Button>
 						</div>
 					</div>

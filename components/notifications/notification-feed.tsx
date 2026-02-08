@@ -9,8 +9,10 @@ import { format, formatDistanceToNow } from "date-fns";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 export function NotificationFeed() {
+	const t = useTranslations("Notifications");
 	const notifications = useQuery(api.notifications.get);
 	const pendingRatings = useQuery(api.ratings.getMyPendingRatings);
 	const markAsRead = useMutation(api.notifications.markAsRead);
@@ -24,13 +26,11 @@ export function NotificationFeed() {
 	const router = useRouter();
 
 	if (notifications === undefined) {
-		return <div className="p-4 text-center">Loading notifications...</div>;
+		return <div className="p-4 text-center">{t("loading")}</div>;
 	}
 
 	if (notifications.length === 0) {
-		return (
-			<div className="p-4 text-center text-gray-500">No new notifications</div>
-		);
+		return <div className="p-4 text-center text-gray-500">{t("empty")}</div>;
 	}
 
 	const handleMarkRead = async (id: Id<"notifications">) => {
@@ -90,86 +90,93 @@ export function NotificationFeed() {
 		const isTransferred = isClaimTransferred;
 
 		let message = "";
+		const itemName = n.item?.name || "";
 		switch (n.type) {
 			case "new_request":
-				message = `New request for "${n.item?.name}"`;
+				message = t("messages.new_request", { itemName });
 				break;
 			case "request_approved":
-				message = `Request approved for "${n.item?.name}"! You can now view the owner's contact details.`;
+				message = t("messages.request_approved", { itemName });
 				break;
 			case "request_rejected":
-				message = `Request rejected for "${n.item?.name}"`;
+				message = t("messages.request_rejected", { itemName });
 				break;
 			case "item_available":
-				message = `"${n.item?.name}" is now available!`;
+				message = t("messages.item_available", { itemName });
 				break;
 			case "pickup_proposed":
-				message = `Pickup requested for "${n.item?.name}"`;
 				if (windowStartAt && windowEndAt) {
-					message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
-						new Date(windowEndAt),
-						"p",
-					)}`;
+					message = t("messages.pickup_proposed_window", {
+						itemName,
+						start: format(new Date(windowStartAt), "MMM d p"),
+						end: format(new Date(windowEndAt), "p"),
+					});
+				} else {
+					message = t("messages.pickup_proposed", { itemName });
 				}
 				break;
 			case "pickup_approved":
-				message = `Pickup approved for "${n.item?.name}"`;
 				if (windowStartAt && windowEndAt) {
-					message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
-						new Date(windowEndAt),
-						"p",
-					)}`;
+					message = t("messages.pickup_approved_window", {
+						itemName,
+						start: format(new Date(windowStartAt), "MMM d p"),
+						end: format(new Date(windowEndAt), "p"),
+					});
+				} else {
+					message = t("messages.pickup_approved", { itemName });
 				}
 				break;
 			case "pickup_confirmed":
 				message =
 					isGiveaway && isTransferred
-						? `Transfer completed for "${n.item?.name}"`
-						: `Pickup confirmed for "${n.item?.name}"`;
+						? t("messages.transfer_completed", { itemName })
+						: t("messages.pickup_confirmed", { itemName });
 				break;
 			case "pickup_expired":
-				message = `Pickup expired for "${n.item?.name}"`;
+				message = t("messages.pickup_expired", { itemName });
 				break;
 			case "return_proposed":
-				message = `Return requested for "${n.item?.name}"`;
 				if (windowStartAt && windowEndAt) {
-					message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
-						new Date(windowEndAt),
-						"p",
-					)}`;
+					message = t("messages.return_proposed_window", {
+						itemName,
+						start: format(new Date(windowStartAt), "MMM d p"),
+						end: format(new Date(windowEndAt), "p"),
+					});
+				} else {
+					message = t("messages.return_proposed", { itemName });
 				}
 				break;
 			case "return_approved":
-				message = `Return approved for "${n.item?.name}"`;
 				if (windowStartAt && windowEndAt) {
-					message += `: ${format(new Date(windowStartAt), "MMM d p")}–${format(
-						new Date(windowEndAt),
-						"p",
-					)}`;
+					message = t("messages.return_approved_window", {
+						itemName,
+						start: format(new Date(windowStartAt), "MMM d p"),
+						end: format(new Date(windowEndAt), "p"),
+					});
+				} else {
+					message = t("messages.return_approved", { itemName });
 				}
 				break;
 			case "return_confirmed":
-				message = `Return confirmed for "${n.item?.name}"`;
+				message = t("messages.return_confirmed", { itemName });
 				break;
 			case "return_missing":
-				message = `Return missing for "${n.item?.name}"`;
+				message = t("messages.return_missing", { itemName });
 				break;
 			case "rate_transaction":
-				message = `Rate your experience with "${n.item?.name}"`;
+				message = t("messages.rate_transaction", { itemName });
 				break;
 			case "rating_received":
 				const raterName = (n as { raterName?: string | null }).raterName;
 				message = raterName
-					? `${raterName} left you a review for "${n.item?.name}"`
-					: `You received a new review for "${n.item?.name}"`;
+					? t("messages.rating_received_named", { itemName, raterName })
+					: t("messages.rating_received", { itemName });
 				break;
 			default:
-				message = "New notification";
+				message = t("messages.default");
 		}
 
 		const renderAction = () => {
-			const commonDisabled = !claimId;
-
 			if (n.type === "new_request") {
 				const isPending = n.claim?.status === "pending";
 				const isApproved = n.claim?.status === "approved";
@@ -184,7 +191,7 @@ export function NotificationFeed() {
 									: "bg-red-100 text-red-700"
 							}`}
 						>
-							{isApproved ? "Approved" : "Rejected"}
+							{isApproved ? t("actions.approved") : t("actions.rejected")}
 						</span>
 					);
 				}
@@ -203,7 +210,7 @@ export function NotificationFeed() {
 								if (!claimId) return;
 								try {
 									await rejectClaim({ id: itemId, claimId });
-									toast.success("Request rejected");
+									toast.success(t("toasts.rejected"));
 									await handleMarkRead(n._id);
 								} catch (error: unknown) {
 									const message =
@@ -224,7 +231,7 @@ export function NotificationFeed() {
 								if (!claimId) return;
 								try {
 									await approveClaim({ id: itemId, claimId });
-									toast.success("Request approved");
+									toast.success(t("toasts.approved"));
 									await handleMarkRead(n._id);
 								} catch (error: unknown) {
 									const message =
@@ -233,7 +240,7 @@ export function NotificationFeed() {
 								}
 							}}
 						>
-							Approve
+							{t("actions.approve")}
 						</Button>
 					</div>
 				);
@@ -272,7 +279,7 @@ export function NotificationFeed() {
 							if (!claimId) return;
 							try {
 								await approvePickupWindow({ itemId, claimId });
-								toast.success("Pickup time approved");
+								toast.success(t("toasts.pickupApproved"));
 								await handleMarkRead(n._id);
 							} catch (error: unknown) {
 								const message =
@@ -281,7 +288,7 @@ export function NotificationFeed() {
 							}
 						}}
 					>
-						Approve
+						{t("actions.approve")}
 					</Button>
 				);
 			}
@@ -314,13 +321,13 @@ export function NotificationFeed() {
 					!isWindowExpired;
 
 				if (!canApprove) {
-					let reason = "Action unavailable";
-					if (!isClaimApproved) reason = "Request not approved";
-					else if (!isClaimPickedUp) reason = "Not picked up yet";
-					else if (isClaimReturned) reason = "Already returned";
-					else if (isClaimExpired) reason = "Lease expired";
-					else if (isClaimMissing) reason = "Item marked missing";
-					else if (isWindowExpired) reason = "Return window expired";
+					let reason = t("reasons.unavailable");
+					if (!isClaimApproved) reason = t("reasons.notApproved");
+					else if (!isClaimPickedUp) reason = t("reasons.notPickedUp");
+					else if (isClaimReturned) reason = t("reasons.alreadyReturned");
+					else if (isClaimExpired) reason = t("reasons.leaseExpired");
+					else if (isClaimMissing) reason = t("reasons.itemMissing");
+					else if (isWindowExpired) reason = t("reasons.returnWindowExpired");
 
 					return (
 						<span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-500">
@@ -340,7 +347,7 @@ export function NotificationFeed() {
 							if (!claimId) return;
 							try {
 								await approveReturnWindow({ itemId, claimId });
-								toast.success("Return time approved");
+								toast.success(t("toasts.returnApproved"));
 								await handleMarkRead(n._id);
 							} catch (error: unknown) {
 								const message =
@@ -349,7 +356,7 @@ export function NotificationFeed() {
 							}
 						}}
 					>
-						Approve
+						{t("actions.approve")}
 					</Button>
 				);
 			}
@@ -363,11 +370,11 @@ export function NotificationFeed() {
 					!isWindowExpired;
 
 				if (!canConfirm) {
-					let reason = "Action unavailable";
-					if (!isClaimApproved) reason = "Request not approved";
-					else if (isClaimPickedUp) reason = "Already picked up";
-					else if (isClaimExpired) reason = "Lease expired";
-					else if (isWindowExpired) reason = "Pickup window expired";
+					let reason = t("reasons.unavailable");
+					if (!isClaimApproved) reason = t("reasons.notApproved");
+					else if (isClaimPickedUp) reason = t("reasons.alreadyPickedUp");
+					else if (isClaimExpired) reason = t("reasons.leaseExpired");
+					else if (isWindowExpired) reason = t("reasons.pickupWindowExpired");
 
 					return (
 						<span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-500">
@@ -387,7 +394,7 @@ export function NotificationFeed() {
 							if (!claimId) return;
 							try {
 								await markPickedUp({ itemId, claimId });
-								toast.success("Pickup confirmed");
+								toast.success(t("toasts.pickupConfirmed"));
 								await handleMarkRead(n._id);
 							} catch (error: unknown) {
 								const message =
@@ -396,7 +403,7 @@ export function NotificationFeed() {
 							}
 						}}
 					>
-						Confirm
+						{t("actions.confirm")}
 					</Button>
 				);
 			}
@@ -430,13 +437,13 @@ export function NotificationFeed() {
 					!isWindowExpired;
 
 				if (!canConfirm) {
-					let reason = "Action unavailable";
-					if (!isClaimApproved) reason = "Request not approved";
-					else if (!isClaimPickedUp) reason = "Not picked up yet";
-					else if (isClaimReturned) reason = "Already returned";
-					else if (isClaimExpired) reason = "Lease expired";
-					else if (isClaimMissing) reason = "Item marked missing";
-					else if (isWindowExpired) reason = "Return window expired";
+					let reason = t("reasons.unavailable");
+					if (!isClaimApproved) reason = t("reasons.notApproved");
+					else if (!isClaimPickedUp) reason = t("reasons.notPickedUp");
+					else if (isClaimReturned) reason = t("reasons.alreadyReturned");
+					else if (isClaimExpired) reason = t("reasons.leaseExpired");
+					else if (isClaimMissing) reason = t("reasons.itemMissing");
+					else if (isWindowExpired) reason = t("reasons.returnWindowExpired");
 
 					return (
 						<span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-500">
@@ -456,7 +463,7 @@ export function NotificationFeed() {
 							if (!claimId) return;
 							try {
 								await markReturned({ itemId, claimId });
-								toast.success("Return confirmed");
+								toast.success(t("toasts.returnConfirmed"));
 								await handleMarkRead(n._id);
 							} catch (error: unknown) {
 								const message =
@@ -465,7 +472,7 @@ export function NotificationFeed() {
 							}
 						}}
 					>
-						Confirm
+						{t("actions.confirm")}
 					</Button>
 				);
 			}
@@ -487,7 +494,7 @@ export function NotificationFeed() {
 							navigateToItem(itemId);
 						}}
 					>
-						View
+						{t("actions.view")}
 					</Button>
 				);
 			}
@@ -520,7 +527,7 @@ export function NotificationFeed() {
 							}
 						}}
 					>
-						Rate
+						{t("actions.rate")}
 					</Button>
 				);
 			}
@@ -540,7 +547,7 @@ export function NotificationFeed() {
 							}
 						}}
 					>
-						View
+						{t("actions.view")}
 					</Button>
 				);
 			}
@@ -557,7 +564,7 @@ export function NotificationFeed() {
 							router.push(`/user/${n.item?.ownerId}`);
 						}}
 					>
-						View Profile
+						{t("actions.viewProfile")}
 					</Button>
 				);
 			}
@@ -595,7 +602,7 @@ export function NotificationFeed() {
 								handleMarkRead(n._id);
 							}}
 						>
-							<span className="sr-only">Mark as read</span>
+							<span className="sr-only">{t("markAsRead")}</span>
 							<div className="h-2 w-2 rounded-full bg-blue-500" />
 						</Button>
 					)}
@@ -607,14 +614,14 @@ export function NotificationFeed() {
 	return (
 		<div className="flex flex-col max-h-[400px]">
 			<div className="p-2 border-b flex justify-between items-center sticky top-0 bg-white z-10">
-				<span className="font-semibold text-sm">Notifications</span>
+				<span className="font-semibold text-sm">{t("title")}</span>
 				<Button
 					variant="ghost"
 					size="sm"
 					className="text-xs h-7"
 					onClick={() => markAllAsRead({})}
 				>
-					Mark all read <Check className="ml-1 h-3 w-3" />
+					{t("markAllRead")} <Check className="ml-1 h-3 w-3" />
 				</Button>
 			</div>
 			<div className="overflow-y-auto p-2 flex-1 scrollbar-thin scrollbar-thumb-gray-200">

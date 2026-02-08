@@ -19,6 +19,7 @@ import { api } from "@/convex/_generated/api";
 import { LeaseClaimCard } from "./lease-claim-card";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 function isSameDay(a: Date, b: Date): boolean {
 	return (
@@ -76,7 +77,7 @@ export function BorrowerRequestProvider(props: {
 	children: React.ReactNode;
 }) {
 	const { item, children } = props;
-
+	const t = useTranslations("BorrowerRequest");
 	const calendar = useItemCalendar({
 		mode: "borrower",
 		itemId: item._id,
@@ -138,15 +139,15 @@ export function BorrowerRequestProvider(props: {
 		// not earlier than the current hour. This allows 21–23 at 21:05, but
 		// disallows 20–23 at 21:05.
 		if (endAt <= now) {
-			toast.error("Start time must be in the future");
+			toast.error(t("errors.startTimeFuture"));
 			throw new Error("Start time must be in the future");
 		}
 		if (startAt < currentHourStart) {
-			toast.error("Start time must be in the future");
+			toast.error(t("errors.startTimeFuture"));
 			throw new Error("Start time must be in the future");
 		}
 		if (endAt <= startAt) {
-			toast.error("End time must be after start time");
+			toast.error(t("errors.endTimeAfterStart"));
 			throw new Error("End time must be after start time");
 		}
 
@@ -157,7 +158,7 @@ export function BorrowerRequestProvider(props: {
 			),
 		);
 		if (overlaps) {
-			toast.error("Selected hours are not available");
+			toast.error(t("errors.hoursNotAvailable"));
 			throw new Error("Selected hours are not available");
 		}
 
@@ -269,6 +270,7 @@ export function BorrowerRequestActions() {
 		onClaim,
 		calendar,
 	} = useBorrowerRequestContext();
+	const t = useTranslations("BorrowerRequest");
 
 	const markPickedUp = useMutation(api.items.markPickedUp);
 	const markReturned = useMutation(api.items.markReturned);
@@ -303,29 +305,29 @@ export function BorrowerRequestActions() {
 					>
 						{isSubmitting ? (
 							<>
-								<Loader2 className="mr-2 h-4 w-4 animate-spin" /> Requesting...
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+								{t("requesting")}
 							</>
 						) : (
-							"Request to Borrow"
+							t("requestToBorrow")
 						)}
 					</Button>
 					{!hasActiveBorrow && <AvailabilityToggle id={item._id} />}
 				</div>
 				{!isAuthenticated && (
 					<span className="text-sm text-muted-foreground">
-						Sign in to request
+						{t("signInToRequest")}
 					</span>
 				)}
 				<span className="text-xs text-muted-foreground">
-					For intraday requests, pickup &amp; return time is arranged via
-					proposed and approved hour windows after approval.
+					{t("intradayNote")}
 				</span>
 			</div>
 
 			{isAuthenticated && myRequests && myRequests.length > 0 && (
 				<div className="mt-6">
 					<div className="flex justify-between items-center mb-3">
-						<h4 className="font-medium">Your Requests</h4>
+						<h4 className="font-medium">{t("yourRequests")}</h4>
 						<Toggle
 							pressed={showInactive}
 							onPressedChange={setShowInactive}
@@ -333,7 +335,7 @@ export function BorrowerRequestActions() {
 							size="sm"
 							aria-label="Toggle inactive requests"
 						>
-							{showInactive ? "Hide Inactive" : "Show Inactive"}
+							{showInactive ? t("hideInactive") : t("showInactive")}
 						</Toggle>
 					</div>
 					<div className="space-y-4">
@@ -431,6 +433,8 @@ export function GiveawayBorrowerRequestPanel({
 		availability,
 	} = useClaimItem(item._id);
 
+	const t = useTranslations("BorrowerRequest");
+
 	const markPickedUp = useMutation(api.items.markPickedUp);
 	const markReturned = useMutation(api.items.markReturned);
 
@@ -491,9 +495,9 @@ export function GiveawayBorrowerRequestPanel({
 				)}
 			>
 				<div className="space-y-2">
-					<div className="text-sm font-medium">Pick a pickup day</div>
+					<div className="text-sm font-medium">{t("pickPickupDay")}</div>
 					<div className="text-xs text-muted-foreground">
-						Giveaway: no return needed. Ownership transfers after pickup.
+						{t("giveawayNote")}
 					</div>
 				</div>
 				<div className="mt-3 flex justify-center">
@@ -525,7 +529,7 @@ export function GiveawayBorrowerRequestPanel({
 						{isSubmitting ? (
 							<Loader2 className="h-4 w-4 animate-spin" />
 						) : (
-							"Request"
+							t("request")
 						)}
 					</Button>
 				</div>
@@ -534,7 +538,7 @@ export function GiveawayBorrowerRequestPanel({
 			{isAuthenticated && myRequests && myRequests.length > 0 ? (
 				<div className="mt-6">
 					<div className="flex justify-between items-center mb-3">
-						<h4 className="font-medium">Your Requests</h4>
+						<h4 className="font-medium">{t("yourRequests")}</h4>
 						<Toggle
 							pressed={showInactive}
 							onPressedChange={setShowInactive}
@@ -542,7 +546,7 @@ export function GiveawayBorrowerRequestPanel({
 							size="sm"
 							aria-label="Toggle inactive requests"
 						>
-							{showInactive ? "Hide Inactive" : "Show Inactive"}
+							{showInactive ? t("hideInactive") : t("showInactive")}
 						</Toggle>
 					</div>
 					<div className="space-y-4">

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { MapPin, Loader2, Navigation } from "lucide-react";
 import { toast } from "sonner";
 import { renderToString } from "react-dom/server";
+import { useTranslations } from "next-intl";
 
 // Da Lat coordinates
 const DEFAULT_CENTER: [number, number] = [11.9404, 108.4583];
@@ -114,6 +115,7 @@ export function LocationPickerDialog({
 	value,
 	onSelect,
 }: LocationPickerDialogProps) {
+	const t = useTranslations("LocationPicker");
 	const [MapComponents, setMapComponents] = useState<{
 		MapContainer: typeof import("react-leaflet").MapContainer;
 		TileLayer: typeof import("react-leaflet").TileLayer;
@@ -174,7 +176,7 @@ export function LocationPickerDialog({
 
 	const handleGetCurrentLocation = useCallback(() => {
 		if (!navigator.geolocation) {
-			toast.error("Geolocation is not supported by your browser");
+			toast.error(t("geolocationNotSupported"));
 			return;
 		}
 
@@ -189,10 +191,10 @@ export function LocationPickerDialog({
 			},
 			(error) => {
 				setIsGettingLocation(false);
-				toast.error(`Failed to get location: ${error.message}`);
+				toast.error(t("locationError", { error: error.message }));
 			},
 		);
-	}, [handleLocationChange]);
+	}, [handleLocationChange, t]);
 
 	const handleConfirm = () => {
 		if (selectedLocation) {
@@ -233,10 +235,8 @@ export function LocationPickerDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-2xl">
 				<DialogHeader>
-					<DialogTitle>Pick Location</DialogTitle>
-					<DialogDescription>
-						Click on the map to select a location, or drag the marker to adjust.
-					</DialogDescription>
+					<DialogTitle>{t("title")}</DialogTitle>
+					<DialogDescription>{t("description")}</DialogDescription>
 				</DialogHeader>
 
 				<div className="flex flex-col gap-4">
@@ -299,7 +299,7 @@ export function LocationPickerDialog({
 							) : (
 								<Navigation className="h-4 w-4 mr-2" />
 							)}
-							Use Current Location
+							{t("useCurrent")}
 						</Button>
 					</div>
 
@@ -310,14 +310,14 @@ export function LocationPickerDialog({
 							<div className="flex flex-col gap-1 min-w-0">
 								{isGeocoding ? (
 									<span className="text-sm text-muted-foreground">
-										Loading address...
+										{t("loadingAddress")}
 									</span>
 								) : (
 									<>
 										<span className="text-sm break-words">{address}</span>
 										{ward && (
 											<span className="text-xs text-muted-foreground">
-												Area: {ward}
+												{t("area", { ward })}
 											</span>
 										)}
 									</>
@@ -333,10 +333,10 @@ export function LocationPickerDialog({
 
 				<DialogFooter>
 					<Button variant="outline" onClick={() => onOpenChange(false)}>
-						Cancel
+						{t("cancel")}
 					</Button>
 					<Button onClick={handleConfirm} disabled={!selectedLocation}>
-						Confirm Location
+						{t("confirm")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

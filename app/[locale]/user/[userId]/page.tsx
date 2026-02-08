@@ -15,6 +15,7 @@ import { User, MapPin, ArrowLeft, Calendar } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
+import { useTranslations } from "next-intl";
 
 export default function UserProfilePage() {
 	const params = useParams();
@@ -25,14 +26,15 @@ export default function UserProfilePage() {
 	const profileWithContacts = useQuery(api.users.getProfileWithContacts, {
 		userId,
 	});
+	const t = useTranslations("UserProfile");
 
 	// If this is the current user, redirect to their own profile page
 	if (currentUser?.id === userId) {
 		return (
 			<main className="min-h-screen flex flex-col items-center justify-center gap-4">
-				<p className="text-muted-foreground">Redirecting to your profile...</p>
+				<p className="text-muted-foreground">{t("redirecting")}</p>
 				<Link href="/profile">
-					<Button>Go to My Profile</Button>
+					<Button>{t("goToProfile")}</Button>
 				</Link>
 			</main>
 		);
@@ -41,7 +43,7 @@ export default function UserProfilePage() {
 	if (profile === undefined) {
 		return (
 			<main className="min-h-screen flex items-center justify-center">
-				<div className="text-muted-foreground">Loading profile...</div>
+				<div className="text-muted-foreground">{t("loading")}</div>
 			</main>
 		);
 	}
@@ -49,11 +51,11 @@ export default function UserProfilePage() {
 	if (profile === null) {
 		return (
 			<main className="min-h-screen flex flex-col items-center justify-center gap-4">
-				<p className="text-muted-foreground">User not found.</p>
+				<p className="text-muted-foreground">{t("notFound")}</p>
 				<Link href="/">
 					<Button variant="outline">
 						<ArrowLeft className="h-4 w-4 mr-2" />
-						Back to Home
+						{t("backToHome")}
 					</Button>
 				</Link>
 			</main>
@@ -72,7 +74,7 @@ export default function UserProfilePage() {
 					>
 						<ArrowLeft className="h-5 w-5" />
 					</Link>
-					<h1 className="text-xl font-semibold">User Profile</h1>
+					<h1 className="text-xl font-semibold">{t("title")}</h1>
 				</div>
 
 				{/* Profile Header */}
@@ -107,8 +109,9 @@ export default function UserProfilePage() {
 								{profile.createdAt && (
 									<p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
 										<Calendar className="h-3 w-3" />
-										Member since{" "}
-										{format(new Date(profile.createdAt), "MMMM yyyy")}
+										{t("memberSince", {
+											date: format(new Date(profile.createdAt), "MMMM yyyy"),
+										})}
 									</p>
 								)}
 								<div className="mt-2">
@@ -127,7 +130,7 @@ export default function UserProfilePage() {
 				{/* Contact Information */}
 				<Card>
 					<CardHeader>
-						<CardTitle className="text-base">Contact Information</CardTitle>
+						<CardTitle className="text-base">{t("contactInfo")}</CardTitle>
 					</CardHeader>
 					<CardContent>
 						{hasFullContactAccess && profileWithContacts ? (
@@ -141,8 +144,8 @@ export default function UserProfilePage() {
 				{/* Tabs for History and Ratings */}
 				<Tabs defaultValue="ratings" className="w-full">
 					<TabsList className="w-full grid grid-cols-2">
-						<TabsTrigger value="ratings">Ratings</TabsTrigger>
-						<TabsTrigger value="history">History</TabsTrigger>
+						<TabsTrigger value="ratings">{t("tabs.ratings")}</TabsTrigger>
+						<TabsTrigger value="history">{t("tabs.history")}</TabsTrigger>
 					</TabsList>
 
 					<TabsContent value="ratings" className="mt-4 space-y-4">

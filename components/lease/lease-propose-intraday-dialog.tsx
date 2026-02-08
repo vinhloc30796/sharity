@@ -4,6 +4,7 @@ import type { ComponentProps } from "react";
 import { useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { format } from "date-fns";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -60,12 +61,14 @@ function formatHourLabel(hour: number): string {
 }
 
 /** Hour groups for better UX */
-const HOUR_GROUPS = [
-	{ label: "Morning (6-11)", hours: [6, 7, 8, 9, 10, 11] },
-	{ label: "Afternoon (12-17)", hours: [12, 13, 14, 15, 16, 17] },
-	{ label: "Evening (18-23)", hours: [18, 19, 20, 21, 22, 23] },
-	{ label: "Night (0-5)", hours: [0, 1, 2, 3, 4, 5] },
-] as const;
+/** Hour groups for better UX */
+const getHourGroups = (t: (key: string) => string) =>
+	[
+		{ label: t("groups.morning"), hours: [6, 7, 8, 9, 10, 11] },
+		{ label: t("groups.afternoon"), hours: [12, 13, 14, 15, 16, 17] },
+		{ label: t("groups.evening"), hours: [18, 19, 20, 21, 22, 23] },
+		{ label: t("groups.night"), hours: [0, 1, 2, 3, 4, 5] },
+	] as const;
 
 /**
  * Dialog that lets user pick start and end hour on a fixed date (no minutes).
@@ -94,6 +97,8 @@ export function LeaseProposeIntradayDialog(
 		onOpenChange,
 		showTrigger = true,
 	} = props;
+	const t = useTranslations("LeaseProposeIntraday");
+	const HOUR_GROUPS = useMemo(() => getHourGroups(t), [t]);
 
 	const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
 	const open = controlledOpen ?? uncontrolledOpen;
@@ -158,16 +163,16 @@ export function LeaseProposeIntradayDialog(
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
 					<DialogDescription>
-						{description ?? `Choose hours on ${dateLabel}.`}
+						{description ?? t("defaultDescription", { date: dateLabel })}
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-4">
 					<div className="space-y-2">
-						<Label>Start hour</Label>
+						<Label>{t("startHour")}</Label>
 						<Select value={startHourValue} onValueChange={setStartHourValue}>
 							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Select a start hour" />
+								<SelectValue placeholder={t("selectStartHour")} />
 							</SelectTrigger>
 							<SelectContent>
 								{HOUR_GROUPS.map((group) => (
@@ -185,10 +190,10 @@ export function LeaseProposeIntradayDialog(
 					</div>
 
 					<div className="space-y-2">
-						<Label>End hour</Label>
+						<Label>{t("endHour")}</Label>
 						<Select value={endHourValue} onValueChange={setEndHourValue}>
 							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Select an end hour" />
+								<SelectValue placeholder={t("selectEndHour")} />
 							</SelectTrigger>
 							<SelectContent>
 								{HOUR_GROUPS.map((group) => (
@@ -206,17 +211,21 @@ export function LeaseProposeIntradayDialog(
 						{!isValid ? (
 							<div className="text-xs text-destructive">
 								{endHour === startHour
-									? "Start and end hours cannot be the same."
-									: "For multi-day requests, select a date range instead."}
+									? t("errors.sameHour")
+									: t("errors.multiDay")}
 							</div>
 						) : null}
 					</div>
 
 					<div className="text-xs text-muted-foreground">
-						Proposed: {dateLabel} {formatHourLabel(startHour)}–
-						{endHour <= startHour
-							? `${format(new Date(fixedDate.getTime() + 24 * 60 * 60 * 1000), "MMM d")} ${formatHourLabel(endHour)}`
-							: formatHourLabel(endHour)}
+						{t("proposed", {
+							date: dateLabel,
+							start: formatHourLabel(startHour),
+							end:
+								endHour <= startHour
+									? `${format(new Date(fixedDate.getTime() + 24 * 60 * 60 * 1000), "MMM d")} ${formatHourLabel(endHour)}`
+									: formatHourLabel(endHour),
+						})}
 					</div>
 				</div>
 
@@ -244,7 +253,7 @@ export function LeaseProposeIntradayDialog(
 							}
 						}}
 					>
-						{isSaving ? `${confirmLabel}...` : confirmLabel}
+						{isSaving ? t("saving", { label: confirmLabel }) : confirmLabel}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

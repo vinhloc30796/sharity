@@ -22,6 +22,7 @@ import { UploadCloudIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { toCloudinaryRef, type CloudinaryRef } from "@/lib/cloudinary-ref";
 import { MAX_IMAGE_SIZE_BYTES } from "@/lib/image-constants";
+import { useTranslations } from "next-intl";
 
 interface RatingFormProps {
 	claimId: Id<"claims">;
@@ -42,6 +43,7 @@ export function RatingForm({
 	const [comment, setComment] = useState("");
 	const [files, setFiles] = useState<File[]>([]);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const t = useTranslations("Ratings");
 
 	const createRating = useMutation(api.ratings.createRating);
 	const { upload: uploadToCloudinary } = useCloudinaryUpload(
@@ -52,7 +54,7 @@ export function RatingForm({
 		e.preventDefault();
 
 		if (stars === 0) {
-			toast.error("Please select a rating");
+			toast.error(t("form.selectRating"));
 			return;
 		}
 
@@ -76,11 +78,11 @@ export function RatingForm({
 					photoCloudinary.length > 0 ? photoCloudinary : undefined,
 			});
 
-			toast.success("Rating submitted successfully");
+			toast.success(t("form.success"));
 			onSuccess?.();
 		} catch (error) {
 			console.error("Error submitting rating:", error);
-			toast.error("Failed to submit rating");
+			toast.error(t("form.failed"));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -89,19 +91,22 @@ export function RatingForm({
 	return (
 		<form onSubmit={handleSubmit} className="flex flex-col gap-4">
 			<div className="text-sm text-muted-foreground">
-				Rate the {targetRole} for &quot;{itemName}&quot;
+				{t("form.title", {
+					role: targetRole === "lender" ? t("lender") : t("borrower"),
+					item: itemName,
+				})}
 			</div>
 
 			<div className="flex flex-col gap-2">
-				<Label>Rating</Label>
+				<Label>{t("form.ratingLabel")}</Label>
 				<StarRating value={stars} onChange={setStars} size="lg" />
 			</div>
 
 			<div className="flex flex-col gap-2">
-				<Label htmlFor="comment">Comment (optional)</Label>
+				<Label htmlFor="comment">{t("form.commentLabel")}</Label>
 				<Textarea
 					id="comment"
-					placeholder="Share your experience..."
+					placeholder={t("form.commentPlaceholder")}
 					value={comment}
 					onChange={(e) => setComment(e.target.value)}
 					disabled={isSubmitting}
@@ -110,7 +115,7 @@ export function RatingForm({
 			</div>
 
 			<div className="flex flex-col gap-2">
-				<Label>Photo (optional)</Label>
+				<Label>{t("form.photoLabel")}</Label>
 				<FileUpload
 					maxFiles={3}
 					accept="image/*"
@@ -125,7 +130,7 @@ export function RatingForm({
 					<FileUploadDropzone className="h-24 bg-gray-50/50 border-dashed">
 						<div className="flex flex-col items-center gap-1 text-muted-foreground text-xs">
 							<UploadCloudIcon className="size-6 text-muted-foreground/50" />
-							<span>Add photos (up to 3)</span>
+							<span>{t("form.photoHelp")}</span>
 						</div>
 					</FileUploadDropzone>
 					<FileUploadList>
@@ -148,17 +153,17 @@ export function RatingForm({
 						onClick={onCancel}
 						disabled={isSubmitting}
 					>
-						Cancel
+						{t("form.cancel")}
 					</Button>
 				)}
 				<Button type="submit" disabled={isSubmitting || stars === 0}>
 					{isSubmitting ? (
 						<>
 							<Loader2 className="h-4 w-4 animate-spin mr-2" />
-							Submitting...
+							{t("form.submitting")}
 						</>
 					) : (
-						"Submit Rating"
+						t("form.submit")
 					)}
 				</Button>
 			</div>

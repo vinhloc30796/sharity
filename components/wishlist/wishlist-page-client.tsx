@@ -15,6 +15,7 @@ import { useQuery } from "convex/react";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 type WishlistPageClientProps = {
 	shouldFocusDraft: boolean;
@@ -26,11 +27,12 @@ export function WishlistPageClient({
 	const router = useRouter();
 	const wishlistItems = useQuery(api.wishlist.list);
 	const [sortBy, setSortBy] = useState<"recent" | "upvoted">("recent");
+	const t = useTranslations("Wishlist");
 
 	if (!wishlistItems) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-gray-50/50">
-				<div className="animate-pulse">Loading...</div>
+				<div className="animate-pulse">{t("loading")}</div>
 			</div>
 		);
 	}
@@ -51,17 +53,16 @@ export function WishlistPageClient({
 					className="mb-6 gap-2"
 					onClick={() => router.back()}
 				>
-					<ArrowLeft className="h-4 w-4" /> Back
+					<ArrowLeft className="h-4 w-4" /> {t("back")}
 				</Button>
 
 				<div className="space-y-8">
 					<div className="flex flex-col md:flex-row items-center justify-between gap-4">
 						<div>
-							<h1 className="text-3xl font-bold tracking-tight">Wishlist</h1>
-							<p className="text-gray-500">
-								Request items you can&apos;t find and vote on others&apos;
-								requests.
-							</p>
+							<h1 className="text-3xl font-bold tracking-tight">
+								{t("title")}
+							</h1>
+							<p className="text-gray-500">{t("subtitle")}</p>
 						</div>
 						<div className="flex items-center gap-2">
 							<Select
@@ -69,11 +70,15 @@ export function WishlistPageClient({
 								onValueChange={(v) => setSortBy(v as "recent" | "upvoted")}
 							>
 								<SelectTrigger className="w-[180px]">
-									<SelectValue placeholder="Sort by" />
+									<SelectValue placeholder={t("sortBy")} />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="recent">Most Recent</SelectItem>
-									<SelectItem value="upvoted">Most Upvoted</SelectItem>
+									<SelectItem value="recent">
+										{t("sortOptions.recent")}
+									</SelectItem>
+									<SelectItem value="upvoted">
+										{t("sortOptions.upvoted")}
+									</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -83,7 +88,7 @@ export function WishlistPageClient({
 						<WishlistDraftCard autoFocus={shouldFocusDraft} />
 						{sortedItems.length === 0 ? (
 							<div className="text-center py-12 text-gray-500 bg-white rounded-lg border shadow-sm">
-								<p>No items found.</p>
+								<p>{t("noItems")}</p>
 							</div>
 						) : (
 							sortedItems.map((item) => (

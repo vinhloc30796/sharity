@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { RotateCcw } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface ProfileSetupModalProps {
 	open: boolean;
@@ -31,6 +32,7 @@ export function ProfileSetupModal({
 	onOpenChange,
 	clerkData,
 }: ProfileSetupModalProps) {
+	const t = useTranslations("ProfileSetup");
 	const [name, setName] = useState(clerkData.name || "");
 	const [address, setAddress] = useState("");
 	const [telegram, setTelegram] = useState("");
@@ -51,7 +53,7 @@ export function ProfileSetupModal({
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!name.trim()) {
-			toast.error("Name is required");
+			toast.error(t("toastRequired"));
 			return;
 		}
 
@@ -74,11 +76,11 @@ export function ProfileSetupModal({
 				contacts: Object.keys(contacts).length > 0 ? contacts : undefined,
 			});
 
-			toast.success("Profile created successfully!");
+			toast.success(t("toastSuccess"));
 			onOpenChange(false);
 		} catch (error) {
 			console.error("Failed to create profile:", error);
-			toast.error("Failed to create profile");
+			toast.error(t("toastFailed"));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -90,22 +92,19 @@ export function ProfileSetupModal({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>Complete Your Profile</DialogTitle>
-					<DialogDescription>
-						Set up your profile to start sharing and borrowing items. You can
-						update this later.
-					</DialogDescription>
+					<DialogTitle>{t("title")}</DialogTitle>
+					<DialogDescription>{t("description")}</DialogDescription>
 				</DialogHeader>
 
 				<form onSubmit={handleSubmit} className="flex flex-col gap-4">
 					<div className="flex flex-col gap-2">
 						<div className="flex items-center justify-between">
 							<Label htmlFor="name">
-								Name <span className="text-red-500">*</span>
+								{t("nameLabel")} <span className="text-red-500">*</span>
 							</Label>
 							{isNameFromClerk && (
 								<span className="text-xs text-muted-foreground">
-									(from Clerk)
+									{t("fromClerk")}
 								</span>
 							)}
 						</div>
@@ -113,7 +112,7 @@ export function ProfileSetupModal({
 							<Input
 								id="name"
 								type="text"
-								placeholder="Your name"
+								placeholder={t("namePlaceholder")}
 								value={name}
 								onChange={(e) => setName(e.target.value)}
 								disabled={isSubmitting}
@@ -125,7 +124,7 @@ export function ProfileSetupModal({
 									variant="outline"
 									size="icon"
 									onClick={() => setName(clerkData.name || "")}
-									title="Reset to Clerk value"
+									title={t("resetToClerk")}
 								>
 									<RotateCcw className="h-4 w-4" />
 								</Button>
@@ -134,11 +133,11 @@ export function ProfileSetupModal({
 					</div>
 
 					<div className="flex flex-col gap-2">
-						<Label htmlFor="address">Address</Label>
+						<Label htmlFor="address">{t("addressLabel")}</Label>
 						<Input
 							id="address"
 							type="text"
-							placeholder="Your location (e.g., Da Lat, Vietnam)"
+							placeholder={t("addressPlaceholder")}
 							value={address}
 							onChange={(e) => setAddress(e.target.value)}
 							disabled={isSubmitting}
@@ -146,36 +145,36 @@ export function ProfileSetupModal({
 					</div>
 
 					<div className="flex flex-col gap-2">
-						<Label>Contact Methods</Label>
+						<Label>{t("contactMethodsLabel")}</Label>
 						<p className="text-xs text-muted-foreground">
-							Add at least one way for others to contact you
+							{t("contactMethodsDesc")}
 						</p>
 
 						<div className="grid grid-cols-2 gap-2">
 							<Input
 								type="text"
-								placeholder="Telegram @username"
+								placeholder={t("telegramPlaceholder")}
 								value={telegram}
 								onChange={(e) => setTelegram(e.target.value)}
 								disabled={isSubmitting}
 							/>
 							<Input
 								type="text"
-								placeholder="WhatsApp number"
+								placeholder={t("whatsappPlaceholder")}
 								value={whatsapp}
 								onChange={(e) => setWhatsapp(e.target.value)}
 								disabled={isSubmitting}
 							/>
 							<Input
 								type="text"
-								placeholder="Facebook profile"
+								placeholder={t("facebookPlaceholder")}
 								value={facebook}
 								onChange={(e) => setFacebook(e.target.value)}
 								disabled={isSubmitting}
 							/>
 							<Input
 								type="text"
-								placeholder="Phone number"
+								placeholder={t("phonePlaceholder")}
 								value={phone}
 								onChange={(e) => setPhone(e.target.value)}
 								disabled={isSubmitting}
@@ -190,10 +189,10 @@ export function ProfileSetupModal({
 							onClick={() => onOpenChange(false)}
 							disabled={isSubmitting}
 						>
-							Later
+							{t("later")}
 						</Button>
 						<Button type="submit" disabled={isSubmitting}>
-							{isSubmitting ? "Saving..." : "Save Profile"}
+							{isSubmitting ? t("saving") : t("save")}
 						</Button>
 					</div>
 				</form>

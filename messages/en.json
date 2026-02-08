@@ -1,0 +1,689 @@
+{
+    "Layout": {
+        "metadata": {
+            "title": {
+                "default": "Sharity — Share, borrow, and lend items in Da Lat, Vietnam",
+                "template": "%s — Sharity, the sharing economy in Da Lat, Vietnam"
+            },
+            "description": "Sharity is a community sharing platform in Da Lat, Vietnam. Lend rarely used items, borrow what you need for a few days, and manage requests and availability in one place.",
+            "openGraph": {
+                "siteName": "Sharity",
+                "title": "Sharity — Share, borrow, and lend items in Da Lat, Vietnam",
+                "description": "Sharity is a community sharing platform in Da Lat, Vietnam. Lend rarely used items, borrow what you need for a few days, and manage requests and availability in one place.",
+                "locale": "en_US"
+            },
+            "twitter": {
+                "title": "Sharity — Share, borrow, and lend items in Da Lat, Vietnam",
+                "description": "Sharity is a community sharing platform in Da Lat, Vietnam. Lend rarely used items, borrow what you need for a few days, and manage requests and availability in one place."
+            }
+        }
+    },
+    "Common": {
+        "back": "Back",
+        "loading": "Loading...",
+        "signIn": "Sign In",
+        "signUp": "Sign Up",
+        "profile": "Profile",
+        "submit": "Submit"
+    },
+    "AppHeader": {
+        "signIn": "Sign In",
+        "signUp": "Sign Up",
+        "profile": "Profile"
+    },
+    "Home": {
+        "title": "Sharity",
+        "subtitle": "Borrow and lend useful items in Da Lat.",
+        "tabs": {
+            "share": "Share",
+            "request": "Request",
+            "browse": "Browse"
+        },
+        "topRequests": "Top requests",
+        "sortBy": "Sort by",
+        "sortOptions": {
+            "recent": "Most Recent",
+            "upvoted": "Most Upvoted"
+        },
+        "noRequests": "No requests yet.",
+        "seeFullWishlist": "See full wishlist"
+    },
+    "ItemCard": {
+        "giveaway": "Giveaway",
+        "locationAvailable": "Location available"
+    },
+    "ItemForm": {
+        "giveawayMode": "Giveaway",
+        "giveawayDesc": "No return. Ownership transfers after pickup.",
+        "switchMode": {
+            "title": "Switch mode?",
+            "description": "This will reject all current pending requests",
+            "cancel": "Cancel",
+            "confirm": "Switch"
+        },
+        "itemName": "Item Name",
+        "itemNamePlaceholder": "e.g., Camping Tent",
+        "description": "Description",
+        "descriptionPlaceholder": "Optional description",
+        "leaseLengthLimits": "Lease length limits (days)",
+        "giveawaylimitDesc": "Lease length limits are disabled for giveaway items.",
+        "minLeaseDays": "Min days (optional)",
+        "minLeaseDaysPlaceholder": "e.g., 1",
+        "maxLeaseDays": "Max days (optional)",
+        "maxLeaseDaysPlaceholder": "e.g., 14",
+        "sameDayNote": "Same-day requests count as a fraction of a day.",
+        "category": "Category",
+        "selectCategory": "Select a category",
+        "location": "Location",
+        "addressPlaceholder": "Address (auto-filled from map)",
+        "pickOnMap": "Pick on map",
+        "getCurrentLocation": "Get current location",
+        "imagesLabel": "Images (Max 5)",
+        "clickToUpload": "Click to upload",
+        "dragAndDrop": "or drag and drop",
+        "uploadLimit": "Up to 5 images",
+        "uploadLimitReached": "Limit of 5 images reached. Remove some to add new ones.",
+        "uploadingExample": "You can add {count} more image{s}",
+        "uploadingSaving": "Uploading & Saving...",
+        "myItems": "My Items",
+        "validation": {
+            "geolocationNotSupported": "Geolocation is not supported by your browser",
+            "locationCaptured": "Location captured successfully",
+            "locationError": "Failed to get location: {error}",
+            "locationSelected": "Location selected",
+            "mustBeInteger": "{label} must be an integer number of days",
+            "mustBeAtLeastOne": "{label} must be at least 1 day",
+            "minMaxError": "Min lease length must be less than or equal to max lease length",
+            "fileReject": "{message} ({fileName})"
+        }
+    },
+    "ClaimItemBack": {
+        "back": "Back",
+        "requestToReceive": "Request to Receive",
+        "signInToRequest": "Sign in to request.",
+        "connecting": "Connecting...",
+        "giveawayDesc": "Giveaway: no return needed. Ownership transfers after pickup.",
+        "details": "Details",
+        "request": "Request",
+        "requestToBorrow": "Request to Borrow",
+        "openDetails": "Open details",
+        "noActiveRequests": "No active requests",
+        "nothingToApprove": "Nothing to approve right now.",
+        "intraday": {
+            "title": "Select hours",
+            "description": "Same-day requests are booked by the hour.",
+            "changeHours": "Change hours ({range})",
+            "selectHours": "Select hours",
+            "save": "Save hours",
+            "cancel": "Cancel",
+            "errors": {
+                "futureStart": "Start time must be in the future",
+                "endAfterStart": "End time must be after start time",
+                "notAvailable": "Selected hours are not available"
+            }
+        }
+    },
+    "AddItemForm": {
+        "title": "Add an Item",
+        "submit": "Share Item",
+        "signInTitle": "Sign in to Share Items",
+        "signIn": "Sign In"
+    },
+    "BorrowedItemCard": {
+        "overdue": "Overdue by {time}",
+        "dueToday": "Due today",
+        "dueInDays": "Due in {count} day{s}",
+        "dueOn": "Due {date}",
+        "viewDetails": "View Details",
+        "borrowedFrom": "Borrowed from {name}",
+        "pickedUp": "Picked up {date}"
+    },
+    "MyItemCard": {
+        "by": "by",
+        "anonymous": "Anonymous",
+        "status": {
+            "available": "Available",
+            "pending": "Requests pending",
+            "approved": "Approved",
+            "picked_up": "In use",
+            "returned": "Completed",
+            "expired": "Expired",
+            "missing": "Missing"
+        },
+        "giveaway": "Giveaway",
+        "borrowed": "Borrowed",
+        "review": "Review",
+        "edit": "Edit",
+        "editTitle": "Edit Item",
+        "saveChanges": "Save Changes",
+        "delete": "Delete",
+        "deleteConfirm": {
+            "title": "Are you sure?",
+            "description": "This action cannot be undone. This will permanently delete your item.",
+            "cancel": "Cancel",
+            "confirm": "Delete"
+        },
+        "open": "Open",
+        "receivedFrom": "Received from <user></user>",
+        "pendingRequests": "{count} pending request{s}",
+        "awaitingApproval": "Awaiting approval",
+        "reject": "Reject",
+        "approve": "Approve"
+    },
+    "Notifications": {
+        "loading": "Loading notifications...",
+        "empty": "No new notifications",
+        "title": "Notifications",
+        "markAllRead": "Mark all read",
+        "markAsRead": "Mark as read",
+        "messages": {
+            "new_request": "New request for \"{itemName}\"",
+            "request_approved": "Request approved for \"{itemName}\"! You can now view the owner's contact details.",
+            "request_rejected": "Request rejected for \"{itemName}\"",
+            "item_available": "\"{itemName}\" is now available!",
+            "pickup_proposed": "Pickup requested for \"{itemName}\"",
+            "pickup_proposed_window": "Pickup requested for \"{itemName}\": {start}–{end}",
+            "pickup_approved": "Pickup approved for \"{itemName}\"",
+            "pickup_approved_window": "Pickup approved for \"{itemName}\": {start}–{end}",
+            "pickup_confirmed": "Pickup confirmed for \"{itemName}\"",
+            "transfer_completed": "Transfer completed for \"{itemName}\"",
+            "pickup_expired": "Pickup expired for \"{itemName}\"",
+            "return_proposed": "Return requested for \"{itemName}\"",
+            "return_proposed_window": "Return requested for \"{itemName}\": {start}–{end}",
+            "return_approved": "Return approved for \"{itemName}\"",
+            "return_approved_window": "Return approved for \"{itemName}\": {start}–{end}",
+            "return_confirmed": "Return confirmed for \"{itemName}\"",
+            "return_missing": "Return missing for \"{itemName}\"",
+            "rate_transaction": "Rate your experience with \"{itemName}\"",
+            "rating_received": "You received a new review for \"{itemName}\"",
+            "rating_received_named": "{raterName} left you a review for \"{itemName}\"",
+            "default": "New notification"
+        },
+        "actions": {
+            "approved": "Approved",
+            "rejected": "Rejected",
+            "reject": "Reject",
+            "approve": "Approve",
+            "confirm": "Confirm",
+            "view": "View",
+            "rate": "Rate",
+            "viewProfile": "View Profile"
+        },
+        "reasons": {
+            "unavailable": "Action unavailable",
+            "notApproved": "Request not approved",
+            "alreadyPickedUp": "Already picked up",
+            "leaseExpired": "Lease expired",
+            "pickupWindowExpired": "Pickup window expired",
+            "notPickedUp": "Not picked up yet",
+            "alreadyReturned": "Already returned",
+            "itemMissing": "Item marked missing",
+            "returnWindowExpired": "Return window expired"
+        },
+        "toasts": {
+            "rejected": "Request rejected",
+            "approved": "Request approved",
+            "pickupApproved": "Pickup time approved",
+            "pickupConfirmed": "Pickup confirmed",
+            "returnApproved": "Return time approved",
+            "returnConfirmed": "Return confirmed"
+        }
+    },
+    "LeaseProposeIntraday": {
+        "defaultDescription": "Choose hours on {date}.",
+        "startHour": "Start hour",
+        "selectStartHour": "Select a start hour",
+        "endHour": "End hour",
+        "selectEndHour": "Select an end hour",
+        "errors": {
+            "sameHour": "Start and end hours cannot be the same.",
+            "multiDay": "For multi-day requests, select a date range instead."
+        },
+        "proposed": "Proposed: {date} {start}–{end}",
+        "saving": "{label}...",
+        "groups": {
+            "morning": "Morning (6-11)",
+            "afternoon": "Afternoon (12-17)",
+            "evening": "Evening (18-23)",
+            "night": "Night (0-5)"
+        }
+    },
+    "LeaseClaim": {
+        "status": {
+            "requested": "Awaiting approval",
+            "approved": "Approved",
+            "rejected": "Rejected",
+            "picked_up": "In use",
+            "transferred": "Transferred",
+            "returned": "Completed",
+            "expired": "Expired",
+            "past_due": "Past due",
+            "missing": "Missing",
+            "unknown": "Unknown"
+        },
+        "pastDueMessage": "This request has passed its start date and can no longer be approved.",
+        "actions": {
+            "cancel": "Cancel",
+            "cancelling": "Cancelling...",
+            "cancelRequest": "Cancel request",
+            "approve": "Approve",
+            "approving": "Approving...",
+            "reject": "Reject",
+            "rejectRequest": "Reject request",
+            "sendProposal": "Send proposal",
+            "view": "View",
+            "confirm": "Confirm"
+        },
+        "rejectDialog": {
+            "titleGiveaway": "Reject giveaway request",
+            "titleLease": "Reject lease request",
+            "descGiveaway": "This will notify the requester that their request was declined.",
+            "descLease": "This will notify the borrower that their request was declined.",
+            "reasonLabel": "Reason (optional, but recommended)",
+            "reasonPlaceholder": "Let them know why..."
+        },
+        "intraday": {
+            "note": "Intraday lease: pickup & return happen within the selected hours. Use the pickup and return time proposals below to agree on exact windows."
+        },
+        "pickup": {
+            "proposedApproved": "Pickup proposed & approved:",
+            "proposed": "Pickup proposed:",
+            "pendingApproval": "Pending approval.",
+            "propose": "Propose pickup time",
+            "change": "Change pickup time",
+            "sentToast": "Pickup request sent. Now please wait for approval from your counterpart. Nothing to do for now",
+            "confirmTitle": "Confirm item pickup",
+            "confirmDesc": "Record that the item has been picked up. Photos help document the item's condition.",
+            "confirmAction": "Confirm pickup",
+            "noteLabel": "Notes (optional)",
+            "notePlaceholder": "Any notes about the pickup...",
+            "photoLabel": "Photos (optional)",
+            "confirmedToast": "Pickup confirmed",
+            "approving": "Approving...",
+            "approve": "Approve pickup time",
+            "approvedToast": "Pickup time approved. Waiting for confirmation from your counterpart.",
+            "windowPassed": "This window has passed. It will auto-expire soon.",
+            "confirmAvailable": "Confirm is available during {start}–{end}."
+        },
+        "return": {
+            "proposedApproved": "Return proposed & approved:",
+            "proposed": "Return proposed:",
+            "pendingApproval": "Pending approval.",
+            "propose": "Propose return time",
+            "change": "Change return time",
+            "sentToast": "Return request sent. Now please wait for approval from your counterpart. Nothing to do for now",
+            "confirmTitle": "Confirm item return",
+            "confirmDesc": "Record that the item has been returned. Photos help document the item's condition.",
+            "confirmAction": "Confirm return",
+            "noteLabel": "Notes (optional)",
+            "notePlaceholder": "Any notes about the return...",
+            "photoLabel": "Photos (optional)",
+            "confirmedToast": "Return confirmed",
+            "approving": "Approving...",
+            "approve": "Approve return time",
+            "approvedToast": "Return time approved. Waiting for confirmation from your counterpart.",
+            "windowPassed": "This window has passed. It will auto-expire soon.",
+            "confirmAvailable": "Confirm is available during {start}–{end}."
+        }
+    },
+    "LeaseActivity": {
+        "timelineTitle": "Activity timeline",
+        "loading": "Loading lease activity...",
+        "empty": "No lease activity yet.",
+        "by": "by",
+        "window": "Window: {start}–{end}",
+        "eventTitles": {
+            "requested": "Requested",
+            "approved": "Approved",
+            "rejected": "Rejected",
+            "expired": "Expired",
+            "missing": "Missing",
+            "pickup_proposed": "Pickup proposed",
+            "pickup_approved": "Pickup time approved",
+            "return_proposed": "Return proposed",
+            "return_approved": "Return time approved",
+            "picked_up": "Picked up",
+            "returned": "Returned",
+            "default": "Lease activity"
+        }
+    },
+    "LeaseProposeWindow": {
+        "defaultDescription": "Choose a 1-hour window on {date}.",
+        "hourWindow": "Hour window",
+        "selectHour": "Select an hour",
+        "proposed": "Proposed: {date} {window}",
+        "groups": {
+            "morning": "Morning (6-11)",
+            "afternoon": "Afternoon (12-17)",
+            "evening": "Evening (18-23)",
+            "night": "Night (0-5)"
+        }
+    },
+    "LeaseAction": {
+        "clickToUpload": "Click to upload",
+        "dragAndDrop": "or drag and drop",
+        "uploadLimit": "Up to {count} images"
+    },
+    "BorrowerRequest": {
+        "errors": {
+            "startTimeFuture": "Start time must be in the future",
+            "endTimeAfterStart": "End time must be after start time",
+            "hoursNotAvailable": "Selected hours are not available"
+        },
+        "requesting": "Requesting...",
+        "requestToBorrow": "Request to Borrow",
+        "signInToRequest": "Sign in to request",
+        "intradayNote": "For intraday requests, pickup & return time is arranged via proposed and approved hour windows after approval.",
+        "yourRequests": "Your Requests",
+        "hideInactive": "Hide Inactive",
+        "showInactive": "Show Inactive",
+        "pickPickupDay": "Pick a pickup day",
+        "giveawayNote": "Giveaway: no return needed. Ownership transfers after pickup.",
+        "request": "Request"
+    },
+    "MyItems": {
+        "title": "My Items",
+        "signInMessage": "Please sign in to view and manage your items.",
+        "signInButton": "Sign In",
+        "loading": "Loading...",
+        "noItems": "You don't have any items yet.",
+        "borrowingTitle": "Items I'm Borrowing",
+        "myItemsTitle": "My Items"
+    },
+    "Profile": {
+        "title": "My Profile",
+        "loading": "Loading...",
+        "signInMessage": "Please sign in to view your profile.",
+        "backToHome": "Back to Home",
+        "loadingProfile": "Loading profile...",
+        "edit": "Edit",
+        "editTitle": "Edit Profile",
+        "save": "Save Profile",
+        "saving": "Saving...",
+        "name": "Name",
+        "namePlaceholder": "Your name",
+        "address": "Address / Location",
+        "addressPlaceholder": "e.g., Da Lat, Ward 1",
+        "bio": "About Me",
+        "bioPlaceholder": "Tell others a bit about yourself...",
+        "contactInfo": "Contact Information",
+        "contactInfoDesc": "These will be shared with users you have approved transactions with.",
+        "telegram": "Telegram username",
+        "whatsapp": "WhatsApp number",
+        "facebook": "Facebook profile",
+        "phone": "Phone number",
+        "tabs": {
+            "ratings": "Ratings",
+            "history": "History"
+        },
+        "toasts": {
+            "updated": "Profile updated",
+            "failed": "Failed to update profile",
+            "geolocationNotSupported": "Geolocation is not supported by your browser",
+            "locationError": "Failed to get location: {error}"
+        }
+    },
+    "ContactInfo": {
+        "noInfo": "No contact info provided.",
+        "noMethods": "No contact methods set up.",
+        "availableMethods": "Available contact methods:",
+        "sharedAfter": "Contact details shared after approved transaction",
+        "labels": {
+            "telegram": "Telegram",
+            "whatsapp": "WhatsApp",
+            "facebook": "Facebook",
+            "phone": "Phone"
+        }
+    },
+    "LocationPicker": {
+        "title": "Pick Location",
+        "description": "Click on the map to select a location, or drag the marker to adjust.",
+        "useCurrent": "Use Current Location",
+        "loadingAddress": "Loading address...",
+        "area": "Area: {ward}",
+        "cancel": "Cancel",
+        "confirm": "Confirm Location",
+        "geolocationNotSupported": "Geolocation is not supported by your browser",
+        "locationError": "Failed to get location: {error}"
+    },
+    "UserProfile": {
+        "redirecting": "Redirecting to your profile...",
+        "goToProfile": "Go to My Profile",
+        "loading": "Loading profile...",
+        "notFound": "User not found.",
+        "backToHome": "Back to Home",
+        "title": "User Profile",
+        "memberSince": "Member since {date}",
+        "contactInfo": "Contact Information",
+        "tabs": {
+            "ratings": "Ratings",
+            "history": "History"
+        }
+    },
+    "Ratings": {
+        "pendingTitle": "Rate Your Transactions",
+        "pendingDesc": "You have {count} transaction{s} to rate.",
+        "lender": "lender",
+        "borrower": "borrower",
+        "asLender": "As lender",
+        "asBorrower": "As borrower",
+        "with": "with {name}",
+        "rate": "Rate",
+        "leaveRating": "Leave a Rating",
+        "form": {
+            "title": "Rate the {role} for \"{item}\"",
+            "ratingLabel": "Rating",
+            "commentLabel": "Comment (optional)",
+            "commentPlaceholder": "Share your experience...",
+            "photoLabel": "Photo (optional)",
+            "photoHelp": "Add photos (up to 3)",
+            "cancel": "Cancel",
+            "submit": "Submit Rating",
+            "submitting": "Submitting...",
+            "selectRating": "Please select a rating",
+            "success": "Rating submitted successfully",
+            "failed": "Failed to submit rating"
+        }
+    },
+    "UserHistory": {
+        "loading": "Loading history...",
+        "noHistory": "No transaction history yet.",
+        "noLending": "No lending history.",
+        "noBorrowing": "No borrowing history.",
+        "lent": "Lent",
+        "borrowed": "Borrowed",
+        "tabs": {
+            "lending": "Lending ({count})",
+            "borrowing": "Borrowing ({count})"
+        }
+    },
+    "Wishlist": {
+        "title": "Wishlist",
+        "subtitle": "Request items you can't find and vote on others' requests.",
+        "inputPlaceholder": "Search requests...",
+        "sortBy": "Sort by",
+        "sortOptions": {
+            "recent": "Most Recent",
+            "upvoted": "Most Upvoted"
+        },
+        "back": "Back",
+        "loading": "Loading...",
+        "noItems": "No items found.",
+        "emptyCard": {
+            "title": "Can't find what you're looking for?",
+            "description": "Check the community wishlist to see what others need, or make a request yourself.",
+            "seeFull": "See full wishlist",
+            "makeRequest": "Make a Request"
+        },
+        "draftCard": {
+            "title": "Make a Request",
+            "label": "What do you need?",
+            "placeholder": "e.g. Power Drill, Camping Tent...",
+            "photoLabel": "Photos (optional)",
+            "clickToUpload": "Click to upload",
+            "dragAndDrop": "or drag and drop",
+            "uploadLimit": "Up to 5 images",
+            "matchFound": "We found {count} match{es}. Submitting will ask you to confirm.",
+            "addRequest": "Add Request",
+            "searchItems": "Search Items",
+            "success": "Request added to wishlist!",
+            "failed": "Failed to add request: {error}"
+        },
+        "item": {
+            "matches": "{count} match{es}",
+            "edit": "Edit Request",
+            "editTitle": "Edit Request",
+            "currentPhotos": "Current photos",
+            "addMorePhotos": "Add more photos",
+            "cancel": "Cancel",
+            "save": "Save",
+            "saving": "Saving...",
+            "updated": "Request updated!",
+            "failedUpdate": "Failed to update: {error}",
+            "failedVote": "Failed to vote",
+            "close": "Close"
+        },
+        "alerts": {
+            "similarTitle": "Similar items found!",
+            "similarDesc": "We found {count} items that match your request. Would you like to view them instead?",
+            "viewItems": "View Items",
+            "postAnyway": "Post Request Anyway"
+        }
+    },
+    "ItemList": {
+        "searchPlaceholder": "Search available items...",
+        "giveaway": "Giveaway",
+        "loadingMap": "Loading map...",
+        "loading": "Loading...",
+        "noLocationItems": "No items with location in current filter"
+    },
+    "RatingSummary": {
+        "loading": "Loading...",
+        "noRatings": "No ratings",
+        "noRatingsYet": "No ratings yet",
+        "ratingCount": "{count} rating{s}",
+        "asLender": "As Lender",
+        "asBorrower": "As Borrower"
+    },
+    "ItemDetail": {
+        "youOwnThis": "You own this",
+        "giveaway": "Giveaway",
+        "locationAvailable": "Location available",
+        "notFound": "Item not found",
+        "rateTransaction": "Rate transaction",
+        "rateTransactions": "Rate transactions",
+        "reviewTransaction": "Review transaction",
+        "ratePrompt": {
+            "receiveFromUser": "Share your experience receiving this item from {targetUserName}",
+            "giveToUser": "Share your experience giving this item to {targetUserName}",
+            "receive": "Share your experience receiving this item",
+            "give": "Share your experience giving this item",
+            "borrowFromUser": "Share your experience borrowing from {targetUserName}",
+            "lendToUser": "Share your experience lending to {targetUserName}",
+            "borrow": "Share your experience borrowing this item",
+            "lend": "Share your experience lending this item"
+        },
+        "rate": "Rate",
+        "leaveRating": "Leave a Rating",
+        "noImages": "No Images",
+        "editItem": "Edit Item",
+        "deleteItem": "Delete Item",
+        "cancel": "Cancel",
+        "deleteConfirm": {
+            "title": "Are you sure?",
+            "description": "This action cannot be undone. This will permanently delete your item.",
+            "confirm": "Delete"
+        },
+        "itemDeleted": "Item deleted",
+        "itemUpdated": "Item updated",
+        "saveChanges": "Save Changes",
+        "requests": "Requests ({count})",
+        "hideInactive": "Hide Inactive",
+        "showInactive": "Show Inactive",
+        "noRequests": "No requests yet.",
+        "availabilityAndRequests": "Availability & Requests",
+        "activity": "Activity",
+        "checkAvailabilityAndRequest": "Check Availability & Request",
+        "leaseLength": "Lease length: ",
+        "minDays": "min {count} day(s)",
+        "maxDays": "max {count} day(s)",
+        "backToItems": "Back to Items",
+        "imageAlt": "{name} - Image {index}",
+        "toggleInactiveRequests": "Toggle inactive requests"
+    },
+    "ItemActivity": {
+        "system": "System",
+        "itemCreated": "Item created",
+        "giveawayApproved": "Giveaway approved",
+        "loanStarted": "Loan started",
+        "itemPickedUp": "Item picked up",
+        "itemReturned": "Item returned",
+        "defaultActivity": "Activity",
+        "recipient": "Recipient: ",
+        "borrower": "Borrower: ",
+        "loading": "Loading activity…",
+        "noActivity": "No activity yet.",
+        "by": "by "
+    },
+    "Categories": {
+        "kitchen": "Kitchen",
+        "furniture": "Furniture",
+        "electronics": "Electronics",
+        "clothing": "Clothing",
+        "books": "Books",
+        "sports": "Sports",
+        "other": "Other"
+    },
+    "ClaimButton": {
+        "manageRequest": "Manage Request",
+        "claim": "Claim",
+        "signInTooltip": "Sign in to claim this item"
+    },
+    "OwnerUnavailability": {
+        "button": "Vacation",
+        "badgeOn": "On",
+        "title": "Vacation / Unavailability",
+        "description": "When a range is active, your items are hidden from Browse and cannot be requested.",
+        "yourRanges": "Your ranges",
+        "loading": "Loading…",
+        "noRanges": "No ranges yet.",
+        "delete": "Delete",
+        "addRange": "Add a range",
+        "notePlaceholder": "Note (optional)",
+        "save": "Add",
+        "saving": "Saving…",
+        "dateFormat": "MMM d, yyyy"
+    },
+    "ProfileSetup": {
+        "title": "Complete Your Profile",
+        "description": "Set up your profile to start sharing and borrowing items. You can update this later.",
+        "nameLabel": "Name",
+        "fromClerk": "(from Clerk)",
+        "namePlaceholder": "Your name",
+        "resetToClerk": "Reset to Clerk value",
+        "addressLabel": "Address",
+        "addressPlaceholder": "Your location (e.g., Da Lat, Vietnam)",
+        "contactMethodsLabel": "Contact Methods",
+        "contactMethodsDesc": "Add at least one way for others to contact you",
+        "telegramPlaceholder": "Telegram @username",
+        "whatsappPlaceholder": "WhatsApp number",
+        "facebookPlaceholder": "Facebook profile",
+        "phonePlaceholder": "Phone number",
+        "later": "Later",
+        "save": "Save Profile",
+        "saving": "Saving...",
+        "toastRequired": "Name is required",
+        "toastSuccess": "Profile created successfully!",
+        "toastFailed": "Failed to create profile"
+    },
+    "RatingsList": {
+        "loading": "Loading ratings...",
+        "all": "All ({count})",
+        "lender": "As Lender ({count})",
+        "borrower": "As Borrower ({count})",
+        "noRatings": "No ratings in this category.",
+        "asLender": "As Lender",
+        "asBorrower": "As Borrower",
+        "photoAlt": "Rating photo {index}"
+    }
+}

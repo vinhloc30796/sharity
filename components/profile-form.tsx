@@ -11,6 +11,7 @@ import { AvatarUpload } from "@/components/avatar-upload";
 import { Loader2, MessageCircle, Phone, Facebook } from "lucide-react";
 import { toast } from "sonner";
 import type { CloudinaryRef } from "@/lib/cloudinary-ref";
+import { useTranslations } from "next-intl";
 
 interface ProfileFormProps {
 	initialValues?: {
@@ -47,6 +48,7 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 		CloudinaryRef | undefined
 	>(initialValues?.avatarCloudinary);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const t = useTranslations("Profile");
 
 	const updateProfile = useMutation(api.users.updateProfile);
 
@@ -77,11 +79,11 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 
 			await updateProfile(payload);
 
-			toast.success("Profile updated");
+			toast.success(t("toasts.updated"));
 			onSuccess?.();
 		} catch (error) {
 			console.error("Error updating profile:", error);
-			toast.error("Failed to update profile");
+			toast.error(t("toasts.failed"));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -99,11 +101,11 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 			</div>
 
 			<div className="flex flex-col gap-2">
-				<Label htmlFor="name">Name</Label>
+				<Label htmlFor="name">{t("name")}</Label>
 				<Input
 					id="name"
 					type="text"
-					placeholder="Your name"
+					placeholder={t("namePlaceholder")}
 					value={name}
 					onChange={(e) => setName(e.target.value)}
 					disabled={isSubmitting}
@@ -111,11 +113,11 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 			</div>
 
 			<div className="flex flex-col gap-2">
-				<Label htmlFor="address">Address / Location</Label>
+				<Label htmlFor="address">{t("address")}</Label>
 				<Input
 					id="address"
 					type="text"
-					placeholder="e.g., Da Lat, Ward 1"
+					placeholder={t("addressPlaceholder")}
 					value={address}
 					onChange={(e) => setAddress(e.target.value)}
 					disabled={isSubmitting}
@@ -124,14 +126,14 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 
 			<div className="flex flex-col gap-2">
 				<div className="flex items-center justify-between">
-					<Label htmlFor="bio">About Me</Label>
+					<Label htmlFor="bio">{t("bio")}</Label>
 					<span className="text-xs text-muted-foreground">
 						{bio.length}/500
 					</span>
 				</div>
 				<Textarea
 					id="bio"
-					placeholder="Tell others a bit about yourself..."
+					placeholder={t("bioPlaceholder")}
 					value={bio}
 					onChange={(e) => setBio(e.target.value.slice(0, 500))}
 					disabled={isSubmitting}
@@ -141,9 +143,9 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 			</div>
 
 			<div className="flex flex-col gap-4">
-				<Label className="text-base">Contact Information</Label>
+				<Label className="text-base">{t("contactInfo")}</Label>
 				<p className="text-sm text-muted-foreground -mt-2">
-					These will be shared with users you have approved transactions with.
+					{t("contactInfoDesc")}
 				</p>
 
 				<div className="flex flex-col gap-3">
@@ -153,7 +155,7 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 						</div>
 						<Input
 							type="text"
-							placeholder="Telegram username"
+							placeholder={t("telegram")}
 							value={telegram}
 							onChange={(e) => setTelegram(e.target.value)}
 							disabled={isSubmitting}
@@ -166,7 +168,7 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 						</div>
 						<Input
 							type="text"
-							placeholder="WhatsApp number"
+							placeholder={t("whatsapp")}
 							value={whatsapp}
 							onChange={(e) => setWhatsapp(e.target.value)}
 							disabled={isSubmitting}
@@ -179,7 +181,7 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 						</div>
 						<Input
 							type="text"
-							placeholder="Facebook profile"
+							placeholder={t("facebook")}
 							value={facebook}
 							onChange={(e) => setFacebook(e.target.value)}
 							disabled={isSubmitting}
@@ -192,7 +194,7 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 						</div>
 						<Input
 							type="tel"
-							placeholder="Phone number"
+							placeholder={t("phone")}
 							value={phone}
 							onChange={(e) => setPhone(e.target.value)}
 							disabled={isSubmitting}
@@ -205,10 +207,10 @@ export function ProfileForm({ initialValues, onSuccess }: ProfileFormProps) {
 				{isSubmitting ? (
 					<>
 						<Loader2 className="h-4 w-4 animate-spin mr-2" />
-						Saving...
+						{t("saving")}
 					</>
 				) : (
-					"Save Profile"
+					t("save")
 				)}
 			</Button>
 		</form>

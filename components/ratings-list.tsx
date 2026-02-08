@@ -2,6 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslations } from "next-intl";
 
 import { api } from "@/convex/_generated/api";
 import { CloudinaryImage } from "@/components/cloudinary-image";
@@ -16,6 +17,7 @@ interface RatingsListProps {
 }
 
 export function RatingsList({ userId }: RatingsListProps) {
+	const t = useTranslations("RatingsList");
 	const allRatings = useQuery(api.ratings.getRatingsForUser, { userId });
 	const lenderRatings = useQuery(api.ratings.getRatingsForUser, {
 		userId,
@@ -27,9 +29,7 @@ export function RatingsList({ userId }: RatingsListProps) {
 	});
 
 	if (allRatings === undefined) {
-		return (
-			<div className="text-sm text-muted-foreground">Loading ratings...</div>
-		);
+		return <div className="text-sm text-muted-foreground">{t("loading")}</div>;
 	}
 
 	if (allRatings.length === 0) {
@@ -39,12 +39,14 @@ export function RatingsList({ userId }: RatingsListProps) {
 	return (
 		<Tabs defaultValue="all" className="w-full">
 			<TabsList className="w-full grid grid-cols-3">
-				<TabsTrigger value="all">All ({allRatings?.length ?? 0})</TabsTrigger>
+				<TabsTrigger value="all">
+					{t("all", { count: allRatings?.length ?? 0 })}
+				</TabsTrigger>
 				<TabsTrigger value="lender">
-					As Lender ({lenderRatings?.length ?? 0})
+					{t("lender", { count: lenderRatings?.length ?? 0 })}
 				</TabsTrigger>
 				<TabsTrigger value="borrower">
-					As Borrower ({borrowerRatings?.length ?? 0})
+					{t("borrower", { count: borrowerRatings?.length ?? 0 })}
 				</TabsTrigger>
 			</TabsList>
 
@@ -74,11 +76,11 @@ interface Rating {
 }
 
 function RatingsGrid({ ratings }: { ratings: Rating[] }) {
+	const t = useTranslations("RatingsList");
+
 	if (ratings.length === 0) {
 		return (
-			<div className="text-sm text-muted-foreground">
-				No ratings in this category.
-			</div>
+			<div className="text-sm text-muted-foreground">{t("noRatings")}</div>
 		);
 	}
 
@@ -92,6 +94,8 @@ function RatingsGrid({ ratings }: { ratings: Rating[] }) {
 }
 
 function RatingCard({ rating }: { rating: Rating }) {
+	const t = useTranslations("RatingsList");
+	// TODO: Use next-intl formatter for relative time if possible, or keep date-fns but maybe need locale
 	return (
 		<Card className="py-4 gap-3">
 			<CardContent className="px-4 md:px-6">
@@ -100,7 +104,7 @@ function RatingCard({ rating }: { rating: Rating }) {
 						<div className="flex items-center gap-2">
 							<UserLink userId={rating.fromUserId} size="sm" />
 							<Badge variant="outline" className="text-xs">
-								{rating.role === "lender" ? "As Lender" : "As Borrower"}
+								{rating.role === "lender" ? t("asLender") : t("asBorrower")}
 							</Badge>
 						</div>
 						<StarRating value={rating.stars} readonly size="sm" />
@@ -113,7 +117,7 @@ function RatingCard({ rating }: { rating: Rating }) {
 									<CloudinaryImage
 										key={index}
 										src={url}
-										alt={`Rating photo ${index + 1}`}
+										alt={t("photoAlt", { index: index + 1 })}
 										width={64}
 										height={64}
 										sizes="64px"
