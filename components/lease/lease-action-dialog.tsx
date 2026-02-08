@@ -4,6 +4,7 @@ import type { ComponentProps } from "react";
 import { useState } from "react";
 import { type LucideIcon, UploadCloudIcon } from "lucide-react";
 import { useCloudinaryUpload } from "@imaxis/cloudinary-convex/react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -111,6 +112,7 @@ export function LeaseActionDialog(props: LeaseActionDialogProps) {
 	const { upload: uploadToCloudinary } = useCloudinaryUpload(
 		api.cloudinary.upload,
 	);
+	const t = useTranslations("LeaseAction");
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
@@ -164,11 +166,13 @@ export function LeaseActionDialog(props: LeaseActionDialogProps) {
 										<UploadCloudIcon className="size-8 text-muted-foreground/50" />
 										<div className="flex flex-col items-center">
 											<span className="font-semibold text-foreground">
-												Click to upload
+												{t("clickToUpload")}
 											</span>
-											<span>or drag and drop</span>
+											<span>{t("dragAndDrop")}</span>
 											<span className="text-xs text-muted-foreground/75">
-												Up to {props.photoConfig.maxFiles} images
+												{t("uploadLimit", {
+													count: props.photoConfig.maxFiles,
+												})}
 											</span>
 										</div>
 									</div>

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ItemCard } from "./item-card";
 import type { Id } from "@/convex/_generated/dataModel";
 import type { MediaImage } from "./item-form";
+import { useTranslations } from "next-intl";
 
 interface BorrowedItemData {
 	_id: Id<"items">;
@@ -37,51 +38,56 @@ function formatOwnerName(owner: BorrowedItemData["owner"]): string {
 	return `${owner.id.slice(0, 8)}...${owner.id.slice(-6)}`;
 }
 
-function getDueStatus(endDate: number): {
-	label: string;
-	className: string;
-	isOverdue: boolean;
-} {
-	const now = Date.now();
-	const endDateObj = new Date(endDate);
-
-	if (isPast(endDateObj)) {
-		return {
-			label: `Overdue by ${formatDistanceToNow(endDateObj)}`,
-			className:
-				"border-transparent bg-rose-100 text-rose-900 hover:bg-rose-100/80",
-			isOverdue: true,
-		};
-	}
-
-	if (isToday(endDateObj)) {
-		return {
-			label: "Due today",
-			className:
-				"border-transparent bg-amber-100 text-amber-900 hover:bg-amber-100/80",
-			isOverdue: false,
-		};
-	}
-
-	const daysUntilDue = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
-	if (daysUntilDue <= 3) {
-		return {
-			label: `Due in ${daysUntilDue} day${daysUntilDue > 1 ? "s" : ""}`,
-			className:
-				"border-transparent bg-amber-100 text-amber-900 hover:bg-amber-100/80",
-			isOverdue: false,
-		};
-	}
-
-	return {
-		label: `Due ${format(endDateObj, "MMM d")}`,
-		className:
-			"border-transparent bg-emerald-100 text-emerald-900 hover:bg-emerald-100/80",
-		isOverdue: false,
-	};
-}
-
 export function BorrowedItemCard({ item }: { item: BorrowedItemData }) {
+	const t = useTranslations("BorrowedItemCard");
+
+	function getDueStatus(endDate: number): {
+		label: string;
+		className: string;
+		isOverdue: boolean;
+	} {
+		const now = Date.now();
+		const endDateObj = new Date(endDate);
+
+		if (isPast(endDateObj)) {
+			return {
+				label: t("overdue", { time: formatDistanceToNow(endDateObj) }),
+				className:
+					"border-transparent bg-rose-100 text-rose-900 hover:bg-rose-100/80",
+				isOverdue: true,
+			};
+		}
+
+		if (isToday(endDateObj)) {
+			return {
+				label: t("dueToday"),
+				className:
+					"border-transparent bg-amber-100 text-amber-900 hover:bg-amber-100/80",
+				isOverdue: false,
+			};
+		}
+
+		const daysUntilDue = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+		if (daysUntilDue <= 3) {
+			return {
+				label: t("dueInDays", {
+					count: daysUntilDue,
+					s: daysUntilDue > 1 ? "s" : "",
+				}),
+				className:
+					"border-transparent bg-amber-100 text-amber-900 hover:bg-amber-100/80",
+				isOverdue: false,
+			};
+		}
+
+		return {
+			label: t("dueOn", { date: format(endDateObj, "MMM d") }),
+			className:
+				"border-transparent bg-emerald-100 text-emerald-900 hover:bg-emerald-100/80",
+			isOverdue: false,
+		};
+	}
+
 	const dueStatus = getDueStatus(item.claim.endDate);
 
 	const rightHeader = (
@@ -103,7 +109,7 @@ export function BorrowedItemCard({ item }: { item: BorrowedItemData }) {
 				<div className="flex justify-end gap-2 w-full">
 					<Link href={`/item/${item._id}`}>
 						<Button variant="secondary" size="sm">
-							View Details
+							{t("viewDetails")}
 						</Button>
 					</Link>
 				</div>
@@ -113,7 +119,9 @@ export function BorrowedItemCard({ item }: { item: BorrowedItemData }) {
 				{/* Owner info */}
 				<div className="flex items-center gap-2 text-xs text-muted-foreground">
 					<User className="h-3 w-3" />
-					<span>Borrowed from {formatOwnerName(item.owner)}</span>
+					<span>
+						{t("borrowedFrom", { name: formatOwnerName(item.owner) })}
+					</span>
 				</div>
 
 				{/* Picked up date */}
@@ -121,7 +129,9 @@ export function BorrowedItemCard({ item }: { item: BorrowedItemData }) {
 					<div className="flex items-center gap-2 text-xs text-muted-foreground">
 						<Clock className="h-3 w-3" />
 						<span>
-							Picked up {format(new Date(item.claim.pickedUpAt), "MMM d, yyyy")}
+							{t("pickedUp", {
+								date: format(new Date(item.claim.pickedUpAt), "MMM d, yyyy"),
+							})}
 						</span>
 					</div>
 				)}

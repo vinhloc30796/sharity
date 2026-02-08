@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Doc } from "../convex/_generated/dataModel";
-import { CATEGORY_LABELS, type ItemCategory } from "./item-form";
+import { type ItemCategory } from "@/lib/constants";
 import { createMarkerIcon } from "./item-marker";
+import { useTranslations } from "next-intl";
 import {
 	CloudinaryImage,
 	isCloudinaryImageUrl,
@@ -83,6 +84,7 @@ interface ItemsMapProps {
 }
 
 export function ItemsMap({ items, onItemClick }: ItemsMapProps) {
+	const tCategories = useTranslations("Categories");
 	const [MapComponents, setMapComponents] = useState<{
 		MapContainer: typeof import("react-leaflet").MapContainer;
 		TileLayer: typeof import("react-leaflet").TileLayer;
@@ -170,7 +172,7 @@ export function ItemsMap({ items, onItemClick }: ItemsMapProps) {
 									</Link>
 									{item.category && (
 										<p className="text-xs text-muted-foreground">
-											{CATEGORY_LABELS[item.category]}
+											{tCategories(item.category)}
 										</p>
 									)}
 									{item.location?.ward && (

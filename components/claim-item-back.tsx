@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { useTranslations } from "next-intl";
 
 import type { Doc } from "../convex/_generated/dataModel";
 import { useItemCalendar } from "@/hooks/use-item-calendar";
@@ -94,6 +95,7 @@ function GiveawayBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 		requestItem,
 		availability,
 	} = useClaimItem(item._id);
+	const t = useTranslations("ClaimItemBack");
 
 	const [pickupDay, setPickupDay] = useState<Date | undefined>(undefined);
 
@@ -109,14 +111,14 @@ function GiveawayBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 	return (
 		<>
 			<CardHeader className="space-y-1">
-				<CardTitle className="text-base">Request to Receive</CardTitle>
+				<CardTitle className="text-base">{t("requestToReceive")}</CardTitle>
 				{!isAuthenticated ? (
 					<div className="text-sm text-muted-foreground">
-						{isAuthLoading ? "Connecting..." : "Sign in to request."}
+						{isAuthLoading ? t("connecting") : t("signInToRequest")}
 					</div>
 				) : (
 					<div className="text-xs text-muted-foreground">
-						Giveaway: no return needed. Ownership transfers after pickup.
+						{t("giveawayDesc")}
 					</div>
 				)}
 			</CardHeader>
@@ -138,11 +140,11 @@ function GiveawayBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 				<AvailabilityToggle id={item._id} />
 				<div className="flex gap-2">
 					<Button variant="ghost" size="sm" onClick={flipToFront}>
-						Back
+						{t("back")}
 					</Button>
 					<Link href={`/item/${item._id}`} className="hidden sm:block">
 						<Button variant="outline" size="sm">
-							Details
+							{t("details")}
 						</Button>
 					</Link>
 					<Button
@@ -160,7 +162,7 @@ function GiveawayBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 						{isSubmitting ? (
 							<Loader2 className="h-4 w-4 animate-spin" />
 						) : (
-							"Request"
+							t("request")
 						)}
 					</Button>
 				</div>
@@ -178,6 +180,7 @@ function BorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 
 function LoanBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 	const { flipToFront } = useItemCard();
+	const t = useTranslations("ClaimItemBack");
 
 	const calendar = useItemCalendar({
 		mode: "borrower",
@@ -291,11 +294,11 @@ function LoanBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 				/>
 				<CardFooter className="mt-auto border-t gap-2 justify-end">
 					<Button variant="ghost" size="sm" onClick={flipToFront}>
-						Back
+						{t("back")}
 					</Button>
 					<Link href={`/item/${item._id}`}>
 						<Button variant="outline" size="sm">
-							Open details
+							{t("openDetails")}
 						</Button>
 					</Link>
 				</CardFooter>
@@ -306,10 +309,10 @@ function LoanBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 	return (
 		<>
 			<CardHeader className="space-y-1">
-				<CardTitle className="text-base">Request to Borrow</CardTitle>
+				<CardTitle className="text-base">{t("requestToBorrow")}</CardTitle>
 				{!calendar.isAuthenticated ? (
 					<div className="text-sm text-muted-foreground">
-						{calendar.isAuthLoading ? "Connecting..." : "Sign in to request."}
+						{calendar.isAuthLoading ? t("connecting") : t("signInToRequest")}
 					</div>
 				) : null}
 			</CardHeader>
@@ -320,18 +323,20 @@ function LoanBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 				{intradayFixedDate ? (
 					<div className="mt-3">
 						<LeaseProposeIntradayDialog
-							title="Select hours"
-							description="Same-day requests are booked by the hour."
+							title={t("intraday.title")}
+							description={t("intraday.description")}
 							triggerLabel={
 								intradayRange
-									? `Change hours (${formatIntradayRangeLabel(intradayRange)})`
-									: "Select hours"
+									? t("intraday.changeHours", {
+											range: formatIntradayRangeLabel(intradayRange),
+										})
+									: t("intraday.selectHours")
 							}
 							triggerVariant="outline"
 							triggerSize="sm"
 							triggerClassName="w-full h-8"
-							confirmLabel="Save hours"
-							cancelLabel="Cancel"
+							confirmLabel={t("intraday.save")}
+							cancelLabel={t("intraday.cancel")}
 							fixedDate={intradayFixedDate}
 							disabled={calendar.isSubmitting || isIntradayBusy}
 							open={intradayDialogOpen}
@@ -345,16 +350,16 @@ function LoanBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 								// it hasn't fully passed yet (end must be in the future)
 								// and the start hour is not earlier than the current hour.
 								if (endAt <= now) {
-									toast.error("Start time must be in the future");
-									throw new Error("Start time must be in the future");
+									toast.error(t("intraday.errors.futureStart"));
+									throw new Error(t("intraday.errors.futureStart"));
 								}
 								if (startAt < currentHourStart) {
-									toast.error("Start time must be in the future");
-									throw new Error("Start time must be in the future");
+									toast.error(t("intraday.errors.futureStart"));
+									throw new Error(t("intraday.errors.futureStart"));
 								}
 								if (endAt <= startAt) {
-									toast.error("End time must be after start time");
-									throw new Error("End time must be after start time");
+									toast.error(t("intraday.errors.endAfterStart"));
+									throw new Error(t("intraday.errors.endAfterStart"));
 								}
 
 								const overlaps = (calendar.availability ?? []).some((r) =>
@@ -364,8 +369,8 @@ function LoanBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 									),
 								);
 								if (overlaps) {
-									toast.error("Selected hours are not available");
-									throw new Error("Selected hours are not available");
+									toast.error(t("intraday.errors.notAvailable"));
+									throw new Error(t("intraday.errors.notAvailable"));
 								}
 
 								setIntradayRange({ startAt, endAt });
@@ -379,18 +384,18 @@ function LoanBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 				<AvailabilityToggle id={item._id} />
 				<div className="flex gap-2">
 					<Button variant="ghost" size="sm" onClick={flipToFront}>
-						Back
+						{t("back")}
 					</Button>
 					<Link href={`/item/${item._id}`} className="hidden sm:block">
 						<Button variant="outline" size="sm">
-							Details
+							{t("details")}
 						</Button>
 					</Link>
 					<Button size="sm" onClick={onClaim} disabled={requestDisabled}>
 						{calendar.isSubmitting ? (
 							<Loader2 className="h-4 w-4 animate-spin" />
 						) : (
-							"Request"
+							t("request")
 						)}
 					</Button>
 				</div>
@@ -402,6 +407,7 @@ function LoanBorrowerClaimItemBack({ item }: { item: Doc<"items"> }) {
 function OwnerClaimItemBack({ item }: { item: Doc<"items"> }) {
 	const { flipToFront } = useItemCard();
 	const claims = useQuery(api.items.getClaims, { id: item._id });
+	const t = useTranslations("ClaimItemBack");
 
 	const primaryClaim = useMemo(() => {
 		const list = claims ?? [];
@@ -447,11 +453,11 @@ function OwnerClaimItemBack({ item }: { item: Doc<"items"> }) {
 				/>
 				<CardFooter className="mt-auto border-t gap-2 justify-end">
 					<Button variant="ghost" size="sm" onClick={flipToFront}>
-						Back
+						{t("back")}
 					</Button>
 					<Link href={`/item/${item._id}`}>
 						<Button variant="outline" size="sm">
-							Open details
+							{t("openDetails")}
 						</Button>
 					</Link>
 				</CardFooter>
@@ -462,20 +468,18 @@ function OwnerClaimItemBack({ item }: { item: Doc<"items"> }) {
 	return (
 		<>
 			<CardHeader className="space-y-1">
-				<CardTitle className="text-base">No active requests</CardTitle>
+				<CardTitle className="text-base">{t("noActiveRequests")}</CardTitle>
 				<div className="text-sm text-muted-foreground">
-					{claims === undefined
-						? "Loading..."
-						: "Nothing to approve right now."}
+					{claims === undefined ? t("connecting") : t("nothingToApprove")}
 				</div>
 			</CardHeader>
 			<CardFooter className="mt-auto border-t gap-2 justify-end">
 				<Button variant="ghost" size="sm" onClick={flipToFront}>
-					Back
+					{t("back")}
 				</Button>
 				<Link href={`/item/${item._id}`}>
 					<Button variant="outline" size="sm">
-						Open details
+						{t("openDetails")}
 					</Button>
 				</Link>
 			</CardFooter>

@@ -12,6 +12,7 @@ import {
 import { format } from "date-fns";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 import type { LeaseActivityEvent } from "./lease-activity-timeline";
 import { LeaseActivitySection } from "./lease-activity-section";
@@ -70,31 +71,6 @@ function badgeVariantForState(
 	}
 }
 
-function labelForState(state: string): string {
-	switch (state) {
-		case "requested":
-			return "Awaiting approval";
-		case "approved":
-			return "Approved";
-		case "rejected":
-			return "Rejected";
-		case "picked_up":
-			return "In use";
-		case "transferred":
-			return "Transferred";
-		case "returned":
-			return "Completed";
-		case "expired":
-			return "Expired";
-		case "past_due":
-			return "Past due";
-		case "missing":
-			return "Missing";
-		default:
-			return "Unknown";
-	}
-}
-
 function getStateIcon(state: string) {
 	switch (state) {
 		case "requested":
@@ -149,7 +125,7 @@ export function LeaseClaimCard(props: {
 		markExpired,
 		markMissing,
 	} = props;
-
+	const t = useTranslations("LeaseClaim");
 	const events = useQuery(api.items.getLeaseActivity, { claimId: claim._id });
 	const leaseEvents = events as LeaseActivityEvent[] | undefined;
 
@@ -407,7 +383,7 @@ export function LeaseClaimCard(props: {
 				<LeaseClaimHeader
 					claim={claim}
 					requestedAt={eventTimes.requestedAt ?? claim._creationTime}
-					stateLabel={labelForState(derivedState)}
+					stateLabel={t(`status.${derivedState}`)}
 					stateVariant={badgeVariantForState(derivedState)}
 					StateIcon={StateIcon}
 					viewerRole={viewerRole}
@@ -418,8 +394,7 @@ export function LeaseClaimCard(props: {
 			<CardContent>
 				{isPastDue && (
 					<div className="pb-3 text-xs text-muted-foreground">
-						This request has passed its start date and can no longer be
-						approved.
+						{t("pastDueMessage")}
 					</div>
 				)}
 
@@ -440,7 +415,9 @@ export function LeaseClaimCard(props: {
 								}
 							}}
 						>
-							{isCancelling ? "Cancelling..." : "Cancel request"}
+							{isCancelling
+								? t("actions.cancelling")
+								: t("actions.cancelRequest")}
 						</Button>
 					</div>
 				)}
@@ -462,11 +439,11 @@ export function LeaseClaimCard(props: {
 							}}
 						>
 							{isApproving ? (
-								"Approving..."
+								t("actions.approving")
 							) : (
 								<>
 									<Check className="h-3.5 w-3.5 mr-1.5" />
-									Approve
+									{t("actions.approve")}
 								</>
 							)}
 						</Button>
@@ -475,26 +452,26 @@ export function LeaseClaimCard(props: {
 							<LeaseActionDialog
 								title={
 									isGiveaway
-										? "Reject giveaway request"
-										: "Reject lease request"
+										? t("rejectDialog.titleGiveaway")
+										: t("rejectDialog.titleLease")
 								}
 								description={
 									isGiveaway
-										? "This will notify the requester that their request was declined."
-										: "This will notify the borrower that their request was declined."
+										? t("rejectDialog.descGiveaway")
+										: t("rejectDialog.descLease")
 								}
-								triggerLabel="Reject"
+								triggerLabel={t("actions.reject")}
 								triggerIcon={X}
 								triggerVariant="outline"
 								triggerSize="sm"
 								triggerClassName="h-8"
-								confirmLabel="Reject request"
+								confirmLabel={t("actions.rejectRequest")}
 								confirmVariant="destructive"
-								cancelLabel="Cancel"
+								cancelLabel={t("actions.cancel")}
 								noteConfig={{
 									id: "reject-note",
-									label: "Reason (optional, but recommended)",
-									placeholder: "Let them know why...",
+									label: t("rejectDialog.reasonLabel"),
+									placeholder: t("rejectDialog.reasonPlaceholder"),
 									rows: 3,
 								}}
 								disabled={isApproving}
@@ -512,9 +489,7 @@ export function LeaseClaimCard(props: {
 						<div className="space-y-2">
 							{isIntradayLease ? (
 								<div className="text-xs text-muted-foreground">
-									Intraday lease: pickup &amp; return happen within the selected
-									hours. Use the pickup and return time proposals below to agree
-									on exact windows.
+									{t("intraday.note")}
 								</div>
 							) : null}
 							{canRecordPickup && (
@@ -522,29 +497,29 @@ export function LeaseClaimCard(props: {
 									{pickupProposal ? (
 										<div className="text-xs text-muted-foreground">
 											{pickupApproved
-												? "Pickup proposed & approved: "
-												: "Pickup proposed: "}
+												? t("pickup.proposedApproved")
+												: t("pickup.proposed")}{" "}
 											{format(
 												new Date(pickupProposal.windowStartAt),
 												"MMM d p",
 											)}
 											–{format(new Date(pickupProposal.windowEndAt), "p")}
-											{pickupApproved ? null : ". Pending approval."}
+											{pickupApproved
+												? null
+												: ` ${t("pickup.pendingApproval")}`}
 										</div>
 									) : null}
 
 									<LeaseProposeWindowDialog
-										title="Propose pickup time"
+										title={t("pickup.propose")}
 										triggerLabel={
-											pickupProposal
-												? "Change pickup time"
-												: "Propose pickup time"
+											pickupProposal ? t("pickup.change") : t("pickup.propose")
 										}
 										triggerIcon={Package}
 										triggerSize="sm"
 										triggerClassName="w-full h-8"
-										confirmLabel="Send proposal"
-										cancelLabel="Cancel"
+										confirmLabel={t("actions.sendProposal")}
+										cancelLabel={t("actions.cancel")}
 										fixedDate={new Date(claim.startDate)}
 										defaultHour={
 											pickupProposal
@@ -565,9 +540,7 @@ export function LeaseClaimCard(props: {
 													claimId: claim._id,
 													windowStartAt,
 												});
-												toast.success(
-													"Pickup request sent. Now please wait for approval from your counterpart. Nothing to do for now",
-												);
+												toast.success(t("pickup.sentToast"));
 											} catch (error: unknown) {
 												toast.error(toErrorMessage(error));
 												throw error;
@@ -579,22 +552,22 @@ export function LeaseClaimCard(props: {
 										pickupApproved ? (
 											pickupConfirmWindowOpen ? (
 												<LeaseActionDialog
-													title="Confirm item pickup"
-													description="Record that the item has been picked up. Photos help document the item&apos;s condition."
-													triggerLabel="Confirm pickup"
+													title={t("pickup.confirmTitle")}
+													description={t("pickup.confirmDesc")}
+													triggerLabel={t("pickup.confirmAction")}
 													triggerIcon={Package}
 													triggerSize="sm"
 													triggerClassName="w-full h-8"
-													confirmLabel="Confirm pickup"
-													cancelLabel="Cancel"
+													confirmLabel={t("pickup.confirmAction")}
+													cancelLabel={t("actions.cancel")}
 													noteConfig={{
 														id: "pickup-note",
-														label: "Notes (optional)",
-														placeholder: "Any notes about the pickup...",
+														label: t("pickup.noteLabel"),
+														placeholder: t("pickup.notePlaceholder"),
 														rows: 2,
 													}}
 													photoConfig={{
-														label: "Photos (optional)",
+														label: t("pickup.photoLabel"),
 														maxFiles: 5,
 														accept: "image/*",
 														folder: "leases",
@@ -607,7 +580,7 @@ export function LeaseClaimCard(props: {
 																note,
 																photoCloudinary,
 															});
-															toast.success("Pickup confirmed");
+															toast.success(t("pickup.confirmedToast"));
 														} catch (error: unknown) {
 															toast.error(toErrorMessage(error));
 															throw error;
@@ -619,18 +592,21 @@ export function LeaseClaimCard(props: {
 													<TooltipTrigger asChild>
 														<span className="w-full">
 															<Button size="sm" className="w-full h-8" disabled>
-																Confirm pickup
+																{t("pickup.confirmAction")}
 															</Button>
 														</span>
 													</TooltipTrigger>
 													<TooltipContent sideOffset={6}>
-														Confirm is available during{" "}
-														{format(
-															new Date(pickupProposal.windowStartAt),
-															"MMM d p",
-														)}
-														–{format(new Date(pickupProposal.windowEndAt), "p")}
-														.
+														{t.rich("pickup.confirmAvailable", {
+															start: format(
+																new Date(pickupProposal.windowStartAt),
+																"MMM d p",
+															),
+															end: format(
+																new Date(pickupProposal.windowEndAt),
+																"p",
+															),
+														})}
 													</TooltipContent>
 												</Tooltip>
 											)
@@ -653,9 +629,7 @@ export function LeaseClaimCard(props: {
 															itemId,
 															claimId: claim._id,
 														});
-														toast.success(
-															"Pickup time approved. Waiting for confirmation from your counterpart.",
-														);
+														toast.success(t("pickup.approvedToast"));
 													} catch (error: unknown) {
 														toast.error(toErrorMessage(error));
 													} finally {
@@ -664,13 +638,13 @@ export function LeaseClaimCard(props: {
 												}}
 											>
 												{isApprovingPickupTime
-													? "Approving..."
-													: "Approve pickup time"}
+													? t("pickup.approving")
+													: t("pickup.approve")}
 											</Button>
 										) : null
 									) : pickupProposal ? (
 										<div className="text-xs text-muted-foreground">
-											This window has passed. It will auto-expire soon.
+											{t("pickup.windowPassed")}
 										</div>
 									) : null}
 								</div>
@@ -681,29 +655,29 @@ export function LeaseClaimCard(props: {
 									{returnProposal ? (
 										<div className="text-xs text-muted-foreground">
 											{returnApproved
-												? "Return proposed & approved: "
-												: "Return proposed: "}
+												? t("return.proposedApproved")
+												: t("return.proposed")}{" "}
 											{format(
 												new Date(returnProposal.windowStartAt),
 												"MMM d p",
 											)}
 											–{format(new Date(returnProposal.windowEndAt), "p")}
-											{returnApproved ? null : ". Pending approval."}
+											{returnApproved
+												? null
+												: ` ${t("return.pendingApproval")}`}
 										</div>
 									) : null}
 
 									<LeaseProposeWindowDialog
-										title="Propose return time"
+										title={t("return.propose")}
 										triggerLabel={
-											returnProposal
-												? "Change return time"
-												: "Propose return time"
+											returnProposal ? t("return.change") : t("return.propose")
 										}
 										triggerIcon={PackageCheck}
 										triggerSize="sm"
 										triggerClassName="w-full h-8"
-										confirmLabel="Send proposal"
-										cancelLabel="Cancel"
+										confirmLabel={t("actions.sendProposal")}
+										cancelLabel={t("actions.cancel")}
 										fixedDate={new Date(claim.endDate)}
 										defaultHour={
 											returnProposal
@@ -725,9 +699,7 @@ export function LeaseClaimCard(props: {
 													claimId: claim._id,
 													windowStartAt,
 												});
-												toast.success(
-													"Return request sent. Now please wait for approval from your counterpart. Nothing to do for now",
-												);
+												toast.success(t("return.sentToast"));
 											} catch (error: unknown) {
 												toast.error(toErrorMessage(error));
 												throw error;
@@ -739,22 +711,22 @@ export function LeaseClaimCard(props: {
 										returnApproved ? (
 											returnConfirmWindowOpen ? (
 												<LeaseActionDialog
-													title="Confirm item return"
-													description="Record that the item has been returned. Photos help document the item&apos;s condition."
-													triggerLabel="Confirm return"
+													title={t("return.confirmTitle")}
+													description={t("return.confirmDesc")}
+													triggerLabel={t("return.confirmAction")}
 													triggerIcon={PackageCheck}
 													triggerSize="sm"
 													triggerClassName="w-full h-8"
-													confirmLabel="Confirm return"
-													cancelLabel="Cancel"
+													confirmLabel={t("return.confirmAction")}
+													cancelLabel={t("actions.cancel")}
 													noteConfig={{
 														id: "return-note",
-														label: "Notes (optional)",
-														placeholder: "Any notes about the return...",
+														label: t("return.noteLabel"),
+														placeholder: t("return.notePlaceholder"),
 														rows: 2,
 													}}
 													photoConfig={{
-														label: "Photos (optional)",
+														label: t("return.photoLabel"),
 														maxFiles: 5,
 														accept: "image/*",
 														folder: "leases",
@@ -767,7 +739,7 @@ export function LeaseClaimCard(props: {
 																note,
 																photoCloudinary,
 															});
-															toast.success("Return confirmed");
+															toast.success(t("return.confirmedToast"));
 														} catch (error: unknown) {
 															toast.error(toErrorMessage(error));
 															throw error;
@@ -779,18 +751,21 @@ export function LeaseClaimCard(props: {
 													<TooltipTrigger asChild>
 														<span className="w-full">
 															<Button size="sm" className="w-full h-8" disabled>
-																Confirm return
+																{t("return.confirmAction")}
 															</Button>
 														</span>
 													</TooltipTrigger>
 													<TooltipContent sideOffset={6}>
-														Confirm is available during{" "}
-														{format(
-															new Date(returnProposal.windowStartAt),
-															"MMM d p",
-														)}
-														–{format(new Date(returnProposal.windowEndAt), "p")}
-														.
+														{t.rich("return.confirmAvailable", {
+															start: format(
+																new Date(returnProposal.windowStartAt),
+																"MMM d p",
+															),
+															end: format(
+																new Date(returnProposal.windowEndAt),
+																"p",
+															),
+														})}
 													</TooltipContent>
 												</Tooltip>
 											)

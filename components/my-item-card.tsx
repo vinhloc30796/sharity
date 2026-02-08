@@ -33,15 +33,18 @@ import { Clock, Pencil, Trash2 } from "lucide-react";
 import { ClaimItemBack } from "./claim-item-back";
 import { LeaseClaimHeader } from "@/components/lease/lease-claim-header";
 import type { MediaImage } from "./item-form";
+import { useTranslations, useLocale } from "next-intl";
+import { enUS, vi } from "date-fns/locale";
 
 // Badge not available, using span
 
 function UserName({ userId }: { userId: string }) {
+	const t = useTranslations("MyItemCard");
 	const userInfo = useQuery(api.users.getBasicInfo, { userId });
 	if (userInfo === undefined) {
 		return <span className="animate-pulse">...</span>;
 	}
-	return <span>{userInfo.name || "Anonymous"}</span>;
+	return <span>{userInfo.name || t("anonymous")}</span>;
 }
 
 function FlipToBackButton(props: { label: string }) {
@@ -91,22 +94,23 @@ function primaryStatusForOwnerClaims(
 
 function labelForOwnerStatus(
 	status: ReturnType<typeof primaryStatusForOwnerClaims>,
+	t: (key: string) => string,
 ): string {
 	switch (status) {
 		case "available":
-			return "Available";
+			return t("status.available");
 		case "pending":
-			return "Requests pending";
+			return t("status.pending");
 		case "approved":
-			return "Approved";
+			return t("status.approved");
 		case "picked_up":
-			return "In use";
+			return t("status.picked_up");
 		case "returned":
-			return "Completed";
+			return t("status.returned");
 		case "expired":
-			return "Expired";
+			return t("status.expired");
 		case "missing":
-			return "Missing";
+			return t("status.missing");
 	}
 }
 
@@ -150,6 +154,10 @@ export function MyItemCard({
 		isOwner ? { id: item._id } : "skip",
 	);
 
+	const t = useTranslations("MyItemCard");
+	const locale = useLocale();
+	const dateLocale = locale === "vi" ? vi : enUS;
+
 	const [editingId, setEditingId] = useState<string | null>(null);
 
 	const pendingClaims = (claims ?? []).filter((c) => c.status === "pending");
@@ -170,12 +178,12 @@ export function MyItemCard({
 		<div className="flex items-center gap-2">
 			{item.giveaway ? (
 				<span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-amber-100 text-amber-900 hover:bg-amber-100/80">
-					Giveaway
+					{t("giveaway")}
 				</span>
 			) : null}
 			{item.giveaway ? null : (
 				<span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-indigo-100 text-indigo-800 hover:bg-indigo-100/80">
-					Borrowed
+					{t("borrowed")}
 				</span>
 			)}
 		</div>
@@ -183,18 +191,25 @@ export function MyItemCard({
 		<div className="flex items-center gap-2">
 			{item.giveaway ? (
 				<span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-amber-100 text-amber-900 hover:bg-amber-100/80">
-					Giveaway
+					{t("giveaway")}
 				</span>
 			) : null}
 			<span
 				className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${classNameForOwnerStatus(status)}`}
 			>
-				{labelForOwnerStatus(status)}
+				{labelForOwnerStatus(status, t)}
+
 				{activeApprovedClaim ? (
 					<span className="ml-2 hidden sm:inline text-xs text-muted-foreground">
-						by <UserName userId={activeApprovedClaim.claimerId} /> (
-						{format(activeApprovedClaim.startDate, "MMM d")} -{" "}
-						{format(activeApprovedClaim.endDate, "MMM d")})
+						{t("by")} <UserName userId={activeApprovedClaim.claimerId} /> (
+						{format(activeApprovedClaim.startDate, "MMM d", {
+							locale: dateLocale,
+						})}{" "}
+						-{" "}
+						{format(activeApprovedClaim.endDate, "MMM d", {
+							locale: dateLocale,
+						})}
+						)
 					</span>
 				) : null}
 			</span>
@@ -216,7 +231,9 @@ export function MyItemCard({
 			footer={
 				isOwner ? (
 					<div className="flex justify-end gap-2 w-full">
-						{hasActionableBack ? <FlipToBackButton label="Review" /> : null}
+						{hasActionableBack ? (
+							<FlipToBackButton label={t("review")} />
+						) : null}
 						<Dialog
 							open={editingId === item._id}
 							onOpenChange={(open) => setEditingId(open ? item._id : null)}
@@ -228,12 +245,12 @@ export function MyItemCard({
 									className="h-8 w-8 text-muted-foreground hover:text-foreground"
 								>
 									<Pencil className="h-4 w-4" />
-									<span className="sr-only">Edit</span>
+									<span className="sr-only">{t("edit")}</span>
 								</Button>
 							</DialogTrigger>
 							<DialogContent>
 								<DialogHeader>
-									<DialogTitle>Edit Item</DialogTitle>
+									<DialogTitle>{t("editTitle")}</DialogTitle>
 								</DialogHeader>
 								<ItemForm
 									initialValues={{
@@ -261,7 +278,7 @@ export function MyItemCard({
 										});
 										setEditingId(null);
 									}}
-									submitLabel="Save Changes"
+									submitLabel={t("saveChanges")}
 								/>
 							</DialogContent>
 						</Dialog>
@@ -274,23 +291,26 @@ export function MyItemCard({
 									className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50"
 								>
 									<Trash2 className="h-4 w-4" />
-									<span className="sr-only">Delete</span>
+									<span className="sr-only">{t("delete")}</span>
 								</Button>
 							</AlertDialogTrigger>
 							<AlertDialogContent>
 								<AlertDialogHeader>
-									<AlertDialogTitle>Are you sure?</AlertDialogTitle>
+									<AlertDialogTitle>
+										{t("deleteConfirm.title")}
+									</AlertDialogTitle>
 									<AlertDialogDescription>
-										This action cannot be undone. This will permanently delete
-										your item.
+										{t("deleteConfirm.description")}
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>
-									<AlertDialogCancel>Cancel</AlertDialogCancel>
+									<AlertDialogCancel>
+										{t("deleteConfirm.cancel")}
+									</AlertDialogCancel>
 									<AlertDialogAction
 										onClick={() => deleteItem({ id: item._id })}
 									>
-										Delete
+										{t("deleteConfirm.confirm")}
 									</AlertDialogAction>
 								</AlertDialogFooter>
 							</AlertDialogContent>
@@ -300,7 +320,7 @@ export function MyItemCard({
 					<div className="flex justify-end gap-2 w-full">
 						<Link href={`/item/${item._id}`}>
 							<Button variant="secondary" size="sm">
-								Open
+								{t("open")}
 							</Button>
 						</Link>
 					</div>
@@ -310,7 +330,9 @@ export function MyItemCard({
 			<div className="space-y-3">
 				{!isOwner ? (
 					<div className="text-xs text-muted-foreground">
-						Received from <UserName userId={item.ownerId} />
+						{t.rich("receivedFrom", {
+							user: () => <UserName userId={item.ownerId} />,
+						})}
 					</div>
 				) : null}
 
@@ -324,8 +346,10 @@ export function MyItemCard({
 					<div className="rounded-md border bg-muted/30 p-3 space-y-3">
 						<div className="flex items-center justify-between gap-2">
 							<div className="text-xs text-muted-foreground">
-								{pendingClaims.length} pending request
-								{pendingClaims.length > 1 ? "s" : ""}
+								{t("pendingRequests", {
+									count: pendingClaims.length,
+									s: pendingClaims.length > 1 ? "s" : "",
+								})}
 							</div>
 						</div>
 						<LeaseClaimHeader
@@ -333,7 +357,7 @@ export function MyItemCard({
 							requestedAt={
 								nextPendingClaim.requestedAt ?? nextPendingClaim._creationTime
 							}
-							stateLabel="Awaiting approval"
+							stateLabel={t("awaitingApproval")}
 							stateVariant="secondary"
 							StateIcon={Clock}
 						/>
@@ -346,7 +370,7 @@ export function MyItemCard({
 									rejectClaim({ claimId: nextPendingClaim._id, id: item._id })
 								}
 							>
-								Reject
+								{t("reject")}
 							</Button>
 							<Button
 								size="sm"
@@ -355,7 +379,7 @@ export function MyItemCard({
 									approveClaim({ claimId: nextPendingClaim._id, id: item._id })
 								}
 							>
-								Approve
+								{t("approve")}
 							</Button>
 						</div>
 					</div>

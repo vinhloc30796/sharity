@@ -1,0 +1,689 @@
+{
+    "Layout": {
+        "metadata": {
+            "title": {
+                "default": "Sharity — Chia sẻ, mượn và cho mượn đồ đạc tại Đà Lạt, Việt Nam",
+                "template": "%s — Sharity, nền tảng chia sẻ tại Đà Lạt, Việt Nam"
+            },
+            "description": "Sharity là nền tảng chia sẻ cộng đồng tại Đà Lạt, Việt Nam. Cho mượn những món đồ ít dùng, mượn những thứ bạn cần, và quản lý yêu cầu một cách dễ dàng.",
+            "openGraph": {
+                "siteName": "Sharity",
+                "title": "Sharity — Chia sẻ, mượn và cho mượn đồ đạc tại Đà Lạt, Việt Nam",
+                "description": "Sharity là nền tảng chia sẻ cộng đồng tại Đà Lạt, Việt Nam. Cho mượn những món đồ ít dùng, mượn những thứ bạn cần, và quản lý yêu cầu một cách dễ dàng.",
+                "locale": "vi_VN"
+            },
+            "twitter": {
+                "title": "Sharity — Chia sẻ, mượn và cho mượn đồ đạc tại Đà Lạt, Việt Nam",
+                "description": "Sharity là nền tảng chia sẻ cộng đồng tại Đà Lạt, Việt Nam. Cho mượn những món đồ ít dùng, mượn những thứ bạn cần, và quản lý yêu cầu một cách dễ dàng."
+            }
+        }
+    },
+    "Common": {
+        "back": "Quay lại",
+        "loading": "Đang tải...",
+        "signIn": "Đăng nhập",
+        "signUp": "Đăng ký",
+        "profile": "Hồ sơ",
+        "submit": "Gửi"
+    },
+    "AppHeader": {
+        "signIn": "Đăng nhập",
+        "signUp": "Đăng ký",
+        "profile": "Hồ sơ"
+    },
+    "Home": {
+        "title": "Sharity",
+        "subtitle": "Mượn và cho mượn đồ đạc tại Đà Lạt.",
+        "tabs": {
+            "share": "Chia sẻ",
+            "request": "Yêu cầu",
+            "browse": "Khám phá"
+        },
+        "topRequests": "Yêu cầu hàng đầu",
+        "sortBy": "Sắp xếp theo",
+        "sortOptions": {
+            "recent": "Mới nhất",
+            "upvoted": "Được bình chọn nhiều nhất"
+        },
+        "noRequests": "Chưa có yêu cầu nào.",
+        "seeFullWishlist": "Xem tất cả danh sách mong muốn"
+    },
+    "ItemCard": {
+        "giveaway": "Tặng",
+        "locationAvailable": "Có sẵn vị trí"
+    },
+    "ItemForm": {
+        "giveawayMode": "Chế độ tặng quà",
+        "giveawayDesc": "Không cần trả lại. Quyền sở hữu được chuyển sau khi nhận.",
+        "switchMode": {
+            "title": "Chuyển chế độ?",
+            "description": "Điều này sẽ từ chối tất cả các yêu cầu đang chờ xử lý hiện tại",
+            "cancel": "Hủy",
+            "confirm": "Chuyển đổi"
+        },
+        "itemName": "Tên món đồ",
+        "itemNamePlaceholder": "Ví dụ: Lều cắm trại",
+        "description": "Mô tả",
+        "descriptionPlaceholder": "Mô tả tùy chọn",
+        "leaseLengthLimits": "Giới hạn thời gian cho thuê (ngày)",
+        "giveawaylimitDesc": "Giới hạn thời gian cho thuê bị vô hiệu hóa đối với các mặt hàng tặng.",
+        "minLeaseDays": "Số ngày tối thiểu (tùy chọn)",
+        "minLeaseDaysPlaceholder": "Ví dụ: 1",
+        "maxLeaseDays": "Số ngày tối đa (tùy chọn)",
+        "maxLeaseDaysPlaceholder": "Ví dụ: 14",
+        "sameDayNote": "Các yêu cầu trong ngày được tính là một phần của ngày.",
+        "category": "Danh mục",
+        "selectCategory": "Chọn danh mục",
+        "location": "Vị trí",
+        "addressPlaceholder": "Địa chỉ (tự động điền từ bản đồ)",
+        "pickOnMap": "Chọn trên bản đồ",
+        "getCurrentLocation": "Lấy vị trí hiện tại",
+        "imagesLabel": "Hình ảnh (Tối đa 5)",
+        "clickToUpload": "Nhấn để tải lên",
+        "dragAndDrop": "hoặc kéo và thả",
+        "uploadLimit": "Tối đa 5 ảnh",
+        "uploadLimitReached": "Đã đạt giới hạn 5 ảnh. Xóa bớt để thêm ảnh mới.",
+        "uploadingExample": "Bạn có thể thêm {count} ảnh nữa{s}",
+        "uploadingSaving": "Đang tải lên & Lưu...",
+        "myItems": "Đồ của tôi",
+        "validation": {
+            "geolocationNotSupported": "Trình duyệt của bạn không hỗ trợ định vị",
+            "locationCaptured": "Đã lấy vị trí thành công",
+            "locationError": "Không thể lấy vị trí: {error}",
+            "locationSelected": "Đã chọn vị trí",
+            "mustBeInteger": "{label} phải là số nguyên",
+            "mustBeAtLeastOne": "{label} phải ít nhất là 1 ngày",
+            "minMaxError": "Thời gian thuê tối thiểu phải nhỏ hơn hoặc bằng thời gian thuê tối đa",
+            "fileReject": "{message} ({fileName})"
+        }
+    },
+    "ClaimItemBack": {
+        "back": "Quay lại",
+        "requestToReceive": "Yêu cầu nhận",
+        "signInToRequest": "Đăng nhập để yêu cầu.",
+        "connecting": "Đang kết nối...",
+        "giveawayDesc": "Tặng: không cần trả lại. Quyền sở hữu được chuyển sau khi nhận.",
+        "details": "Chi tiết",
+        "request": "Yêu cầu",
+        "requestToBorrow": "Yêu cầu mượn",
+        "openDetails": "Mở chi tiết",
+        "noActiveRequests": "Không có yêu cầu nào",
+        "nothingToApprove": "Không có gì để duyệt lúc này.",
+        "intraday": {
+            "title": "Chọn giờ",
+            "description": "Yêu cầu trong ngày được đặt theo giờ.",
+            "changeHours": "Thay đổi giờ ({range})",
+            "selectHours": "Chọn giờ",
+            "save": "Lưu giờ",
+            "cancel": "Hủy",
+            "errors": {
+                "futureStart": "Thời gian bắt đầu phải ở tương lai",
+                "endAfterStart": "Thời gian kết thúc phải sau thời gian bắt đầu",
+                "notAvailable": "Giờ đã chọn không có sẵn"
+            }
+        }
+    },
+    "AddItemForm": {
+        "title": "Thêm món đồ",
+        "submit": "Chia sẻ món đồ",
+        "signInTitle": "Đăng nhập để chia sẻ",
+        "signIn": "Đăng nhập"
+    },
+    "BorrowedItemCard": {
+        "overdue": "Quá hạn {time}",
+        "dueToday": "Đến hạn hôm nay",
+        "dueInDays": "Đến hạn trong {count} ngày nữa",
+        "dueOn": "Đến hạn {date}",
+        "viewDetails": "Xem chi tiết",
+        "borrowedFrom": "Mượn từ {name}",
+        "pickedUp": "Đã nhận {date}"
+    },
+    "MyItemCard": {
+        "by": "bởi",
+        "anonymous": "Ẩn danh",
+        "status": {
+            "available": "Có sẵn",
+            "pending": "Đang chờ duyệt",
+            "approved": "Đã duyệt",
+            "picked_up": "Đang sử dụng",
+            "returned": "Đã hoàn thành",
+            "expired": "Hết hạn",
+            "missing": "Thất lạc"
+        },
+        "giveaway": "Tặng",
+        "borrowed": "Đang mượn",
+        "review": "Xem xét",
+        "edit": "Sửa",
+        "editTitle": "Sửa món đồ",
+        "saveChanges": "Lưu thay đổi",
+        "delete": "Xóa",
+        "deleteConfirm": {
+            "title": "Bạn có chắc chắn không?",
+            "description": "Hành động này không thể hoàn tác. Món đồ của bạn sẽ bị xóa vĩnh viễn.",
+            "cancel": "Hủy",
+            "confirm": "Xóa"
+        },
+        "open": "Mở",
+        "receivedFrom": "Nhận từ <user></user>",
+        "pendingRequests": "{count} yêu cầu đang chờ",
+        "awaitingApproval": "Đang chờ duyệt",
+        "reject": "Từ chối",
+        "approve": "Chấp nhận"
+    },
+    "Notifications": {
+        "loading": "Đang tải thông báo...",
+        "empty": "Không có thông báo mới",
+        "title": "Thông báo",
+        "markAllRead": "Đánh dấu tất cả là đã đọc",
+        "markAsRead": "Đánh dấu là đã đọc",
+        "messages": {
+            "new_request": "Yêu cầu mới cho \"{itemName}\"",
+            "request_approved": "Yêu cầu cho \"{itemName}\" đã được duyệt! Bạn có thể xem thông tin liên hệ của chủ sở hữu.",
+            "request_rejected": "Yêu cầu cho \"{itemName}\" bị từ chối",
+            "item_available": "\"{itemName}\" hiện có sẵn!",
+            "pickup_proposed": "Yêu cầu nhận đồ \"{itemName}\"",
+            "pickup_proposed_window": "Yêu cầu nhận đồ \"{itemName}\": {start}–{end}",
+            "pickup_approved": "Đã duyệt lịch nhận \"{itemName}\"",
+            "pickup_approved_window": "Đã duyệt lịch nhận \"{itemName}\": {start}–{end}",
+            "pickup_confirmed": "Đã xác nhận nhận \"{itemName}\"",
+            "transfer_completed": "Chuyển giao \"{itemName}\" hoàn tất",
+            "pickup_expired": "Hết hạn nhận \"{itemName}\"",
+            "return_proposed": "Yêu cầu trả đồ \"{itemName}\"",
+            "return_proposed_window": "Yêu cầu trả đồ \"{itemName}\": {start}–{end}",
+            "return_approved": "Đã duyệt lịch trả \"{itemName}\"",
+            "return_approved_window": "Đã duyệt lịch trả \"{itemName}\": {start}–{end}",
+            "return_confirmed": "Đã xác nhận trả \"{itemName}\"",
+            "return_missing": "Báo mất khi trả \"{itemName}\"",
+            "rate_transaction": "Đánh giá trải nghiệm với \"{itemName}\"",
+            "rating_received": "Bạn nhận được đánh giá mới cho \"{itemName}\"",
+            "rating_received_named": "{raterName} đã đánh giá bạn cho \"{itemName}\"",
+            "default": "Thông báo mới"
+        },
+        "actions": {
+            "approved": "Đã duyệt",
+            "rejected": "Đã từ chối",
+            "reject": "Từ chối",
+            "approve": "Duyệt",
+            "confirm": "Xác nhận",
+            "view": "Xem",
+            "rate": "Đánh giá",
+            "viewProfile": "Xem hồ sơ"
+        },
+        "reasons": {
+            "unavailable": "Hành động không khả dụng",
+            "notApproved": "Yêu cầu chưa được duyệt",
+            "alreadyPickedUp": "Đã nhận đồ",
+            "leaseExpired": "Quá hạn thuê",
+            "pickupWindowExpired": "Quá hạn nhận đồ",
+            "notPickedUp": "Chưa nhận đồ",
+            "alreadyReturned": "Đã trả đồ",
+            "itemMissing": "Đồ bị báo mất",
+            "returnWindowExpired": "Quá hạn trả đồ"
+        },
+        "toasts": {
+            "rejected": "Đã từ chối yêu cầu",
+            "approved": "Đã duyệt yêu cầu",
+            "pickupApproved": "Đã duyệt giờ nhận",
+            "pickupConfirmed": "Đã xác nhận nhận đồ",
+            "returnApproved": "Đã duyệt giờ trả",
+            "returnConfirmed": "Đã xác nhận trả đồ"
+        }
+    },
+    "LeaseProposeIntraday": {
+        "defaultDescription": "Chọn giờ vào ngày {date}.",
+        "startHour": "Giờ bắt đầu",
+        "selectStartHour": "Chọn giờ bắt đầu",
+        "endHour": "Giờ kết thúc",
+        "selectEndHour": "Chọn giờ kết thúc",
+        "errors": {
+            "sameHour": "Giờ bắt đầu và kết thúc không được trùng nhau.",
+            "multiDay": "Đối với yêu cầu nhiều ngày, vui lòng chọn khoảng ngày."
+        },
+        "proposed": "Đề xuất: {date} {start}–{end}",
+        "saving": "{label}...",
+        "groups": {
+            "morning": "Sáng (6-11)",
+            "afternoon": "Chiều (12-17)",
+            "evening": "Tối (18-23)",
+            "night": "Đêm (0-5)"
+        }
+    },
+    "LeaseClaim": {
+        "status": {
+            "requested": "Đang chờ duyệt",
+            "approved": "Đã duyệt",
+            "rejected": "Đã từ chối",
+            "picked_up": "Đang sử dụng",
+            "transferred": "Đã chuyển giao",
+            "returned": "Đã hoàn thành",
+            "expired": "Hết hạn",
+            "past_due": "Quá hạn",
+            "missing": "Thất lạc",
+            "unknown": "Không xác định"
+        },
+        "pastDueMessage": "Yêu cầu này đã quá ngày bắt đầu và không thể được duyệt nữa.",
+        "actions": {
+            "cancel": "Hủy",
+            "cancelling": "Đang hủy...",
+            "cancelRequest": "Hủy yêu cầu",
+            "approve": "Duyệt",
+            "approving": "Đang duyệt...",
+            "reject": "Từ chối",
+            "rejectRequest": "Từ chối yêu cầu",
+            "sendProposal": "Gửi đề xuất",
+            "view": "Xem",
+            "confirm": "Xác nhận"
+        },
+        "rejectDialog": {
+            "titleGiveaway": "Từ chối yêu cầu tặng",
+            "titleLease": "Từ chối yêu cầu thuê",
+            "descGiveaway": "Người yêu cầu sẽ được thông báo rằng yêu cầu của họ đã bị từ chối.",
+            "descLease": "Người mượn sẽ được thông báo rằng yêu cầu của họ đã bị từ chối.",
+            "reasonLabel": "Lý do (tùy chọn nhưng khuyên dùng)",
+            "reasonPlaceholder": "Cho họ biết lý do..."
+        },
+        "intraday": {
+            "note": "Thuê trong ngày: nhận và trả đồ diễn ra trong các khung giờ đã chọn. Sử dụng đề xuất thời gian bên dưới để thống nhất khung giờ chính xác."
+        },
+        "pickup": {
+            "proposedApproved": "Đã đề xuất & duyệt giờ nhận:",
+            "proposed": "Đã đề xuất giờ nhận:",
+            "pendingApproval": "Đang chờ duyệt.",
+            "propose": "Đề xuất giờ nhận",
+            "change": "Thay đổi giờ nhận",
+            "sentToast": "Đã gửi yêu cầu nhận đồ. Vui lòng chờ đối phương duyệt.",
+            "confirmTitle": "Xác nhận nhận đồ",
+            "confirmDesc": "Ghi nhận rằng món đồ đã được nhận. Ảnh chụp giúp ghi lại tình trạng món đồ.",
+            "confirmAction": "Xác nhận nhận đồ",
+            "noteLabel": "Ghi chú (tùy chọn)",
+            "notePlaceholder": "Ghi chú về việc nhận đồ...",
+            "photoLabel": "Hình ảnh (tùy chọn)",
+            "confirmedToast": "Đã xác nhận nhận đồ",
+            "approving": "Đang duyệt...",
+            "approve": "Duyệt giờ nhận",
+            "approvedToast": "Đã duyệt giờ nhận. Đang chờ xác nhận từ đối phương.",
+            "windowPassed": "Khung giờ này đã qua. Nó sẽ sớm hết hạn.",
+            "confirmAvailable": "Xác nhận khả dụng trong khoảng {start}–{end}."
+        },
+        "return": {
+            "proposedApproved": "Đã đề xuất & duyệt giờ trả:",
+            "proposed": "Đã đề xuất giờ trả:",
+            "pendingApproval": "Đang chờ duyệt.",
+            "propose": "Đề xuất giờ trả",
+            "change": "Thay đổi giờ trả",
+            "sentToast": "Đã gửi yêu cầu trả đồ. Vui lòng chờ đối phương duyệt.",
+            "confirmTitle": "Xác nhận trả đồ",
+            "confirmDesc": "Ghi nhận rằng món đồ đã được trả. Ảnh chụp giúp ghi lại tình trạng món đồ.",
+            "confirmAction": "Xác nhận trả đồ",
+            "noteLabel": "Ghi chú (tùy chọn)",
+            "notePlaceholder": "Ghi chú về việc trả đồ...",
+            "photoLabel": "Hình ảnh (tùy chọn)",
+            "confirmedToast": "Đã xác nhận trả đồ",
+            "approving": "Đang duyệt...",
+            "approve": "Duyệt giờ trả",
+            "approvedToast": "Đã duyệt giờ trả. Đang chờ xác nhận từ đối phương.",
+            "windowPassed": "Khung giờ này đã qua. Nó sẽ sớm hết hạn.",
+            "confirmAvailable": "Xác nhận khả dụng trong khoảng {start}–{end}."
+        }
+    },
+    "LeaseActivity": {
+        "timelineTitle": "Dòng thời gian hoạt động",
+        "loading": "Đang tải hoạt động...",
+        "empty": "Chưa có hoạt động nào.",
+        "by": "bởi",
+        "window": "Khung giờ: {start}–{end}",
+        "eventTitles": {
+            "requested": "Đã yêu cầu",
+            "approved": "Đã duyệt",
+            "rejected": "Đã từ chối",
+            "expired": "Hết hạn",
+            "missing": "Thất lạc",
+            "pickup_proposed": "Đã đề xuất giờ nhận",
+            "pickup_approved": "Đã duyệt giờ nhận",
+            "return_proposed": "Đã đề xuất giờ trả",
+            "return_approved": "Đã duyệt giờ trả",
+            "picked_up": "Đã nhận",
+            "returned": "Đã trả",
+            "default": "Hoạt động thuê"
+        }
+    },
+    "LeaseProposeWindow": {
+        "defaultDescription": "Chọn khung giờ 1 tiếng vào ngày {date}.",
+        "hourWindow": "Khung giờ",
+        "selectHour": "Chọn giờ",
+        "proposed": "Đề xuất: {date} {window}",
+        "groups": {
+            "morning": "Sáng (6-11)",
+            "afternoon": "Chiều (12-17)",
+            "evening": "Tối (18-23)",
+            "night": "Đêm (0-5)"
+        }
+    },
+    "LeaseAction": {
+        "clickToUpload": "Nhấn để tải lên",
+        "dragAndDrop": "hoặc kéo và thả",
+        "uploadLimit": "Tối đa {count} ảnh"
+    },
+    "BorrowerRequest": {
+        "errors": {
+            "startTimeFuture": "Thời gian bắt đầu phải ở tương lai",
+            "endTimeAfterStart": "Thời gian kết thúc phải sau thời gian bắt đầu",
+            "hoursNotAvailable": "Giờ đã chọn không có sẵn"
+        },
+        "requesting": "Đang yêu cầu...",
+        "requestToBorrow": "Yêu cầu mượn",
+        "signInToRequest": "Đăng nhập để yêu cầu",
+        "intradayNote": "Đối với yêu cầu trong ngày, thời gian nhận và trả được sắp xếp qua các khung giờ đề xuất và được duyệt sau khi chấp thuận.",
+        "yourRequests": "Yêu cầu của bạn",
+        "hideInactive": "Ẩn yêu cầu cũ",
+        "showInactive": "Hiện yêu cầu cũ",
+        "pickPickupDay": "Chọn ngày nhận",
+        "giveawayNote": "Tặng: không cần trả lại. Quyền sở hữu được chuyển sau khi nhận.",
+        "request": "Yêu cầu"
+    },
+    "MyItems": {
+        "title": "Đồ của tôi",
+        "signInMessage": "Vui lòng đăng nhập để xem và quản lý đồ đạc của bạn.",
+        "signInButton": "Đăng nhập",
+        "loading": "Đang tải...",
+        "noItems": "Bạn chưa có món đồ nào.",
+        "borrowingTitle": "Đồ tôi đang mượn",
+        "myItemsTitle": "Đồ của tôi"
+    },
+    "Profile": {
+        "title": "Hồ sơ của tôi",
+        "loading": "Đang tải...",
+        "signInMessage": "Vui lòng đăng nhập để xem hồ sơ của bạn.",
+        "backToHome": "Về trang chủ",
+        "loadingProfile": "Đang tải hồ sơ...",
+        "edit": "Chỉnh sửa",
+        "editTitle": "Chỉnh sửa hồ sơ",
+        "save": "Lưu hồ sơ",
+        "saving": "Đang lưu...",
+        "name": "Tên",
+        "namePlaceholder": "Tên của bạn",
+        "address": "Địa chỉ / Vị trí",
+        "addressPlaceholder": "Ví dụ: Đà Lạt, Phường 1",
+        "bio": "Giới thiệu",
+        "bioPlaceholder": "Giới thiệu đôi chút về bản thân...",
+        "contactInfo": "Thông tin liên hệ",
+        "contactInfoDesc": "Thông tin này sẽ được chia sẻ với người dùng mà bạn đã chấp nhận giao dịch.",
+        "telegram": "Tên người dùng Telegram",
+        "whatsapp": "Số WhatsApp",
+        "facebook": "Hồ sơ Facebook",
+        "phone": "Số điện thoại",
+        "tabs": {
+            "ratings": "Đánh giá",
+            "history": "Lịch sử"
+        },
+        "toasts": {
+            "updated": "Đã cập nhật hồ sơ",
+            "failed": "Cập nhật hồ sơ thất bại",
+            "geolocationNotSupported": "Trình duyệt của bạn không hỗ trợ định vị",
+            "locationError": "Không thể lấy vị trí: {error}"
+        }
+    },
+    "ContactInfo": {
+        "noInfo": "Chưa cung cấp thông tin liên hệ.",
+        "noMethods": "Chưa thiết lập phương thức liên hệ.",
+        "availableMethods": "Phương thức liên hệ khả dụng:",
+        "sharedAfter": "Chi tiết liên hệ được chia sẻ sau khi giao dịch được chấp nhận",
+        "labels": {
+            "telegram": "Telegram",
+            "whatsapp": "WhatsApp",
+            "facebook": "Facebook",
+            "phone": "Điện thoại"
+        }
+    },
+    "LocationPicker": {
+        "title": "Chọn vị trí",
+        "description": "Nhấp vào bản đồ để chọn vị trí, hoặc kéo thả ghim để điều chỉnh.",
+        "useCurrent": "Dùng vị trí hiện tại",
+        "loadingAddress": "Đang tải địa chỉ...",
+        "area": "Khu vực: {ward}",
+        "cancel": "Hủy",
+        "confirm": "Xác nhận vị trí",
+        "geolocationNotSupported": "Trình duyệt của bạn không hỗ trợ định vị",
+        "locationError": "Không thể lấy vị trí: {error}"
+    },
+    "UserProfile": {
+        "redirecting": "Đang chuyển hướng đến hồ sơ của bạn...",
+        "goToProfile": "Đi tới hồ sơ của tôi",
+        "loading": "Đang tải hồ sơ...",
+        "notFound": "Không tìm thấy người dùng.",
+        "backToHome": "Về trang chủ",
+        "title": "Hồ sơ người dùng",
+        "memberSince": "Tham gia từ {date}",
+        "contactInfo": "Thông tin liên hệ",
+        "tabs": {
+            "ratings": "Đánh giá",
+            "history": "Lịch sử"
+        }
+    },
+    "Ratings": {
+        "pendingTitle": "Đánh giá giao dịch của bạn",
+        "pendingDesc": "Bạn có {count} giao dịch cần đánh giá.",
+        "lender": "người cho mượn",
+        "borrower": "người mượn",
+        "asLender": "Là người cho mượn",
+        "asBorrower": "Là người mượn",
+        "with": "với {name}",
+        "rate": "Đánh giá",
+        "leaveRating": "Viết đánh giá",
+        "form": {
+            "title": "Đánh giá {role} cho món \"{item}\"",
+            "ratingLabel": "Đánh giá",
+            "commentLabel": "Nhận xét (tùy chọn)",
+            "commentPlaceholder": "Chia sẻ trải nghiệm của bạn...",
+            "photoLabel": "Hình ảnh (tùy chọn)",
+            "photoHelp": "Thêm ảnh (tối đa 3)",
+            "cancel": "Hủy",
+            "submit": "Gửi đánh giá",
+            "submitting": "Đang gửi...",
+            "selectRating": "Vui lòng chọn mức đánh giá",
+            "success": "Gửi đánh giá thành công",
+            "failed": "Gửi đánh giá thất bại"
+        }
+    },
+    "UserHistory": {
+        "loading": "Đang tải lịch sử...",
+        "noHistory": "Chưa có lịch sử giao dịch.",
+        "noLending": "Chưa có lịch sử cho mượn.",
+        "noBorrowing": "Chưa có lịch sử đi mượn.",
+        "lent": "Đã cho mượn",
+        "borrowed": "Đã mượn",
+        "tabs": {
+            "lending": "Cho mượn ({count})",
+            "borrowing": "Đi mượn ({count})"
+        }
+    },
+    "Wishlist": {
+        "title": "Danh sách mong muốn",
+        "subtitle": "Yêu cầu những món bạn không tìm thấy và bình chọn cho yêu cầu của người khác.",
+        "inputPlaceholder": "Tìm kiếm yêu cầu...",
+        "sortBy": "Sắp xếp theo",
+        "sortOptions": {
+            "recent": "Mới nhất",
+            "upvoted": "Được bình chọn nhiều nhất"
+        },
+        "back": "Quay lại",
+        "loading": "Đang tải...",
+        "noItems": "Không tìm thấy món nào.",
+        "emptyCard": {
+            "title": "Không tìm thấy món bạn cần?",
+            "description": "Xem danh sách mong muốn của cộng đồng để biết người khác cần gì, hoặc tự tạo yêu cầu.",
+            "seeFull": "Xem tất cả danh sách mong muốn",
+            "makeRequest": "Tạo yêu cầu"
+        },
+        "draftCard": {
+            "title": "Tạo yêu cầu",
+            "label": "Bạn cần món gì?",
+            "placeholder": "Ví dụ: Máy khoan, Lều cắm trại...",
+            "photoLabel": "Hình ảnh (tùy chọn)",
+            "clickToUpload": "Nhấn để tải lên",
+            "dragAndDrop": "hoặc kéo và thả",
+            "uploadLimit": "Tối đa 5 ảnh",
+            "matchFound": "Tìm thấy {count} kết quả phù hợp. Bạn sẽ được yêu cầu xác nhận khi gửi.",
+            "addRequest": "Thêm yêu cầu",
+            "searchItems": "Tìm kiếm món đồ",
+            "success": "Đã thêm yêu cầu vào danh sách mong muốn!",
+            "failed": "Thêm yêu cầu thất bại: {error}"
+        },
+        "item": {
+            "matches": "{count} kết quả phù hợp",
+            "edit": "Sửa yêu cầu",
+            "editTitle": "Sửa yêu cầu",
+            "currentPhotos": "Ảnh hiện tại",
+            "addMorePhotos": "Thêm ảnh",
+            "cancel": "Hủy",
+            "save": "Lưu",
+            "saving": "Đang lưu...",
+            "updated": "Đã cập nhật yêu cầu!",
+            "failedUpdate": "Cập nhật thất bại: {error}",
+            "failedVote": "Bình chọn thất bại",
+            "close": "Đóng"
+        },
+        "alerts": {
+            "similarTitle": "Tìm thấy món tương tự!",
+            "similarDesc": "Chúng tôi tìm thấy {count} món đồ khớp với yêu cầu của bạn. Bạn có muốn xem chúng thay vì tạo yêu cầu mới không?",
+            "viewItems": "Xem món đồ",
+            "postAnyway": "Vẫn đăng yêu cầu"
+        }
+    },
+    "ItemList": {
+        "searchPlaceholder": "Tìm kiếm đồ đạc...",
+        "giveaway": "Đồ tặng",
+        "loadingMap": "Đang tải bản đồ...",
+        "loading": "Đang tải...",
+        "noLocationItems": "Không có món nào có vị trí trong bộ lọc hiện tại"
+    },
+    "RatingSummary": {
+        "loading": "Đang tải...",
+        "noRatings": "Chưa có đánh giá",
+        "noRatingsYet": "Chưa có đánh giá nào",
+        "ratingCount": "{count} đánh giá",
+        "asLender": "Là người cho mượn",
+        "asBorrower": "Là người mượn"
+    },
+    "ItemDetail": {
+        "youOwnThis": "Bạn sở hữu món này",
+        "giveaway": "Tặng",
+        "locationAvailable": "Có sẵn vị trí",
+        "notFound": "Không tìm thấy món đồ",
+        "rateTransaction": "Đánh giá giao dịch",
+        "rateTransactions": "Đánh giá các giao dịch",
+        "reviewTransaction": "Xem lại giao dịch",
+        "ratePrompt": {
+            "receiveFromUser": "Chia sẻ trải nghiệm nhận món này từ {targetUserName}",
+            "giveToUser": "Chia sẻ trải nghiệm tặng món này cho {targetUserName}",
+            "receive": "Chia sẻ trải nghiệm nhận món này",
+            "give": "Chia sẻ trải nghiệm tặng món này",
+            "borrowFromUser": "Chia sẻ trải nghiệm mượn từ {targetUserName}",
+            "lendToUser": "Chia sẻ trải nghiệm cho {targetUserName} mượn",
+            "borrow": "Chia sẻ trải nghiệm mượn món này",
+            "lend": "Chia sẻ trải nghiệm cho mượn món này"
+        },
+        "rate": "Đánh giá",
+        "leaveRating": "Để lại đánh giá",
+        "noImages": "Không có hình ảnh",
+        "editItem": "Chỉnh sửa món đồ",
+        "deleteItem": "Xóa món đồ",
+        "cancel": "Hủy",
+        "deleteConfirm": {
+            "title": "Bạn có chắc chắn không?",
+            "description": "Hành động này không thể hoàn tác. Món đồ của bạn sẽ bị xóa vĩnh viễn.",
+            "confirm": "Xóa"
+        },
+        "itemDeleted": "Đã xóa món đồ",
+        "itemUpdated": "Đã cập nhật món đồ",
+        "saveChanges": "Lưu thay đổi",
+        "requests": "Yêu cầu ({count})",
+        "hideInactive": "Ẩn không hoạt động",
+        "showInactive": "Hiện không hoạt động",
+        "noRequests": "Chưa có yêu cầu nào.",
+        "availabilityAndRequests": "Tình trạng & Yêu cầu",
+        "activity": "Hoạt động",
+        "checkAvailabilityAndRequest": "Kiểm tra tình trạng & Yêu cầu",
+        "leaseLength": "Thời gian thuê: ",
+        "minDays": "tối thiểu {count} ngày",
+        "maxDays": "tối đa {count} ngày",
+        "backToItems": "Quay lại danh sách",
+        "imageAlt": "{name} - Ảnh {index}",
+        "toggleInactiveRequests": "Bật/tắt yêu cầu không hoạt động"
+    },
+    "ItemActivity": {
+        "system": "Hệ thống",
+        "itemCreated": "Đã tạo món đồ",
+        "giveawayApproved": "Đã duyệt tặng",
+        "loanStarted": "Đã bắt đầu cho mượn",
+        "itemPickedUp": "Đã nhận đồ",
+        "itemReturned": "Đã trả đồ",
+        "defaultActivity": "Hoạt động",
+        "recipient": "Người nhận: ",
+        "borrower": "Người mượn: ",
+        "loading": "Đang tải hoạt động...",
+        "noActivity": "Chưa có hoạt động nào.",
+        "by": "bởi "
+    },
+    "Categories": {
+        "kitchen": "Nhà bếp",
+        "furniture": "Nội thất",
+        "electronics": "Điện tử",
+        "clothing": "Quần áo",
+        "books": "Sách",
+        "sports": "Thể thao",
+        "other": "Khác"
+    },
+    "ClaimButton": {
+        "manageRequest": "Quản lý yêu cầu",
+        "claim": "Yêu cầu",
+        "signInTooltip": "Đăng nhập để yêu cầu món này"
+    },
+    "OwnerUnavailability": {
+        "button": "Nghỉ phép",
+        "badgeOn": "Bật",
+        "title": "Nghỉ phép / Không rảnh",
+        "description": "Khi kích hoạt, các món đồ của bạn sẽ bị ẩn khỏi mục Khám phá và không thể bị yêu cầu.",
+        "yourRanges": "Lịch nghỉ của bạn",
+        "loading": "Đang tải…",
+        "noRanges": "Chưa có lịch nghỉ.",
+        "delete": "Xóa",
+        "addRange": "Thêm lịch nghỉ",
+        "notePlaceholder": "Ghi chú (tùy chọn)",
+        "save": "Thêm",
+        "saving": "Đang lưư…",
+        "dateFormat": "d MMM, yyyy"
+    },
+    "ProfileSetup": {
+        "title": "Hoàn tất hồ sơ",
+        "description": "Thiết lập hồ sơ để bắt đầu chia sẻ và mượn đồ. Bạn có thể cập nhật sau.",
+        "nameLabel": "Tên",
+        "fromClerk": "(từ Clerk)",
+        "namePlaceholder": "Tên của bạn",
+        "resetToClerk": "Đặt lại theo Clerk",
+        "addressLabel": "Địa chỉ",
+        "addressPlaceholder": "Vị trí của bạn (VD: Đà Lạt, Việt Nam)",
+        "contactMethodsLabel": "Phương thức liên hệ",
+        "contactMethodsDesc": "Thêm ít nhất một cách để người khác liên hệ với bạn",
+        "telegramPlaceholder": "Telegram @username",
+        "whatsappPlaceholder": "Số WhatsApp",
+        "facebookPlaceholder": "Hồ sơ Facebook",
+        "phonePlaceholder": "Số điện thoại",
+        "later": "Để sau",
+        "save": "Lưu hồ sơ",
+        "saving": "Đang lưu...",
+        "toastRequired": "Tên là bắt buộc",
+        "toastSuccess": "Tạo hồ sơ thành công!",
+        "toastFailed": "Tạo hồ sơ thất bại"
+    },
+    "RatingsList": {
+        "loading": "Đang tải đánh giá...",
+        "all": "Tất cả ({count})",
+        "lender": "Cho mượn ({count})",
+        "borrower": "Đi mượn ({count})",
+        "noRatings": "Không có đánh giá trong danh mục này.",
+        "asLender": "Là người cho mượn",
+        "asBorrower": "Là người mượn",
+        "photoAlt": "Ảnh đánh giá {index}"
+    }
+}

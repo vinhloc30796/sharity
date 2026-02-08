@@ -9,21 +9,8 @@ import {
 	TooltipTrigger,
 	TooltipProvider,
 } from "@/components/ui/tooltip";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { useState } from "react";
-import { DateRange } from "react-day-picker";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "../convex/_generated/api";
-import { toast } from "sonner";
-import { CalendarIcon, Loader2 } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 import { useItemCard } from "./item-card";
+import { useTranslations } from "next-intl";
 
 interface ClaimButtonProps {
 	item: Doc<"items"> & { isRequested?: boolean };
@@ -31,6 +18,7 @@ interface ClaimButtonProps {
 
 export function ClaimButton({ item }: ClaimButtonProps) {
 	const { isSignedIn } = useAuth();
+	const t = useTranslations("ClaimButton");
 	// useItemCard must be called unconditionally at the top level
 	const { flipToBack } = useItemCard();
 	// requestItem and availability moved to ClaimItemBack
@@ -39,7 +27,7 @@ export function ClaimButton({ item }: ClaimButtonProps) {
 	if (item.isRequested) {
 		return (
 			<Button variant="secondary" onClick={flipToBack}>
-				Manage Request
+				{t("manageRequest")}
 			</Button>
 		);
 	}
@@ -57,12 +45,12 @@ export function ClaimButton({ item }: ClaimButtonProps) {
 					<TooltipTrigger asChild>
 						<span tabIndex={0} className="inline-flex cursor-default">
 							<Button disabled className="opacity-50">
-								Claim
+								{t("claim")}
 							</Button>
 						</span>
 					</TooltipTrigger>
 					<TooltipContent>
-						<p>Sign in to claim this item</p>
+						<p>{t("signInTooltip")}</p>
 					</TooltipContent>
 				</Tooltip>
 			</TooltipProvider>
@@ -79,5 +67,5 @@ export function ClaimButton({ item }: ClaimButtonProps) {
 
 	// NOTE: The previous code handled `item.isRequested` check. Keeping it.
 
-	return <Button onClick={flipToBack}>Claim</Button>;
+	return <Button onClick={flipToBack}>{t("claim")}</Button>;
 }

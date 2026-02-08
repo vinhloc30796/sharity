@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { ItemActivityTimeline } from "@/components/item-activity-timeline";
 import { BorrowerRequestPanel } from "@/components/lease/borrower-request-panel";
 import { LeaseClaimCard } from "@/components/lease/lease-claim-card";
-import { CATEGORY_LABELS, ItemForm } from "@/components/item-form";
+import { ItemForm } from "@/components/item-form";
 import { RatingForm } from "@/components/rating-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -45,8 +45,9 @@ import {
 } from "@/components/cloudinary-image";
 import { cn } from "@/lib/utils";
 import { useItemCalendar } from "@/hooks/use-item-calendar";
-import { api } from "../../../convex/_generated/api";
-import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import { api } from "@/convex/_generated/api";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { useTranslations } from "next-intl";
 
 export default function ItemDetailPage({
 	params,
@@ -56,6 +57,9 @@ export default function ItemDetailPage({
 	const { id } = use(params);
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const tCategories = useTranslations("Categories");
+	const tDetail = useTranslations("ItemDetail");
+	const tCommon = useTranslations("Common");
 
 	const item = useQuery(api.items.getById, { id });
 	const activity = useQuery(api.items.getItemActivity, { itemId: id });
@@ -170,11 +174,11 @@ export default function ItemDetailPage({
 	};
 
 	if (item === undefined) {
-		return <div className="p-8 text-center">Loading...</div>;
+		return <div className="p-8 text-center">{tCommon("loading")}</div>;
 	}
 
 	if (item === null) {
-		return <div className="p-8 text-center">Item not found</div>;
+		return <div className="p-8 text-center">{tDetail("notFound")}</div>;
 	}
 
 	const imageUrls = (item.imageUrls ?? []).filter(isCloudinaryImageUrl);
@@ -190,21 +194,21 @@ export default function ItemDetailPage({
 		if (isGiveaway) {
 			if (targetUserName) {
 				return targetRole === "lender"
-					? `Share your experience receiving this item from ${targetUserName}`
-					: `Share your experience giving this item to ${targetUserName}`;
+					? tDetail("ratePrompt.receiveFromUser", { targetUserName })
+					: tDetail("ratePrompt.giveToUser", { targetUserName });
 			}
 			return targetRole === "lender"
-				? "Share your experience receiving this item"
-				: "Share your experience giving this item";
+				? tDetail("ratePrompt.receive")
+				: tDetail("ratePrompt.give");
 		}
 		if (targetUserName) {
 			return targetRole === "lender"
-				? `Share your experience borrowing from ${targetUserName}`
-				: `Share your experience lending to ${targetUserName}`;
+				? tDetail("ratePrompt.borrowFromUser", { targetUserName })
+				: tDetail("ratePrompt.lendToUser", { targetUserName });
 		}
 		return targetRole === "lender"
-			? "Share your experience borrowing this item"
-			: "Share your experience lending this item";
+			? tDetail("ratePrompt.borrow")
+			: tDetail("ratePrompt.lend");
 	};
 
 	const rateTransactionSection =
@@ -214,17 +218,14 @@ export default function ItemDetailPage({
 					<div className="flex items-center gap-2">
 						<Star className="h-4 w-4 text-yellow-500" />
 						<p className="text-sm font-medium">
-							Rate{" "}
+							{tDetail("rate")}{" "}
 							{pendingRatingsForItem.length > 1
-								? "transactions"
-								: "transaction"}
+								? tDetail("rateTransactions")
+								: tDetail("rateTransaction")}
 						</p>
 					</div>
 					<div className="space-y-2">
 						{pendingRatingsForItem.map((pending) => {
-							const targetName =
-								pending.targetUserName ||
-								(pending.targetRole === "lender" ? "lender" : "borrower");
 							const ratingPrompt = getRatingPrompt(
 								item.giveaway ?? false,
 								pending.targetRole,
@@ -236,7 +237,9 @@ export default function ItemDetailPage({
 									className="flex items-center justify-between gap-3 p-2 bg-white rounded-md border"
 								>
 									<div className="min-w-0">
-										<p className="text-xs font-medium">Review transaction</p>
+										<p className="text-xs font-medium">
+											{tDetail("reviewTransaction")}
+										</p>
 										<p className="text-xs text-muted-foreground">
 											{ratingPrompt}
 										</p>
@@ -252,7 +255,7 @@ export default function ItemDetailPage({
 											})
 										}
 									>
-										Rate
+										{tDetail("rate")}
 									</Button>
 								</div>
 							);
@@ -280,7 +283,10 @@ export default function ItemDetailPage({
 								<div className="aspect-square relative">
 									<CloudinaryImage
 										src={url}
-										alt={`${item.name} - Image ${index + 1}`}
+										alt={tDetail("imageAlt", {
+											name: item.name,
+											index: index + 1,
+										})}
 										fill
 										sizes="(max-width: 1024px) 100vw, 560px"
 										className="object-cover"
@@ -299,7 +305,7 @@ export default function ItemDetailPage({
 			</div>
 		) : (
 			<div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-				No Images
+				{tDetail("noImages")}
 			</div>
 		);
 
@@ -307,13 +313,15 @@ export default function ItemDetailPage({
 		<div>
 			<div className="flex justify-between items-start">
 				<h1 className="text-3xl font-bold mb-2">{item.name}</h1>
-				{item.isOwner && <Badge variant="outline">You own this</Badge>}
+				{item.isOwner && (
+					<Badge variant="outline">{tDetail("youOwnThis")}</Badge>
+				)}
 			</div>
 
 			<div className="flex flex-wrap gap-2 mb-4">
-				{item.giveaway ? <Badge>Giveaway</Badge> : null}
+				{item.giveaway ? <Badge>{tDetail("giveaway")}</Badge> : null}
 				{item.category && (
-					<Badge variant="secondary">{CATEGORY_LABELS[item.category]}</Badge>
+					<Badge variant="secondary">{tCategories(item.category)}</Badge>
 				)}
 				{item.location && (
 					<span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
@@ -321,7 +329,7 @@ export default function ItemDetailPage({
 						{item.isOwner
 							? item.location.address ||
 								`${item.location.lat.toFixed(4)}, ${item.location.lng.toFixed(4)}`
-							: item.location.ward || "Location available"}
+							: item.location.ward || tDetail("locationAvailable")}
 					</span>
 				)}
 			</div>
@@ -334,31 +342,32 @@ export default function ItemDetailPage({
 	const ownerItemActions = item.isOwner ? (
 		<div className="flex flex-wrap gap-4">
 			<Button variant="outline" onClick={() => setIsEditing((v) => !v)}>
-				{isEditing ? "Cancel" : "Edit Item"}
+				{isEditing ? tDetail("cancel") : tDetail("editItem")}
 			</Button>
 
 			<AlertDialog>
 				<AlertDialogTrigger asChild>
-					<Button variant="destructive">Delete Item</Button>
+					<Button variant="destructive">{tDetail("deleteItem")}</Button>
 				</AlertDialogTrigger>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Are you sure?</AlertDialogTitle>
+						<AlertDialogTitle>
+							{tDetail("deleteConfirm.title")}
+						</AlertDialogTitle>
 						<AlertDialogDescription>
-							This action cannot be undone. This will permanently delete your
-							item.
+							{tDetail("deleteConfirm.description")}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>{tDetail("cancel")}</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={async () => {
 								await deleteItem({ id: item._id });
-								toast.success("Item deleted");
+								toast.success(tDetail("itemDeleted"));
 								router.push("/");
 							}}
 						>
-							Delete
+							{tDetail("deleteConfirm.confirm")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -395,7 +404,7 @@ export default function ItemDetailPage({
 				<div className="data-[state=open]:animate-in data-[state=open]:fade-in data-[state=open]:slide-in-from-top-2">
 					<Card>
 						<CardHeader className="pb-2">
-							<CardTitle>Edit Item</CardTitle>
+							<CardTitle>{tDetail("editItem")}</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<ItemForm
@@ -431,9 +440,9 @@ export default function ItemDetailPage({
 										maxLeaseDays: values.maxLeaseDays,
 									});
 									setIsEditing(false);
-									toast.success("Item updated");
+									toast.success(tDetail("itemUpdated"));
 								}}
-								submitLabel="Save Changes"
+								submitLabel={tDetail("saveChanges")}
 							/>
 						</CardContent>
 					</Card>
@@ -457,7 +466,7 @@ export default function ItemDetailPage({
 			>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Leave a Rating</DialogTitle>
+						<DialogTitle>{tDetail("leaveRating")}</DialogTitle>
 					</DialogHeader>
 					{selectedRatingClaim && (
 						<RatingForm
@@ -478,16 +487,16 @@ export default function ItemDetailPage({
 			<div>
 				<div className="flex justify-between items-center mb-4">
 					<h3 className="text-xl font-semibold">
-						Requests ({item.requests?.length || 0})
+						{tDetail("requests", { count: item.requests?.length || 0 })}
 					</h3>
 					<Toggle
 						pressed={showInactive}
 						onPressedChange={setShowInactive}
 						variant="outline"
 						size="sm"
-						aria-label="Toggle inactive requests"
+						aria-label={tDetail("toggleInactiveRequests")}
 					>
-						{showInactive ? "Hide Inactive" : "Show Inactive"}
+						{showInactive ? tDetail("hideInactive") : tDetail("showInactive")}
 					</Toggle>
 				</div>
 				{item.requests && item.requests.length > 0 ? (
@@ -522,7 +531,7 @@ export default function ItemDetailPage({
 						))}
 					</div>
 				) : (
-					<p className="text-gray-500">No requests yet.</p>
+					<p className="text-gray-500">{tDetail("noRequests")}</p>
 				)}
 			</div>
 		</div>
@@ -530,11 +539,13 @@ export default function ItemDetailPage({
 
 	const ownerRightColumn = (
 		<div className="space-y-6">
-			<h2 className="text-2xl font-semibold">Availability & Requests</h2>
+			<h2 className="text-2xl font-semibold">
+				{tDetail("availabilityAndRequests")}
+			</h2>
 			{ownerCalendar}
 			<div>{ownerActionsSection}</div>
 			<div className="border-t pt-6">
-				<h3 className="text-xl font-semibold mb-3">Activity</h3>
+				<h3 className="text-xl font-semibold mb-3">{tDetail("activity")}</h3>
 				<ItemActivityTimeline
 					events={activity}
 					isGiveaway={Boolean(item.giveaway)}
@@ -545,25 +556,27 @@ export default function ItemDetailPage({
 
 	const borrowerRightColumn = (
 		<div className="space-y-6">
-			<h2 className="text-2xl font-semibold">Checks Availability & Request</h2>
+			<h2 className="text-2xl font-semibold">
+				{tDetail("checkAvailabilityAndRequest")}
+			</h2>
 			{!item.giveaway && (item.minLeaseDays || item.maxLeaseDays) ? (
 				<div className="text-sm text-muted-foreground">
-					Lease length:{" "}
+					{tDetail("leaseLength")}
 					{typeof item.minLeaseDays === "number"
-						? `min ${item.minLeaseDays} day(s)`
+						? tDetail("minDays", { count: item.minLeaseDays })
 						: null}
 					{typeof item.minLeaseDays === "number" &&
 					typeof item.maxLeaseDays === "number"
 						? ", "
 						: null}
 					{typeof item.maxLeaseDays === "number"
-						? `max ${item.maxLeaseDays} day(s)`
+						? tDetail("maxDays", { count: item.maxLeaseDays })
 						: null}
 				</div>
 			) : null}
 			<BorrowerRequestPanel item={item} fullWidth />
 			<div className="border-t pt-6">
-				<h3 className="text-xl font-semibold mb-3">Activity</h3>
+				<h3 className="text-xl font-semibold mb-3">{tDetail("activity")}</h3>
 				<ItemActivityTimeline
 					events={activity}
 					isGiveaway={Boolean(item.giveaway)}
@@ -579,7 +592,7 @@ export default function ItemDetailPage({
 				className="mb-6 gap-2"
 				onClick={() => router.back()}
 			>
-				<ArrowLeft className="h-4 w-4" /> Back to Items
+				<ArrowLeft className="h-4 w-4" /> {tDetail("backToItems")}
 			</Button>
 
 			{item.isOwner ? (

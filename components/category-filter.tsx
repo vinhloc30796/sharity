@@ -1,10 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { CATEGORY_LABELS, type ItemCategory } from "./item-form";
+import { ITEM_CATEGORIES, type ItemCategory } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-
-const ALL_CATEGORIES = Object.keys(CATEGORY_LABELS) as ItemCategory[];
+import { useTranslations } from "next-intl";
 
 interface CategoryFilterProps {
 	selected: ItemCategory[];
@@ -12,6 +11,7 @@ interface CategoryFilterProps {
 }
 
 export function CategoryFilter({ selected, onChange }: CategoryFilterProps) {
+	const t = useTranslations("Categories");
 	const isAllSelected = selected.length === 0;
 
 	const handleAllClick = () => {
@@ -39,7 +39,7 @@ export function CategoryFilter({ selected, onChange }: CategoryFilterProps) {
 			>
 				All
 			</Button>
-			{ALL_CATEGORIES.map((category) => {
+			{ITEM_CATEGORIES.map((category) => {
 				const isSelected = selected.includes(category);
 				return (
 					<Button
@@ -52,7 +52,7 @@ export function CategoryFilter({ selected, onChange }: CategoryFilterProps) {
 							isSelected && "bg-primary text-primary-foreground",
 						)}
 					>
-						{CATEGORY_LABELS[category]}
+						{t(category)}
 					</Button>
 				);
 			})}

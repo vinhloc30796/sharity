@@ -17,8 +17,10 @@ import { Badge } from "@/components/ui/badge";
 import { Star } from "lucide-react";
 import { format } from "date-fns";
 import { CloudinaryImage } from "@/components/cloudinary-image";
+import { useTranslations } from "next-intl";
 
 export function PendingRatings() {
+	const t = useTranslations("Ratings");
 	const pendingRatings = useQuery(api.ratings.getMyPendingRatings);
 	const [selectedClaim, setSelectedClaim] = useState<{
 		claimId: Id<"claims">;
@@ -40,13 +42,12 @@ export function PendingRatings() {
 				<CardHeader className="px-4 md:px-6 pb-2">
 					<CardTitle className="text-base flex items-center gap-2">
 						<Star className="h-4 w-4 text-yellow-500" />
-						Rate Your Transactions
+						{t("pendingTitle")}
 					</CardTitle>
 				</CardHeader>
 				<CardContent className="px-4 md:px-6">
 					<p className="text-sm text-muted-foreground mb-2">
-						You have {pendingRatings.length} transaction
-						{pendingRatings.length !== 1 ? "s" : ""} to rate.
+						{t("pendingDesc", { count: pendingRatings.length })}
 					</p>
 					<div className="flex flex-col gap-2">
 						{pendingRatings.map((pending) => (
@@ -72,12 +73,12 @@ export function PendingRatings() {
 										<div className="flex items-center gap-2">
 											<Badge variant="outline" className="text-xs">
 												{pending.targetRole === "lender"
-													? "As lender"
-													: "As borrower"}
+													? t("asLender")
+													: t("asBorrower")}
 											</Badge>
 											{pending.targetUserName && (
 												<span className="text-xs text-muted-foreground">
-													with {pending.targetUserName}
+													{t("with", { name: pending.targetUserName })}
 												</span>
 											)}
 											<span className="text-xs text-muted-foreground">
@@ -98,7 +99,7 @@ export function PendingRatings() {
 										})
 									}
 								>
-									Rate
+									{t("rate")}
 								</Button>
 							</div>
 						))}
@@ -112,7 +113,7 @@ export function PendingRatings() {
 			>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Leave a Rating</DialogTitle>
+						<DialogTitle>{t("leaveRating")}</DialogTitle>
 					</DialogHeader>
 					{selectedClaim && (
 						<RatingForm

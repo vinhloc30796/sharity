@@ -6,23 +6,25 @@ import { ItemForm } from "./item-form";
 import { Button } from "@/components/ui/button";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslations } from "next-intl";
 
 export function AddItemForm() {
 	const createItem = useMutation(api.items.create);
+	const t = useTranslations("AddItemForm");
 
 	return (
 		<>
 			<SignedIn>
 				<Card>
 					<CardHeader>
-						<CardTitle>Add an Item</CardTitle>
+						<CardTitle>{t("title")}</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<ItemForm
 							onSubmit={async (values) => {
 								await createItem(values);
 							}}
-							submitLabel="Share Item"
+							submitLabel={t("submit")}
 							enableModeSwitch
 						/>
 					</CardContent>
@@ -32,12 +34,12 @@ export function AddItemForm() {
 				<Card className="bg-gray-50 border-dashed">
 					<CardHeader>
 						<CardTitle className="text-center text-gray-500">
-							Sign in to Share Items
+							{t("signInTitle")}
 						</CardTitle>
 					</CardHeader>
 					<CardContent className="flex justify-center">
 						<SignInButton mode="modal">
-							<Button variant="outline">Sign In</Button>
+							<Button variant="outline">{t("signIn")}</Button>
 						</SignInButton>
 					</CardContent>
 				</Card>

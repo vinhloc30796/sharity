@@ -1,15 +1,18 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 
 import { SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
 import { ArrowLeft } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { AddItemForm } from "@/components/add-item-form";
 import { MyItemsList } from "@/components/my-items-list";
 import { Button } from "@/components/ui/button";
 
 export default function MyItemsPage() {
+	const t = useTranslations("MyItems");
+
 	return (
 		<main className="min-h-screen bg-gray-50/50">
 			<div className="max-w-2xl mx-auto p-4 md:p-8 space-y-6">
@@ -20,7 +23,7 @@ export default function MyItemsPage() {
 					>
 						<ArrowLeft className="h-5 w-5" />
 					</Link>
-					<h1 className="text-xl font-semibold">My Items</h1>
+					<h1 className="text-xl font-semibold">{t("title")}</h1>
 					<div className="w-5" />
 				</div>
 
@@ -34,10 +37,10 @@ export default function MyItemsPage() {
 				<SignedOut>
 					<div className="flex flex-col items-center justify-center gap-4 py-16">
 						<p className="text-muted-foreground text-center">
-							Please sign in to view and manage your items.
+							{t("signInMessage")}
 						</p>
 						<SignInButton mode="modal">
-							<Button variant="outline">Sign In</Button>
+							<Button variant="outline">{t("signInButton")}</Button>
 						</SignInButton>
 					</div>
 				</SignedOut>

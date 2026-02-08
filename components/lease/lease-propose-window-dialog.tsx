@@ -4,6 +4,7 @@ import type { ComponentProps } from "react";
 import { useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { format } from "date-fns";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -59,12 +60,13 @@ function formatHourWindowLabel(hour: number): string {
 }
 
 /** Hour groups for better UX */
-const HOUR_GROUPS = [
-	{ label: "Morning (6-11)", hours: [6, 7, 8, 9, 10, 11] },
-	{ label: "Afternoon (12-17)", hours: [12, 13, 14, 15, 16, 17] },
-	{ label: "Evening (18-23)", hours: [18, 19, 20, 21, 22, 23] },
-	{ label: "Night (0-5)", hours: [0, 1, 2, 3, 4, 5] },
-] as const;
+/** Hour groups for better UX */
+const getHourGroups = (t: (key: string) => string) => [
+	{ label: t("groups.morning"), hours: [6, 7, 8, 9, 10, 11] },
+	{ label: t("groups.afternoon"), hours: [12, 13, 14, 15, 16, 17] },
+	{ label: t("groups.evening"), hours: [18, 19, 20, 21, 22, 23] },
+	{ label: t("groups.night"), hours: [0, 1, 2, 3, 4, 5] },
+];
 
 /**
  * Dialog that lets user pick a 1-hour window on a fixed date.
@@ -93,6 +95,8 @@ export function LeaseProposeWindowDialog(props: LeaseProposeWindowDialogProps) {
 		defaultHour !== undefined ? String(defaultHour) : "18",
 	);
 	const [isSaving, setIsSaving] = useState(false);
+	const t = useTranslations("LeaseProposeWindow");
+	const hourGroups = useMemo(() => getHourGroups(t), [t]);
 
 	const hour = Number(hourValue);
 	const dateLabel = useMemo(
@@ -131,18 +135,18 @@ export function LeaseProposeWindowDialog(props: LeaseProposeWindowDialogProps) {
 				<DialogHeader>
 					<DialogTitle>{title}</DialogTitle>
 					<DialogDescription>
-						{description ?? `Choose a 1-hour window on ${dateLabel}.`}
+						{description ?? t("defaultDescription", { date: dateLabel })}
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-2">
-					<Label>Hour window</Label>
+					<Label>{t("hourWindow")}</Label>
 					<Select value={hourValue} onValueChange={setHourValue}>
 						<SelectTrigger className="w-full">
-							<SelectValue placeholder="Select an hour" />
+							<SelectValue placeholder={t("selectHour")} />
 						</SelectTrigger>
 						<SelectContent>
-							{HOUR_GROUPS.map((group) => (
+							{hourGroups.map((group) => (
 								<SelectGroup key={group.label}>
 									<SelectLabel>{group.label}</SelectLabel>
 									{group.hours.map((hour) => (
@@ -155,7 +159,7 @@ export function LeaseProposeWindowDialog(props: LeaseProposeWindowDialogProps) {
 						</SelectContent>
 					</Select>
 					<div className="text-xs text-muted-foreground">
-						Proposed: {dateLabel} {windowLabel}
+						{t("proposed", { date: dateLabel, window: windowLabel })}
 					</div>
 				</div>
 

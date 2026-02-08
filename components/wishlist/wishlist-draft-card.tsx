@@ -32,6 +32,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { MAX_IMAGE_SIZE_BYTES } from "@/lib/image-constants";
+import { useTranslations } from "next-intl";
 
 type WishlistDraftCardProps = {
 	autoFocus?: boolean;
@@ -45,6 +46,7 @@ export function WishlistDraftCard({
 	const router = useRouter();
 	const inputId = useId();
 	const inputRef = useRef<HTMLInputElement | null>(null);
+	const t = useTranslations("Wishlist");
 
 	const [text, setText] = useState("");
 	const [files, setFiles] = useState<File[]>([]);
@@ -117,9 +119,9 @@ export function WishlistDraftCard({
 			setText("");
 			setFiles([]);
 			setShowMatchAlert(false);
-			toast.success("Request added to wishlist!");
+			toast.success(t("draftCard.success"));
 		} catch (error) {
-			toast.error("Failed to add request: " + (error as Error).message);
+			toast.error(t("draftCard.failed", { error: (error as Error).message }));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -143,17 +145,17 @@ export function WishlistDraftCard({
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">
 						<Plus className="h-4 w-4" />
-						Make a Request
+						{t("draftCard.title")}
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={handleSubmit} className="space-y-4">
 						<div className="space-y-2">
-							<Label htmlFor={inputId}>What do you need?</Label>
+							<Label htmlFor={inputId}>{t("draftCard.label")}</Label>
 							<Input
 								ref={inputRef}
 								id={inputId}
-								placeholder="e.g. Power Drill, Camping Tent..."
+								placeholder={t("draftCard.placeholder")}
 								value={text}
 								onChange={(e) => setText(e.target.value)}
 								disabled={isSubmitting}
@@ -161,7 +163,7 @@ export function WishlistDraftCard({
 						</div>
 
 						<div className="space-y-2">
-							<Label>Photos (optional)</Label>
+							<Label>{t("draftCard.photoLabel")}</Label>
 							<FileUpload
 								maxFiles={5}
 								accept="image/*"
@@ -178,11 +180,11 @@ export function WishlistDraftCard({
 										<UploadCloudIcon className="size-8 text-muted-foreground/50" />
 										<div className="flex flex-col items-center">
 											<span className="font-semibold text-foreground">
-												Click to upload
+												{t("draftCard.clickToUpload")}
 											</span>
-											<span>or drag and drop</span>
+											<span>{t("draftCard.dragAndDrop")}</span>
 											<span className="text-xs text-muted-foreground/75">
-												Up to 5 images
+												{t("draftCard.uploadLimit")}
 											</span>
 										</div>
 									</div>
@@ -202,10 +204,7 @@ export function WishlistDraftCard({
 						{matchCount > 0 ? (
 							<div className="text-xs text-muted-foreground flex items-center gap-2">
 								<CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-								<span>
-									We found {matchCount} {matchCount === 1 ? "match" : "matches"}
-									. Submitting will ask you to confirm.
-								</span>
+								<span>{t("draftCard.matchFound", { count: matchCount })}</span>
 							</div>
 						) : null}
 
@@ -215,7 +214,7 @@ export function WishlistDraftCard({
 								disabled={isSubmitting || !text.trim()}
 								className="flex-1"
 							>
-								Add Request
+								{t("draftCard.addRequest")}
 							</Button>
 							<Button
 								type="button"
@@ -223,7 +222,7 @@ export function WishlistDraftCard({
 								disabled={isSubmitting || !text.trim()}
 								onClick={onViewItems}
 							>
-								Search Items
+								{t("draftCard.searchItems")}
 							</Button>
 						</div>
 					</form>
@@ -233,18 +232,17 @@ export function WishlistDraftCard({
 			<AlertDialog open={showMatchAlert} onOpenChange={setShowMatchAlert}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Similar items found!</AlertDialogTitle>
+						<AlertDialogTitle>{t("alerts.similarTitle")}</AlertDialogTitle>
 						<AlertDialogDescription>
-							We found {matchCount} items that match your request. Would you
-							like to view them instead?
+							{t("alerts.similarDesc", { count: matchCount })}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogCancel onClick={onViewItems}>
-							View Items
+							{t("alerts.viewItems")}
 						</AlertDialogCancel>
 						<AlertDialogAction onClick={doCreate}>
-							Post Request Anyway
+							{t("alerts.postAnyway")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

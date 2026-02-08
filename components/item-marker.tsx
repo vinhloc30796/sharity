@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { renderToString } from "react-dom/server";
 import { cn } from "@/lib/utils";
-import type { ItemCategory } from "./item-form";
+import type { ItemCategory } from "@/lib/constants";
 
 const CATEGORY_ICON_MAP: Record<ItemCategory, LucideIcon> = {
 	kitchen: UtensilsCrossed,

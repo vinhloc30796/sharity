@@ -23,16 +23,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, MapPin, Settings, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 export default function ProfilePage() {
 	const { user, isLoaded } = useUser();
 	const profile = useQuery(api.users.getMyProfile);
 	const [isEditOpen, setIsEditOpen] = useState(false);
+	const t = useTranslations("Profile");
 
 	if (!isLoaded) {
 		return (
 			<main className="min-h-screen flex items-center justify-center">
-				<div className="text-muted-foreground">Loading...</div>
+				<div className="text-muted-foreground">{t("loading")}</div>
 			</main>
 		);
 	}
@@ -40,13 +42,11 @@ export default function ProfilePage() {
 	if (!user) {
 		return (
 			<main className="min-h-screen flex flex-col items-center justify-center gap-4">
-				<p className="text-muted-foreground">
-					Please sign in to view your profile.
-				</p>
+				<p className="text-muted-foreground">{t("signInMessage")}</p>
 				<Link href="/">
 					<Button variant="outline">
 						<ArrowLeft className="h-4 w-4 mr-2" />
-						Back to Home
+						{t("backToHome")}
 					</Button>
 				</Link>
 			</main>
@@ -56,7 +56,7 @@ export default function ProfilePage() {
 	if (profile === undefined) {
 		return (
 			<main className="min-h-screen flex items-center justify-center">
-				<div className="text-muted-foreground">Loading profile...</div>
+				<div className="text-muted-foreground">{t("loadingProfile")}</div>
 			</main>
 		);
 	}
@@ -76,17 +76,17 @@ export default function ProfilePage() {
 					>
 						<ArrowLeft className="h-5 w-5" />
 					</Link>
-					<h1 className="text-xl font-semibold">My Profile</h1>
+					<h1 className="text-xl font-semibold">{t("title")}</h1>
 					<Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
 						<DialogTrigger asChild>
 							<Button variant="outline" size="sm">
 								<Settings className="h-4 w-4 mr-1" />
-								Edit
+								{t("edit")}
 							</Button>
 						</DialogTrigger>
 						<DialogContent className="max-h-[90vh] overflow-y-auto">
 							<DialogHeader>
-								<DialogTitle>Edit Profile</DialogTitle>
+								<DialogTitle>{t("editTitle")}</DialogTitle>
 							</DialogHeader>
 							<ProfileForm
 								initialValues={{
@@ -157,7 +157,7 @@ export default function ProfilePage() {
 				{profile?.contacts && (
 					<Card className="py-4 gap-3">
 						<CardHeader className="px-4 md:px-6 pb-2">
-							<CardTitle className="text-base">Contact Information</CardTitle>
+							<CardTitle className="text-base">{t("contactInfo")}</CardTitle>
 						</CardHeader>
 						<CardContent className="px-4 md:px-6">
 							<ContactInfo contacts={profile.contacts} showValues />
@@ -168,8 +168,8 @@ export default function ProfilePage() {
 				{/* Tabs for History and Ratings */}
 				<Tabs defaultValue="ratings" className="w-full">
 					<TabsList className="w-full grid grid-cols-2">
-						<TabsTrigger value="ratings">Ratings</TabsTrigger>
-						<TabsTrigger value="history">History</TabsTrigger>
+						<TabsTrigger value="ratings">{t("tabs.ratings")}</TabsTrigger>
+						<TabsTrigger value="history">{t("tabs.history")}</TabsTrigger>
 					</TabsList>
 
 					<TabsContent value="ratings" className="mt-4 space-y-4">

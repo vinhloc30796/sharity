@@ -2,6 +2,7 @@
 
 import { MessageCircle, Phone, Facebook, Check, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface AvailableContacts {
 	telegram: boolean;
@@ -28,6 +29,8 @@ export function ContactInfo({
 	contacts,
 	showValues = false,
 }: ContactInfoProps) {
+	const t = useTranslations("ContactInfo");
+
 	// If we have full contacts and should show values
 	if (showValues && contacts) {
 		const hasAnyContact =
@@ -37,11 +40,7 @@ export function ContactInfo({
 			contacts.phone;
 
 		if (!hasAnyContact) {
-			return (
-				<div className="text-sm text-muted-foreground">
-					No contact info provided.
-				</div>
-			);
+			return <div className="text-sm text-muted-foreground">{t("noInfo")}</div>;
 		}
 
 		return (
@@ -49,7 +48,7 @@ export function ContactInfo({
 				{contacts.telegram && (
 					<ContactRow
 						icon={<MessageCircle className="h-4 w-4 text-blue-500" />}
-						label="Telegram"
+						label={t("labels.telegram")}
 						value={contacts.telegram}
 						link={`https://t.me/${contacts.telegram.replace("@", "")}`}
 					/>
@@ -57,7 +56,7 @@ export function ContactInfo({
 				{contacts.whatsapp && (
 					<ContactRow
 						icon={<MessageCircle className="h-4 w-4 text-green-500" />}
-						label="WhatsApp"
+						label={t("labels.whatsapp")}
 						value={contacts.whatsapp}
 						link={`https://wa.me/${contacts.whatsapp.replace(/[^0-9]/g, "")}`}
 					/>
@@ -65,7 +64,7 @@ export function ContactInfo({
 				{contacts.facebook && (
 					<ContactRow
 						icon={<Facebook className="h-4 w-4 text-blue-600" />}
-						label="Facebook"
+						label={t("labels.facebook")}
 						value={contacts.facebook}
 						link={
 							contacts.facebook.startsWith("http")
@@ -77,7 +76,7 @@ export function ContactInfo({
 				{contacts.phone && (
 					<ContactRow
 						icon={<Phone className="h-4 w-4 text-gray-600" />}
-						label="Phone"
+						label={t("labels.phone")}
 						value={contacts.phone}
 						link={`tel:${contacts.phone}`}
 					/>
@@ -92,46 +91,42 @@ export function ContactInfo({
 
 		if (available.length === 0) {
 			return (
-				<div className="text-sm text-muted-foreground">
-					No contact methods set up.
-				</div>
+				<div className="text-sm text-muted-foreground">{t("noMethods")}</div>
 			);
 		}
 
 		return (
 			<div className="flex flex-col gap-2">
-				<p className="text-sm text-muted-foreground">
-					Available contact methods:
-				</p>
+				<p className="text-sm text-muted-foreground">{t("availableMethods")}</p>
 				<div className="flex flex-wrap gap-2">
 					{availableContacts.telegram && (
 						<ContactBadge
 							icon={<MessageCircle className="h-3 w-3 text-blue-500" />}
-							label="Telegram"
+							label={t("labels.telegram")}
 						/>
 					)}
 					{availableContacts.whatsapp && (
 						<ContactBadge
 							icon={<MessageCircle className="h-3 w-3 text-green-500" />}
-							label="WhatsApp"
+							label={t("labels.whatsapp")}
 						/>
 					)}
 					{availableContacts.facebook && (
 						<ContactBadge
 							icon={<Facebook className="h-3 w-3 text-blue-600" />}
-							label="Facebook"
+							label={t("labels.facebook")}
 						/>
 					)}
 					{availableContacts.phone && (
 						<ContactBadge
 							icon={<Phone className="h-3 w-3 text-gray-600" />}
-							label="Phone"
+							label={t("labels.phone")}
 						/>
 					)}
 				</div>
 				<p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
 					<Lock className="h-3 w-3" />
-					Contact details shared after approved transaction
+					{t("sharedAfter")}
 				</p>
 			</div>
 		);

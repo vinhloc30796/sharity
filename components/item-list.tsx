@@ -15,20 +15,26 @@ import { ReactNode } from "react";
 import { UserLink } from "@/components/user-link";
 import { ItemCard } from "./item-card";
 import { CategoryFilter } from "./category-filter";
-import type { ItemCategory } from "./item-form";
+import type { ItemCategory } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { WishlistEmptyCard } from "@/components/wishlist/wishlist-empty-card";
+import { useTranslations } from "next-intl";
 
 // Dynamic import to avoid SSR hydration issues with Leaflet
+function ItemsMapLoading() {
+	const t = useTranslations("ItemList");
+	return (
+		<div className="w-full h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
+			<p className="text-muted-foreground">{t("loadingMap")}</p>
+		</div>
+	);
+}
+
 const ItemsMap = dynamic(
 	() => import("./items-map").then((mod) => mod.ItemsMap),
 	{
 		ssr: false,
-		loading: () => (
-			<div className="w-full h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
-				<p className="text-muted-foreground">Loading map...</p>
-			</div>
-		),
+		loading: () => <ItemsMapLoading />,
 	},
 );
 
@@ -43,6 +49,7 @@ export function ItemList({
 	actionBack?: (item: Doc<"items"> & { isRequested?: boolean }) => ReactNode;
 	onEmptyMakeRequest?: () => void;
 }) {
+	const t = useTranslations("ItemList");
 	const items = useQuery(api.items.get);
 	const searchParams = useSearchParams();
 	const urlQuery = searchParams.get("q") ?? "";
@@ -76,7 +83,7 @@ export function ItemList({
 			<div className="flex flex-col gap-3">
 				<div className="flex gap-2">
 					<Input
-						placeholder="Search available items..."
+						placeholder={t("searchPlaceholder")}
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 						className="flex-1"
@@ -117,7 +124,7 @@ export function ItemList({
 							giveawayOnly && "bg-primary text-primary-foreground",
 						)}
 					>
-						Giveaway
+						{t("giveaway")}
 					</Button>
 				</div>
 			</div>
@@ -125,13 +132,13 @@ export function ItemList({
 			{viewMode === "map" ? (
 				<div className="space-y-2">
 					{items === undefined ? (
-						<p>Loading...</p>
+						<p>{t("loading")}</p>
 					) : (
 						<>
 							<ItemsMap items={filteredItems || []} />
 							{filteredItems?.filter((i) => i.location).length === 0 && (
 								<p className="text-sm text-muted-foreground text-center">
-									No items with location in current filter
+									{t("noLocationItems")}
 								</p>
 							)}
 						</>
@@ -140,7 +147,7 @@ export function ItemList({
 			) : (
 				<div className="grid gap-4">
 					{items === undefined ? (
-						<p>Loading...</p>
+						<p>{t("loading")}</p>
 					) : items.length === 0 ? (
 						<WishlistEmptyCard onMakeRequest={onEmptyMakeRequest} />
 					) : filteredItems?.length === 0 ? (

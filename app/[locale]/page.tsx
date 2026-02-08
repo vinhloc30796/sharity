@@ -21,6 +21,7 @@ import { Gift, ListChecks, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Suspense, useState } from "react";
+import { useTranslations } from "next-intl";
 
 export default function Home() {
 	const [desktopLeftTab, setDesktopLeftTab] = useState<"share" | "request">(
@@ -35,15 +36,14 @@ export default function Home() {
 	const [wishlistSortBy, setWishlistSortBy] = useState<"recent" | "upvoted">(
 		"recent",
 	);
+	const t = useTranslations("Home");
 
 	return (
 		<main className="min-h-screen flex flex-col items-center bg-gray-50/50">
 			<div className="w-full max-w-6xl p-4 md:p-8 space-y-8">
 				<div className="text-center space-y-2">
-					<h1 className="text-4xl font-bold tracking-tight">Sharity</h1>
-					<p className="text-xl text-gray-600">
-						Borrow and lend useful items in Da Lat.
-					</p>
+					<h1 className="text-4xl font-bold tracking-tight">{t("title")}</h1>
+					<p className="text-xl text-gray-600">{t("subtitle")}</p>
 				</div>
 
 				{/* Desktop Layout: Split View */}
@@ -57,11 +57,11 @@ export default function Home() {
 							<TabsList className="w-full grid grid-cols-2">
 								<TabsTrigger value="share">
 									<Gift className="h-4 w-4" />
-									Share
+									{t("tabs.share")}
 								</TabsTrigger>
 								<TabsTrigger value="request">
 									<ListChecks className="h-4 w-4" />
-									Request
+									{t("tabs.request")}
 								</TabsTrigger>
 							</TabsList>
 							<TabsContent value="share" className="mt-4">
@@ -73,7 +73,7 @@ export default function Home() {
 									focusToken={desktopRequestFocusToken}
 								/>
 								<div className="mt-4 flex items-center justify-between gap-2">
-									<div className="text-sm font-medium">Top requests</div>
+									<div className="text-sm font-medium">{t("topRequests")}</div>
 									<Select
 										value={wishlistSortBy}
 										onValueChange={(v) =>
@@ -81,11 +81,15 @@ export default function Home() {
 										}
 									>
 										<SelectTrigger className="h-8 w-[180px]">
-											<SelectValue placeholder="Sort by" />
+											<SelectValue placeholder={t("sortBy")} />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem value="recent">Most Recent</SelectItem>
-											<SelectItem value="upvoted">Most Upvoted</SelectItem>
+											<SelectItem value="recent">
+												{t("sortOptions.recent")}
+											</SelectItem>
+											<SelectItem value="upvoted">
+												{t("sortOptions.upvoted")}
+											</SelectItem>
 										</SelectContent>
 									</Select>
 								</div>
@@ -106,7 +110,7 @@ export default function Home() {
 										if (topItems.length === 0) {
 											return (
 												<div className="mt-2 text-sm text-muted-foreground">
-													No requests yet.
+													{t("noRequests")}
 												</div>
 											);
 										}
@@ -122,7 +126,7 @@ export default function Home() {
 								)}
 								<Link href="/wishlist" className="mt-3 block">
 									<Button variant="outline" className="w-full">
-										See full wishlist
+										{t("seeFullWishlist")}
 									</Button>
 								</Link>
 							</TabsContent>
@@ -152,7 +156,7 @@ export default function Home() {
 						className="w-full"
 					>
 						<TabsContent value="browse" className="mt-0 space-y-4">
-							<h2 className="text-lg font-semibold px-1">Browse</h2>
+							<h2 className="text-lg font-semibold px-1">{t("tabs.browse")}</h2>
 							<Suspense
 								fallback={<div className="w-full max-w-2xl">Loading…</div>}
 							>
@@ -168,13 +172,15 @@ export default function Home() {
 						</TabsContent>
 
 						<TabsContent value="wishlist" className="mt-0 space-y-4">
-							<h2 className="text-lg font-semibold px-1">Request</h2>
+							<h2 className="text-lg font-semibold px-1">
+								{t("tabs.request")}
+							</h2>
 							<WishlistDraftCard
 								autoFocus={mobileWishlistFocusToken > 0}
 								focusToken={mobileWishlistFocusToken}
 							/>
 							<div className="flex items-center justify-between gap-2 px-1">
-								<div className="text-sm font-medium">Top requests</div>
+								<div className="text-sm font-medium">{t("topRequests")}</div>
 								<Select
 									value={wishlistSortBy}
 									onValueChange={(v) =>
@@ -182,11 +188,15 @@ export default function Home() {
 									}
 								>
 									<SelectTrigger className="h-8 w-[160px]">
-										<SelectValue placeholder="Sort by" />
+										<SelectValue placeholder={t("sortBy")} />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="recent">Most Recent</SelectItem>
-										<SelectItem value="upvoted">Most Upvoted</SelectItem>
+										<SelectItem value="recent">
+											{t("sortOptions.recent")}
+										</SelectItem>
+										<SelectItem value="upvoted">
+											{t("sortOptions.upvoted")}
+										</SelectItem>
 									</SelectContent>
 								</Select>
 							</div>
@@ -207,7 +217,7 @@ export default function Home() {
 									if (topItems.length === 0) {
 										return (
 											<div className="px-1 text-sm text-muted-foreground">
-												No requests yet.
+												{t("noRequests")}
 											</div>
 										);
 									}
@@ -219,13 +229,13 @@ export default function Home() {
 							)}
 							<Link href="/wishlist" className="block">
 								<Button variant="outline" className="w-full">
-									See full wishlist
+									{t("seeFullWishlist")}
 								</Button>
 							</Link>
 						</TabsContent>
 
 						<TabsContent value="manage" className="mt-0 space-y-4">
-							<h2 className="text-lg font-semibold px-1">Share</h2>
+							<h2 className="text-lg font-semibold px-1">{t("tabs.share")}</h2>
 							<AddItemForm />
 						</TabsContent>
 
@@ -233,15 +243,15 @@ export default function Home() {
 							<TabsList className="w-full grid grid-cols-3 h-auto">
 								<TabsTrigger value="browse" className="py-3">
 									<Search className="h-4 w-4" />
-									Browse
+									{t("tabs.browse")}
 								</TabsTrigger>
 								<TabsTrigger value="wishlist" className="py-3">
 									<ListChecks className="h-4 w-4" />
-									Request
+									{t("tabs.request")}
 								</TabsTrigger>
 								<TabsTrigger value="manage" className="py-3">
 									<Gift className="h-4 w-4" />
-									Share
+									{t("tabs.share")}
 								</TabsTrigger>
 							</TabsList>
 						</div>
