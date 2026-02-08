@@ -4,12 +4,13 @@ import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useCloudinaryUpload } from "@imaxis/cloudinary-convex/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Id } from "@/convex/_generated/dataModel";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 import {
 	FileUpload,
 	FileUploadDropzone,
@@ -107,7 +108,21 @@ export function ItemForm({
 	const [description, setDescription] = useState(
 		initialValues?.description || "",
 	);
-	const [giveaway, setGiveaway] = useState(Boolean(initialValues?.giveaway));
+	const isEditMode = !!initialValues;
+	const [persistedGiveaway, setPersistedGiveaway] = useLocalStorage<boolean>(
+		"item-form-giveaway-mode",
+		false,
+	);
+
+	const [giveaway, setGiveaway] = useState(
+		isEditMode ? Boolean(initialValues.giveaway) : false,
+	);
+
+	useEffect(() => {
+		if (!isEditMode) {
+			setGiveaway(persistedGiveaway);
+		}
+	}, [persistedGiveaway, isEditMode]);
 	const [minLeaseDays, setMinLeaseDays] = useState(() => {
 		if (Boolean(initialValues?.giveaway)) return "";
 		return typeof initialValues?.minLeaseDays === "number"
@@ -327,6 +342,9 @@ export function ItemForm({
 									onClick={() => {
 										if (pendingGiveaway === null) return;
 										setGiveaway(pendingGiveaway);
+										if (!isEditMode) {
+											setPersistedGiveaway(pendingGiveaway);
+										}
 										if (pendingGiveaway) {
 											setMinLeaseDays("");
 											setMaxLeaseDays("");
