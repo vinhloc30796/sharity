@@ -7,7 +7,6 @@ import {
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
-	SelectValue,
 } from "@/components/ui/select";
 import { Globe } from "lucide-react";
 
@@ -29,6 +28,7 @@ export function LanguageSwitcher() {
 			<SelectContent position="popper" align="end">
 				<SelectItem value="en">English</SelectItem>
 				<SelectItem value="vi">Tiếng Việt</SelectItem>
+				<SelectItem value="ru">Русский</SelectItem>
 			</SelectContent>
 		</Select>
 	);
