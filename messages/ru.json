@@ -2,19 +2,19 @@
 	"Layout": {
 		"metadata": {
 			"title": {
-				"default": "Sharity — делитесь, берите и давайте вещи в Далате, Вьетнам",
-				"template": "%s — Sharity, шеринговая экономика в Далате, Вьетнам"
+				"default": "Sharity — делитесь вещами в Далате, Вьетнам",
+				"template": "%s — Sharity, шеринг в Далате, Вьетнам"
 			},
-			"description": "Sharity — это сообщество для шеринга в Далате, Вьетнам. Давайте вещи, которые редко используете, берите нужное на несколько дней и управляйте запросами и доступностью в одном месте.",
+			"description": "Sharity — это сообщество для шеринга в Далате, Вьетнам. Делитесь вещами, которые редко используете, берите нужное на несколько дней — всё в одном месте.",
 			"openGraph": {
 				"siteName": "Sharity",
-				"title": "Sharity — делитесь, берите и давайте вещи в Далате, Вьетнам",
-				"description": "Sharity — это сообщество для шеринга в Далате, Вьетнам. Давайте вещи, которые редко используете, берите нужное на несколько дней и управляйте запросами и доступностью в одном месте.",
+				"title": "Sharity — делитесь вещами в Далате, Вьетнам",
+				"description": "Sharity — это сообщество для шеринга в Далате, Вьетнам. Делитесь вещами, которые редко используете, берите нужное на несколько дней — всё в одном месте.",
 				"locale": "ru_RU"
 			},
 			"twitter": {
-				"title": "Sharity — делитесь, берите и давайте вещи в Далате, Вьетнам",
-				"description": "Sharity — это сообщество для шеринга в Далате, Вьетнам. Давайте вещи, которые редко используете, берите нужное на несколько дней и управляйте запросами и доступностью в одном месте."
+				"title": "Sharity — делитесь вещами в Далате, Вьетнам",
+				"description": "Sharity — это сообщество для шеринга в Далате, Вьетнам. Делитесь вещами, которые редко используете, берите нужное на несколько дней — всё в одном месте."
 			}
 		}
 	},
@@ -33,31 +33,31 @@
 	},
 	"Home": {
 		"title": "Sharity",
-		"subtitle": "Берите и давайте полезные вещи в Далате.",
+		"subtitle": "Делись и находи нужное в Далате.",
 		"tabs": {
-			"share": "Дать",
-			"request": "Нужно",
+			"share": "Поделиться",
+			"request": "Запросить",
 			"browse": "Найти"
 		},
 		"topRequests": "Популярные запросы",
 		"sortBy": "Сортировать",
 		"sortOptions": {
 			"recent": "Сначала новые",
-			"upvoted": "Больше голосов"
+			"upvoted": "По популярности"
 		},
 		"noRequests": "Пока нет запросов.",
-		"seeFullWishlist": "Открыть весь список желаний"
+		"seeFullWishlist": "Открыть весь список запросов"
 	},
 	"ItemCard": {
 		"giveaway": "Подарок",
-		"locationAvailable": "Есть локация"
+		"locationAvailable": "Место указано"
 	},
 	"ItemForm": {
 		"giveawayMode": "Подарок",
-		"giveawayDesc": "Без возврата. Право собственности переходит после получения.",
+		"giveawayDesc": "Без возврата. Вещь перейдёт получателю.",
 		"switchMode": {
 			"title": "Сменить режим?",
-			"description": "Это отклонит все текущие запросы в ожидании",
+			"description": "Все текущие запросы будут отклонены",
 			"cancel": "Отмена",
 			"confirm": "Сменить"
 		},
@@ -65,60 +65,60 @@
 		"itemNamePlaceholder": "например, палатка",
 		"description": "Описание",
 		"descriptionPlaceholder": "Описание (необязательно)",
-		"leaseLengthLimits": "Ограничения срока аренды (дни)",
-		"giveawaylimitDesc": "Для подарков ограничения срока аренды отключены.",
-		"minLeaseDays": "Мин. дней (необязательно)",
+		"leaseLengthLimits": "На сколько дней",
+		"giveawaylimitDesc": "Для подарков — без ограничений.",
+		"minLeaseDays": "Минимум дней (необязательно)",
 		"minLeaseDaysPlaceholder": "например, 1",
-		"maxLeaseDays": "Макс. дней (необязательно)",
+		"maxLeaseDays": "Максимум дней (необязательно)",
 		"maxLeaseDaysPlaceholder": "например, 14",
-		"sameDayNote": "Запросы в тот же день считаются как доля дня.",
+		"sameDayNote": "Взять и вернуть в один день — считается за неполный день.",
 		"category": "Категория",
-		"selectCategory": "Выберите категорию",
-		"location": "Локация",
-		"addressPlaceholder": "Адрес (заполняется с карты)",
+		"selectCategory": "Выбери категорию",
+		"location": "Место",
+		"addressPlaceholder": "Адрес (заполнится с карты)",
 		"pickOnMap": "Выбрать на карте",
-		"getCurrentLocation": "Определить текущее местоположение",
+		"getCurrentLocation": "Моё местоположение",
 		"imagesLabel": "Фото (макс. 5)",
-		"clickToUpload": "Нажмите, чтобы загрузить",
-		"dragAndDrop": "или перетащите",
+		"clickToUpload": "Нажми, чтобы загрузить",
+		"dragAndDrop": "или перетащи",
 		"uploadLimit": "До 5 фото",
-		"uploadLimitReached": "Достигнут лимит 5 фото. Удалите часть, чтобы добавить новые.",
+		"uploadLimitReached": "Максимум 5 фото. Удали что-нибудь, чтобы добавить новые.",
 		"uploadingExample": "Можно добавить ещё {count} фото.",
 		"uploadingSaving": "Загрузка и сохранение...",
 		"myItems": "Мои вещи",
 		"validation": {
-			"geolocationNotSupported": "Геолокация не поддерживается вашим браузером",
-			"locationCaptured": "Локация успешно получена",
-			"locationError": "Не удалось получить локацию: {error}",
-			"locationSelected": "Локация выбрана",
-			"mustBeInteger": "{label} должно быть целым числом дней",
-			"mustBeAtLeastOne": "{label} должно быть не меньше 1 дня",
-			"minMaxError": "Минимальный срок аренды должен быть меньше или равен максимальному",
+			"geolocationNotSupported": "Твой браузер не поддерживает геолокацию",
+			"locationCaptured": "Место определено",
+			"locationError": "Не удалось определить место: {error}",
+			"locationSelected": "Место выбрано",
+			"mustBeInteger": "{label} — только целые дни",
+			"mustBeAtLeastOne": "{label} — минимум 1 день",
+			"minMaxError": "Минимум не может быть больше максимума",
 			"fileReject": "{message} ({fileName})"
 		}
 	},
 	"ClaimItemBack": {
 		"back": "Назад",
-		"requestToReceive": "Запросить, чтобы получить",
-		"signInToRequest": "Войдите, чтобы отправить запрос.",
+		"requestToReceive": "Запросить",
+		"signInToRequest": "Войди, чтобы отправить запрос.",
 		"connecting": "Подключение...",
-		"giveawayDesc": "Подарок: возврат не нужен. Право собственности переходит после получения.",
+		"giveawayDesc": "Подарок: возврат не нужен. Вещь станет твоей после получения.",
 		"details": "Детали",
 		"request": "Запросить",
-		"requestToBorrow": "Запросить, чтобы взять",
+		"requestToBorrow": "Запросить",
 		"openDetails": "Открыть детали",
 		"noActiveRequests": "Нет активных запросов",
-		"nothingToApprove": "Сейчас нечего одобрять.",
+		"nothingToApprove": "Пока ничего нового.",
 		"intraday": {
-			"title": "Выберите часы",
-			"description": "Запросы в тот же день бронируются по часам.",
+			"title": "Выбери часы",
+			"description": "Запросы на один день — по часам.",
 			"changeHours": "Изменить часы ({range})",
 			"selectHours": "Выбрать часы",
 			"save": "Сохранить часы",
 			"cancel": "Отмена",
 			"errors": {
-				"futureStart": "Время начала должно быть в будущем",
-				"endAfterStart": "Время окончания должно быть позже времени начала",
+				"futureStart": "Выбери время в будущем",
+				"endAfterStart": "Окончание должно быть позже начала",
 				"notAvailable": "Выбранные часы недоступны"
 			}
 		}
@@ -126,46 +126,46 @@
 	"AddItemForm": {
 		"title": "Добавить вещь",
 		"submit": "Опубликовать",
-		"signInTitle": "Войдите, чтобы делиться вещами",
+		"signInTitle": "Войди, чтобы начать делиться вещами",
 		"signIn": "Войти"
 	},
 	"BorrowedItemCard": {
 		"overdue": "Просрочено на {time}",
-		"dueToday": "Срок сегодня",
-		"dueInDays": "Срок через {count} дн.",
-		"dueOn": "Срок {date}",
+		"dueToday": "Вернуть сегодня",
+		"dueInDays": "Вернуть через {count} дн.",
+		"dueOn": "Вернуть до {date}",
 		"viewDetails": "Подробнее",
 		"borrowedFrom": "Взято у {name}",
 		"pickedUp": "Получено {date}"
 	},
 	"MyItemCard": {
 		"by": "от",
-		"anonymous": "Аноним",
+		"anonymous": "Без имени",
 		"status": {
 			"available": "Доступно",
 			"pending": "Есть запросы",
 			"approved": "Одобрено",
 			"picked_up": "В использовании",
 			"returned": "Завершено",
-			"expired": "Истекло",
-			"missing": "Пропало"
+			"expired": "Просрочено",
+			"missing": "Не возвращено"
 		},
 		"giveaway": "Подарок",
 		"borrowed": "Взято",
 		"review": "Отзыв",
 		"edit": "Редактировать",
-		"editTitle": "Редактировать вещь",
+		"editTitle": "Редактировать",
 		"saveChanges": "Сохранить",
 		"delete": "Удалить",
 		"deleteConfirm": {
-			"title": "Вы уверены?",
-			"description": "Это действие нельзя отменить. Вещь будет удалена навсегда.",
+			"title": "Точно удалить?",
+			"description": "Вещь удалится навсегда. Отменить не получится.",
 			"cancel": "Отмена",
 			"confirm": "Удалить"
 		},
 		"open": "Открыть",
 		"receivedFrom": "Получено от <user></user>",
-		"pendingRequests": "Ожидающих запросов: {count}",
+		"pendingRequests": "Запросов: {count}",
 		"awaitingApproval": "Ожидает одобрения",
 		"reject": "Отклонить",
 		"approve": "Одобрить"
@@ -178,7 +178,7 @@
 		"markAsRead": "Отметить как прочитанное",
 		"messages": {
 			"new_request": "Новый запрос на \"{itemName}\"",
-			"request_approved": "Запрос на \"{itemName}\" одобрен! Теперь можно увидеть контакты владельца.",
+			"request_approved": "Запрос на \"{itemName}\" одобрен! Теперь ты можешь посмотреть контакты владельца.",
 			"request_rejected": "Запрос на \"{itemName}\" отклонён",
 			"item_available": "\"{itemName}\" снова доступен!",
 			"pickup_proposed": "Запрошено получение \"{itemName}\"",
@@ -194,8 +194,8 @@
 			"return_approved_window": "Возврат \"{itemName}\" одобрен: {start}–{end}",
 			"return_confirmed": "Возврат \"{itemName}\" подтверждён",
 			"return_missing": "Возврат \"{itemName}\" не состоялся",
-			"rate_transaction": "Оцените ваш опыт с \"{itemName}\"",
-			"rating_received": "Вы получили новый отзыв о \"{itemName}\"",
+			"rate_transaction": "Как всё прошло с \"{itemName}\"?",
+			"rating_received": "Тебе пришёл новый отзыв о \"{itemName}\"",
 			"rating_received_named": "{raterName} оставил(а) отзыв о \"{itemName}\"",
 			"default": "Новое уведомление"
 		},
@@ -210,15 +210,15 @@
 			"viewProfile": "Открыть профиль"
 		},
 		"reasons": {
-			"unavailable": "Действие недоступно",
+			"unavailable": "Сейчас нельзя",
 			"notApproved": "Запрос не одобрен",
 			"alreadyPickedUp": "Уже получено",
-			"leaseExpired": "Срок истёк",
-			"pickupWindowExpired": "Окно получения истекло",
+			"leaseExpired": "Время вышло",
+			"pickupWindowExpired": "Время на получение вышло",
 			"notPickedUp": "Ещё не получено",
 			"alreadyReturned": "Уже возвращено",
-			"itemMissing": "Вещь отмечена как пропавшая",
-			"returnWindowExpired": "Окно возврата истекло"
+			"itemMissing": "Вещь не возвращена",
+			"returnWindowExpired": "Время на возврат вышло"
 		},
 		"toasts": {
 			"rejected": "Запрос отклонён",
@@ -230,14 +230,14 @@
 		}
 	},
 	"LeaseProposeIntraday": {
-		"defaultDescription": "Выберите часы на {date}.",
-		"startHour": "Час начала",
-		"selectStartHour": "Выберите час начала",
-		"endHour": "Час окончания",
-		"selectEndHour": "Выберите час окончания",
+		"defaultDescription": "Выбери часы на {date}.",
+		"startHour": "С",
+		"selectStartHour": "С какого часа",
+		"endHour": "До",
+		"selectEndHour": "До какого часа",
 		"errors": {
-			"sameHour": "Час начала и окончания не могут совпадать.",
-			"multiDay": "Для запросов на несколько дней выберите диапазон дат."
+			"sameHour": "Начало и конец не могут совпадать.",
+			"multiDay": "Для запросов на несколько дней выбери диапазон дат."
 		},
 		"proposed": "Предложено: {date} {start}–{end}",
 		"saving": "{label}...",
@@ -256,12 +256,12 @@
 			"picked_up": "В использовании",
 			"transferred": "Передано",
 			"returned": "Завершено",
-			"expired": "Истекло",
-			"past_due": "Просрочено",
-			"missing": "Пропало",
+			"expired": "Просрочено",
+			"past_due": "Возврат просрочен",
+			"missing": "Не возвращено",
 			"unknown": "Неизвестно"
 		},
-		"pastDueMessage": "Этот запрос уже прошёл дату начала и больше не может быть одобрен.",
+		"pastDueMessage": "Дата начала уже прошла — одобрить нельзя.",
 		"actions": {
 			"cancel": "Отменить",
 			"cancelling": "Отмена...",
@@ -276,14 +276,14 @@
 		},
 		"rejectDialog": {
 			"titleGiveaway": "Отклонить запрос на подарок",
-			"titleLease": "Отклонить запрос на аренду",
-			"descGiveaway": "Это уведомит запрашивающего, что запрос был отклонён.",
-			"descLease": "Это уведомит арендатора, что запрос был отклонён.",
+			"titleLease": "Отклонить запрос",
+			"descGiveaway": "Мы сообщим, что запрос отклонён.",
+			"descLease": "Мы сообщим, что запрос отклонён.",
 			"reasonLabel": "Причина (необязательно, но желательно)",
-			"reasonPlaceholder": "Коротко объясните почему..."
+			"reasonPlaceholder": "Напиши причину..."
 		},
 		"intraday": {
-			"note": "Аренда на один день: получение и возврат происходят в выбранные часы. Используйте предложения времени ниже, чтобы согласовать точные окна."
+			"note": "Получение и возврат в один день — по часам. Выбери удобное время ниже."
 		},
 		"pickup": {
 			"proposedApproved": "Получение предложено и одобрено:",
@@ -291,9 +291,9 @@
 			"pendingApproval": "Ожидает одобрения.",
 			"propose": "Предложить время получения",
 			"change": "Изменить время получения",
-			"sentToast": "Запрос на получение отправлен. Пожалуйста, подождите одобрения. Сейчас ничего делать не нужно",
+			"sentToast": "Запрос на получение отправлен. Подожди одобрения — больше ничего делать не нужно",
 			"confirmTitle": "Подтвердить получение вещи",
-			"confirmDesc": "Зафиксируйте, что вещь была получена. Фото помогают задокументировать состояние вещи.",
+			"confirmDesc": "Отметь, что вещь получена. Фото помогут подтвердить состояние вещи.",
 			"confirmAction": "Подтвердить получение",
 			"noteLabel": "Заметки (необязательно)",
 			"notePlaceholder": "Любые заметки о получении...",
@@ -301,9 +301,9 @@
 			"confirmedToast": "Получение подтверждено",
 			"approving": "Одобрение...",
 			"approve": "Одобрить время получения",
-			"approvedToast": "Время получения одобрено. Ожидаем подтверждения от второй стороны.",
-			"windowPassed": "Это окно уже прошло. Скоро оно будет автоматически просрочено.",
-			"confirmAvailable": "Подтверждение доступно в интервале {start}–{end}."
+			"approvedToast": "Время получения одобрено. Ждём подтверждения.",
+			"windowPassed": "Это время уже прошло. Запрос скоро истечёт.",
+			"confirmAvailable": "Подтвердить можно с {start} до {end}."
 		},
 		"return": {
 			"proposedApproved": "Возврат предложен и одобрен:",
@@ -311,9 +311,9 @@
 			"pendingApproval": "Ожидает одобрения.",
 			"propose": "Предложить время возврата",
 			"change": "Изменить время возврата",
-			"sentToast": "Запрос на возврат отправлен. Пожалуйста, подождите одобрения. Сейчас ничего делать не нужно",
+			"sentToast": "Запрос на возврат отправлен. Подожди одобрения — больше ничего делать не нужно",
 			"confirmTitle": "Подтвердить возврат вещи",
-			"confirmDesc": "Зафиксируйте, что вещь была возвращена. Фото помогают задокументировать состояние вещи.",
+			"confirmDesc": "Отметь, что вещь возвращена. Фото помогут подтвердить состояние вещи.",
 			"confirmAction": "Подтвердить возврат",
 			"noteLabel": "Заметки (необязательно)",
 			"notePlaceholder": "Любые заметки о возврате...",
@@ -321,36 +321,36 @@
 			"confirmedToast": "Возврат подтверждён",
 			"approving": "Одобрение...",
 			"approve": "Одобрить время возврата",
-			"approvedToast": "Время возврата одобрено. Ожидаем подтверждения от второй стороны.",
-			"windowPassed": "Это окно уже прошло. Скоро оно будет автоматически просрочено.",
-			"confirmAvailable": "Подтверждение доступно в интервале {start}–{end}."
+			"approvedToast": "Время возврата одобрено. Ждём подтверждения.",
+			"windowPassed": "Это время уже прошло. Запрос скоро истечёт.",
+			"confirmAvailable": "Подтвердить можно с {start} до {end}."
 		}
 	},
 	"LeaseActivity": {
 		"timelineTitle": "Лента действий",
-		"loading": "Загрузка активности аренды...",
-		"empty": "Пока нет активности аренды.",
+		"loading": "Загрузка событий...",
+		"empty": "Пока нет событий.",
 		"by": "от",
-		"window": "Окно: {start}–{end}",
+		"window": "Время: {start}–{end}",
 		"eventTitles": {
 			"requested": "Запрошено",
 			"approved": "Одобрено",
 			"rejected": "Отклонено",
-			"expired": "Истекло",
-			"missing": "Пропало",
+			"expired": "Просрочено",
+			"missing": "Не возвращено",
 			"pickup_proposed": "Время получения предложено",
 			"pickup_approved": "Время получения одобрено",
 			"return_proposed": "Время возврата предложено",
 			"return_approved": "Время возврата одобрено",
 			"picked_up": "Получено",
 			"returned": "Возвращено",
-			"default": "Активность аренды"
+			"default": "Событие"
 		}
 	},
 	"LeaseProposeWindow": {
-		"defaultDescription": "Выберите окно на 1 час в день {date}.",
+		"defaultDescription": "Выбери час в день {date}.",
 		"hourWindow": "Окно на час",
-		"selectHour": "Выберите час",
+		"selectHour": "Выбери час",
 		"proposed": "Предложено: {date} {window}",
 		"groups": {
 			"morning": "Утро (6-11)",
@@ -360,40 +360,40 @@
 		}
 	},
 	"LeaseAction": {
-		"clickToUpload": "Нажмите, чтобы загрузить",
-		"dragAndDrop": "или перетащите",
+		"clickToUpload": "Нажми, чтобы загрузить",
+		"dragAndDrop": "или перетащи",
 		"uploadLimit": "До {count} фото"
 	},
 	"BorrowerRequest": {
 		"errors": {
-			"startTimeFuture": "Время начала должно быть в будущем",
-			"endTimeAfterStart": "Время окончания должно быть позже времени начала",
+			"startTimeFuture": "Выбери время в будущем",
+			"endTimeAfterStart": "Окончание должно быть позже начала",
 			"hoursNotAvailable": "Выбранные часы недоступны"
 		},
 		"requesting": "Отправка...",
-		"requestToBorrow": "Запросить, чтобы взять",
-		"signInToRequest": "Войдите, чтобы отправить запрос",
-		"intradayNote": "Для запросов на один день время получения и возврата согласуется через предложенные и одобренные окна после одобрения.",
-		"yourRequests": "Ваши запросы",
+		"requestToBorrow": "Запросить",
+		"signInToRequest": "Войди, чтобы отправить запрос",
+		"intradayNote": "Для запросов на один день время получения и возврата согласуешь после одобрения.",
+		"yourRequests": "Твои запросы",
 		"hideInactive": "Скрыть неактивные",
 		"showInactive": "Показать неактивные",
-		"pickPickupDay": "Выберите день получения",
-		"giveawayNote": "Подарок: возврат не нужен. Право собственности переходит после получения.",
+		"pickPickupDay": "Выбери день получения",
+		"giveawayNote": "Подарок: возврат не нужен. Вещь станет твоей после получения.",
 		"request": "Запросить"
 	},
 	"MyItems": {
 		"title": "Мои вещи",
-		"signInMessage": "Пожалуйста, войдите, чтобы просматривать и управлять вашими вещами.",
+		"signInMessage": "Войди, чтобы видеть свои вещи.",
 		"signInButton": "Войти",
 		"loading": "Загрузка...",
-		"noItems": "У вас пока нет вещей.",
-		"borrowingTitle": "Вещи, которые я беру",
+		"noItems": "У тебя пока нет вещей.",
+		"borrowingTitle": "Вещи, которые ты взял",
 		"myItemsTitle": "Мои вещи"
 	},
 	"Profile": {
 		"title": "Мой профиль",
 		"loading": "Загрузка...",
-		"signInMessage": "Пожалуйста, войдите, чтобы просматривать ваш профиль.",
+		"signInMessage": "Войди, чтобы увидеть свой профиль.",
 		"backToHome": "Назад на главную",
 		"loadingProfile": "Загрузка профиля...",
 		"edit": "Редактировать",
@@ -401,13 +401,13 @@
 		"save": "Сохранить",
 		"saving": "Сохранение...",
 		"name": "Имя",
-		"namePlaceholder": "Ваше имя",
-		"address": "Адрес / Локация",
+		"namePlaceholder": "Твоё имя",
+		"address": "Адрес / Место",
 		"addressPlaceholder": "например, Далат, Ward 1",
 		"bio": "О себе",
-		"bioPlaceholder": "Расскажите немного о себе...",
-		"contactInfo": "Контактная информация",
-		"contactInfoDesc": "Эта информация будет доступна пользователям, с которыми у вас есть одобренные сделки.",
+		"bioPlaceholder": "Расскажи немного о себе...",
+		"contactInfo": "Контакты",
+		"contactInfoDesc": "Видят только те, с кем у тебя одобрены запросы.",
 		"telegram": "Имя пользователя Telegram",
 		"whatsapp": "Номер WhatsApp",
 		"facebook": "Профиль Facebook",
@@ -419,15 +419,15 @@
 		"toasts": {
 			"updated": "Профиль обновлён",
 			"failed": "Не удалось обновить профиль",
-			"geolocationNotSupported": "Геолокация не поддерживается вашим браузером",
-			"locationError": "Не удалось получить локацию: {error}"
+			"geolocationNotSupported": "Твой браузер не поддерживает геолокацию",
+			"locationError": "Не удалось определить место: {error}"
 		}
 	},
 	"ContactInfo": {
-		"noInfo": "Контактная информация не указана.",
-		"noMethods": "Способы связи не настроены.",
-		"availableMethods": "Доступные способы связи:",
-		"sharedAfter": "Контакты будут показаны после одобренной сделки",
+		"noInfo": "Контакты не указаны.",
+		"noMethods": "Контакты не добавлены.",
+		"availableMethods": "Как связаться:",
+		"sharedAfter": "Контакты откроются после одобрения запроса",
 		"labels": {
 			"telegram": "Telegram",
 			"whatsapp": "WhatsApp",
@@ -436,37 +436,37 @@
 		}
 	},
 	"LocationPicker": {
-		"title": "Выберите локацию",
-		"description": "Нажмите на карту, чтобы выбрать локацию, или перетащите маркер, чтобы уточнить.",
+		"title": "Выбери место",
+		"description": "Нажми на карту или перетащи маркер.",
 		"useCurrent": "Использовать текущее местоположение",
 		"loadingAddress": "Загрузка адреса...",
 		"area": "Район: {ward}",
 		"cancel": "Отмена",
-		"confirm": "Подтвердить локацию",
-		"geolocationNotSupported": "Геолокация не поддерживается вашим браузером",
-		"locationError": "Не удалось получить локацию: {error}"
+		"confirm": "Подтвердить место",
+		"geolocationNotSupported": "Твой браузер не поддерживает геолокацию",
+		"locationError": "Не удалось определить место: {error}"
 	},
 	"UserProfile": {
-		"redirecting": "Переадресация на ваш профиль...",
+		"redirecting": "Перенаправляем...",
 		"goToProfile": "Перейти в мой профиль",
 		"loading": "Загрузка профиля...",
 		"notFound": "Пользователь не найден.",
 		"backToHome": "Назад на главную",
 		"title": "Профиль пользователя",
 		"memberSince": "Участник с {date}",
-		"contactInfo": "Контактная информация",
+		"contactInfo": "Контакты",
 		"tabs": {
 			"ratings": "Оценки",
 			"history": "История"
 		}
 	},
 	"Ratings": {
-		"pendingTitle": "Оцените ваши сделки",
-		"pendingDesc": "У вас {count} сделок для оценки.",
-		"lender": "дающий",
-		"borrower": "берущий",
-		"asLender": "Как дающий",
-		"asBorrower": "Как берущий",
+		"pendingTitle": "Оставь отзывы",
+		"pendingDesc": "У тебя {count} запросов без отзыва.",
+		"lender": "владелец",
+		"borrower": "получатель",
+		"asLender": "Как владелец",
+		"asBorrower": "Как получатель",
 		"with": "с {name}",
 		"rate": "Оценить",
 		"leaveRating": "Оставить отзыв",
@@ -474,59 +474,59 @@
 			"title": "Оценить {role} по \"{item}\"",
 			"ratingLabel": "Оценка",
 			"commentLabel": "Комментарий (необязательно)",
-			"commentPlaceholder": "Поделитесь опытом...",
+			"commentPlaceholder": "Поделись опытом...",
 			"photoLabel": "Фото (необязательно)",
-			"photoHelp": "Добавьте фото (до 3)",
+			"photoHelp": "Добавь фото (до 3)",
 			"cancel": "Отмена",
 			"submit": "Отправить",
 			"submitting": "Отправка...",
-			"selectRating": "Пожалуйста, выберите оценку",
+			"selectRating": "Выбери оценку",
 			"success": "Оценка успешно отправлена",
 			"failed": "Не удалось отправить оценку"
 		}
 	},
 	"UserHistory": {
 		"loading": "Загрузка истории...",
-		"noHistory": "Пока нет истории сделок.",
-		"noLending": "Нет истории выдачи вещей.",
-		"noBorrowing": "Нет истории получения вещей.",
-		"lent": "Дал",
-		"borrowed": "Взял",
+		"noHistory": "Пока нет истории.",
+		"noLending": "Пока ничего не отдано.",
+		"noBorrowing": "Пока ничего не получено.",
+		"lent": "Отдано",
+		"borrowed": "Получено",
 		"tabs": {
-			"lending": "Выдавал ({count})",
-			"borrowing": "Брал ({count})"
+			"lending": "Отдано ({count})",
+			"borrowing": "Получено ({count})"
 		}
 	},
 	"Wishlist": {
-		"title": "Список желаний",
-		"subtitle": "Запрашивайте вещи, которых не нашли, и голосуйте за запросы других.",
+		"title": "Список запросов",
+		"subtitle": "Нет нужного? Создай запрос или голосуй за другие.",
 		"inputPlaceholder": "Поиск запросов...",
 		"sortBy": "Сортировать",
 		"sortOptions": {
 			"recent": "Сначала новые",
-			"upvoted": "Больше голосов"
+			"upvoted": "По популярности"
 		},
 		"back": "Назад",
 		"loading": "Загрузка...",
 		"noItems": "Ничего не найдено.",
 		"emptyCard": {
 			"title": "Не нашли то, что нужно?",
-			"description": "Посмотрите список желаний сообщества или создайте свой запрос.",
+			"description": "Посмотри, что ищут другие, или создай свой запрос.",
 			"seeFull": "Открыть весь список",
 			"makeRequest": "Создать запрос"
 		},
 		"draftCard": {
 			"title": "Создать запрос",
-			"label": "Что вам нужно?",
+			"label": "Что тебе нужно?",
 			"placeholder": "например, дрель, палатка...",
 			"photoLabel": "Фото (необязательно)",
-			"clickToUpload": "Нажмите, чтобы загрузить",
-			"dragAndDrop": "или перетащите",
+			"clickToUpload": "Нажми, чтобы загрузить",
+			"dragAndDrop": "или перетащи",
 			"uploadLimit": "До 5 фото",
-			"matchFound": "Мы нашли {count} совпадений. После отправки попросим подтвердить.",
+			"matchFound": "Нашли {count} похожих — посмотри перед отправкой.",
 			"addRequest": "Добавить запрос",
 			"searchItems": "Искать вещи",
-			"success": "Запрос добавлен в список желаний!",
+			"success": "Добавлено в список запросов!",
 			"failed": "Не удалось добавить запрос: {error}"
 		},
 		"item": {
@@ -545,7 +545,7 @@
 		},
 		"alerts": {
 			"similarTitle": "Найдены похожие вещи!",
-			"similarDesc": "Мы нашли {count} вещей, которые похожи на ваш запрос. Хотите посмотреть их вместо публикации?",
+			"similarDesc": "Нашли {count} похожих вещей. Посмотришь перед публикацией?",
 			"viewItems": "Посмотреть вещи",
 			"postAnyway": "Опубликовать всё равно"
 		}
@@ -555,33 +555,33 @@
 		"giveaway": "Подарок",
 		"loadingMap": "Загрузка карты...",
 		"loading": "Загрузка...",
-		"noLocationItems": "Нет вещей с локацией в текущем фильтре"
+		"noLocationItems": "В этом фильтре нет вещей на карте"
 	},
 	"RatingSummary": {
 		"loading": "Загрузка...",
 		"noRatings": "Нет оценок",
 		"noRatingsYet": "Пока нет оценок",
 		"ratingCount": "Оценок: {count}",
-		"asLender": "Как дающий",
-		"asBorrower": "Как берущий"
+		"asLender": "Как владелец",
+		"asBorrower": "Как получатель"
 	},
 	"ItemDetail": {
-		"youOwnThis": "Это ваша вещь",
+		"youOwnThis": "Это твоя вещь",
 		"giveaway": "Подарок",
-		"locationAvailable": "Есть локация",
+		"locationAvailable": "Место указано",
 		"notFound": "Вещь не найдена",
-		"rateTransaction": "Оценить сделку",
-		"rateTransactions": "Оценить сделки",
+		"rateTransaction": "Оставить отзыв",
+		"rateTransactions": "Оставить отзывы",
 		"reviewTransaction": "Посмотреть отзыв",
 		"ratePrompt": {
-			"receiveFromUser": "Поделитесь опытом получения этой вещи от {targetUserName}",
-			"giveToUser": "Поделитесь опытом передачи этой вещи пользователю {targetUserName}",
-			"receive": "Поделитесь опытом получения этой вещи",
-			"give": "Поделитесь опытом передачи этой вещи",
-			"borrowFromUser": "Поделитесь опытом, как вы брали у {targetUserName}",
-			"lendToUser": "Поделитесь опытом, как вы давали {targetUserName}",
-			"borrow": "Поделитесь опытом, как вы брали эту вещь",
-			"lend": "Поделитесь опытом, как вы давали эту вещь"
+			"receiveFromUser": "Расскажи, как прошло получение от {targetUserName}",
+			"giveToUser": "Расскажи, как прошла передача {targetUserName}",
+			"receive": "Расскажи, как прошло получение этой вещи",
+			"give": "Расскажи, как прошла передача этой вещи",
+			"borrowFromUser": "Расскажи, как прошло пользование вещью от {targetUserName}",
+			"lendToUser": "Расскажи, как прошла передача вещи {targetUserName}",
+			"borrow": "Расскажи, как прошло пользование этой вещью",
+			"lend": "Расскажи, как прошла передача этой вещи"
 		},
 		"rate": "Оценить",
 		"leaveRating": "Оставить отзыв",
@@ -590,8 +590,8 @@
 		"deleteItem": "Удалить",
 		"cancel": "Отмена",
 		"deleteConfirm": {
-			"title": "Вы уверены?",
-			"description": "Это действие нельзя отменить. Вещь будет удалена навсегда.",
+			"title": "Точно удалить?",
+			"description": "Вещь удалится навсегда. Отменить не получится.",
 			"confirm": "Удалить"
 		},
 		"itemDeleted": "Вещь удалена",
@@ -603,8 +603,8 @@
 		"noRequests": "Пока нет запросов.",
 		"availabilityAndRequests": "Доступность и запросы",
 		"activity": "Активность",
-		"checkAvailabilityAndRequest": "Проверить доступность и запросить",
-		"leaseLength": "Срок аренды: ",
+		"checkAvailabilityAndRequest": "Проверить и запросить",
+		"leaseLength": "На сколько: ",
 		"minDays": "мин {count} дн.",
 		"maxDays": "макс {count} дн.",
 		"backToItems": "Назад к вещам",
@@ -615,12 +615,12 @@
 		"system": "Система",
 		"itemCreated": "Вещь создана",
 		"giveawayApproved": "Подарок одобрен",
-		"loanStarted": "Аренда началась",
+		"loanStarted": "Передано",
 		"itemPickedUp": "Вещь получена",
 		"itemReturned": "Вещь возвращена",
 		"defaultActivity": "Активность",
 		"recipient": "Получатель: ",
-		"borrower": "Берущий: ",
+		"borrower": "Получатель: ",
 		"loading": "Загрузка активности…",
 		"noActivity": "Пока нет активности.",
 		"by": "от "
@@ -635,18 +635,18 @@
 		"other": "Другое"
 	},
 	"ClaimButton": {
-		"manageRequest": "Управлять запросом",
+		"manageRequest": "Мой запрос",
 		"claim": "Запросить",
-		"signInTooltip": "Войдите, чтобы запросить эту вещь"
+		"signInTooltip": "Войди, чтобы запросить эту вещь"
 	},
 	"OwnerUnavailability": {
 		"button": "Отпуск",
 		"badgeOn": "Вкл",
-		"title": "Отпуск / Недоступность",
-		"description": "Когда диапазон активен, ваши вещи скрыты в разделе «Найти» и их нельзя запросить.",
-		"yourRanges": "Ваши периоды",
+		"title": "Когда тебя не будет",
+		"description": "В эти даты твои вещи будут скрыты и их нельзя запросить.",
+		"yourRanges": "Твои даты",
 		"loading": "Загрузка…",
-		"noRanges": "Пока нет периодов.",
+		"noRanges": "Пока ничего не добавлено.",
 		"delete": "Удалить",
 		"addRange": "Добавить период",
 		"notePlaceholder": "Заметка (необязательно)",
@@ -655,16 +655,16 @@
 		"dateFormat": "d MMM, yyyy"
 	},
 	"ProfileSetup": {
-		"title": "Заполните профиль",
-		"description": "Настройте профиль, чтобы начать делиться и брать вещи. Это можно изменить позже.",
+		"title": "Заполни профиль",
+		"description": "Заполни профиль, чтобы начать. Всё можно изменить позже.",
 		"nameLabel": "Имя",
 		"fromClerk": "(из Clerk)",
-		"namePlaceholder": "Ваше имя",
-		"resetToClerk": "Сбросить к значению Clerk",
+		"namePlaceholder": "Твоё имя",
+		"resetToClerk": "Сбросить",
 		"addressLabel": "Адрес",
-		"addressPlaceholder": "Ваша локация (например, Далат, Вьетнам)",
+		"addressPlaceholder": "Где ты находишься (например, Далат, Вьетнам)",
 		"contactMethodsLabel": "Способы связи",
-		"contactMethodsDesc": "Добавьте хотя бы один способ связи",
+		"contactMethodsDesc": "Добавь хотя бы один способ связи",
 		"telegramPlaceholder": "Telegram @username",
 		"whatsappPlaceholder": "Номер WhatsApp",
 		"facebookPlaceholder": "Профиль Facebook",
@@ -673,17 +673,17 @@
 		"save": "Сохранить профиль",
 		"saving": "Сохранение...",
 		"toastRequired": "Имя обязательно",
-		"toastSuccess": "Профиль успешно создан!",
+		"toastSuccess": "Профиль создан!",
 		"toastFailed": "Не удалось создать профиль"
 	},
 	"RatingsList": {
 		"loading": "Загрузка оценок...",
 		"all": "Все ({count})",
-		"lender": "Как дающий ({count})",
-		"borrower": "Как берущий ({count})",
+		"lender": "Как владелец ({count})",
+		"borrower": "Как получатель ({count})",
 		"noRatings": "В этой категории нет оценок.",
-		"asLender": "Как дающий",
-		"asBorrower": "Как берущий",
-		"photoAlt": "Фото отзыва {index}"
+		"asLender": "Как владелец",
+		"asBorrower": "Как получатель",
+		"photoAlt": "Фото {index}"
 	}
 }
